@@ -1,6 +1,8 @@
 # AlfrescoExtensions
 
-A collection of libraries for use with Alfresco, including:
+A work in progress.
+
+This is a collection of libraries for use with Alfresco, including:
 
 Elastic Search Plugin
 
