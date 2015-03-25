@@ -1,0 +1,160 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+      <parent>
+        <groupId>org.alfresco.extensions</groupId>
+        <artifactId>extensions-parent</artifactId>
+        <version>1.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+      </parent>
+
+    <artifactId>alfresco-extensions-serializers</artifactId>
+    <packaging>jar</packaging>
+    <name>Alfresco Extensions Serializers</name>
+
+    <properties>
+        <elasticsearch.version>1.4.4</elasticsearch.version>
+    </properties>
+
+  <dependencies>
+        <dependency>
+            <artifactId>lucene-core</artifactId>
+            <groupId>org.apache.lucene</groupId>
+            <version>4.10.3</version>
+        </dependency>
+        <dependency>
+          <groupId>org.elasticsearch</groupId>
+          <artifactId>elasticsearch</artifactId>
+          <version>${elasticsearch.version}</version>
+          <exclusions>
+          	<exclusion>
+          		<artifactId>*</artifactId>
+          		<groupId>org.apache.lucene</groupId>
+          	</exclusion>
+          </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.3.2</version>
+        </dependency>
+        <dependency>
+            <groupId>${alfresco.groupId}</groupId>
+            <artifactId>alfresco-core</artifactId>
+            <version>${alfresco.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>xml-apis</groupId>
+                    <artifactId>xml-apis</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>${alfresco.groupId}</groupId>
+            <artifactId>alfresco-repository</artifactId>
+            <version>${alfresco.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>xml-apis</groupId>
+                    <artifactId>xml-apis</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>${alfresco.groupId}</groupId>
+            <artifactId>alfresco-data-model</artifactId>
+            <version>${alfresco.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>xml-apis</groupId>
+                    <artifactId>xml-apis</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.alfresco.services</groupId>
+            <artifactId>services-common-mongo</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+        	<groupId>junit</groupId>
+        	<artifactId>junit-dep</artifactId>
+        	<version>4.10</version>
+        	<scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>1.9.5</version>
+            <scope>test</scope>
+        </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+            <!-- Create a jar of test classes -->
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>create-test-jar</id>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Create source jars -->
+            <plugin>
+                <artifactId>maven-source-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>create-source-jars</id>
+                        <goals>
+                            <goal>jar</goal>
+                            <goal>test-jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            
+            <!--  Check license headers -->
+            <plugin>
+                <groupId>org.apache.rat</groupId>
+                <artifactId>apache-rat-plugin</artifactId>
+                <version>0.10</version>
+                <executions>
+                    <execution>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <includes>
+                        <include>**/*.java</include>
+                    </includes>
+                    <licenses>
+                        <license
+                            implementation="org.apache.rat.analysis.license.SimplePatternBasedLicense">
+                            <licenseFamilyCategory>ALF-ENT</licenseFamilyCategory>
+                            <licenseFamilyName>Alfresco Enterprise License</licenseFamilyName>
+                            <notes></notes>
+                            <patterns>
+                                <pattern>License rights for this program may be obtained from Alfresco Software</pattern>
+                            </patterns>
+                        </license>
+                    </licenses>
+                    <licenseFamilies>
+                        <licenseFamily implementation="org.apache.rat.license.SimpleLicenseFamily">
+                            <familyName>Alfresco Enterprise License</familyName>
+                        </licenseFamily>
+                    </licenseFamilies>
+                </configuration>
+            </plugin>
+        </plugins>
+  </build>
+
+</project>

@@ -1,0 +1,22 @@
+springContextFileLocation: spring.xml
+version: ${project.version} (${buildNumber})
+
+http:
+    port: 9192
+    adminPort: 9193
+
+logging:
+  level: INFO
+  loggers:
+    "org.alfresco.elk": DEBUG
+  file:
+    enabled: true
+    threshold: ALL
+    currentLogFilename: ./logs/semantics.log
+    archive: true
+    archivedLogFilenamePattern: ./logs/semantics-%d.log.gz
+    archivedFileCount: 5
+
+mongo:
+    dbName: semantics
+    mongoURI: mongodb://127.0.0.1:27017

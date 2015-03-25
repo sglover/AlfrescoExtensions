@@ -1,0 +1,37 @@
+springContextFileLocation: spring.xml
+version: ${project.version} (${buildNumber})
+
+# ActiveMQ broker url
+messaging:
+    routing:
+        numThreads: 10
+    broker:
+        url: tcp://localhost:61616
+    events:
+        repo:
+            node:
+                sourceTopic:
+                    endpoint: activemq:topic:alfresco.repo.events.nodes
+    clientId: entities
+    durableSubscriptionName: entities
+
+# Mongo persistence config
+mongo:
+    dbName: alfresco
+    mongoURI: mongodb://127.0.0.1:27017
+
+http:
+    port: 9292
+    adminPort: 9293
+
+logging:
+  level: INFO
+  loggers:
+    "org.alfresco.entities": DEBUG
+  file:
+    enabled: true
+    threshold: ALL
+    currentLogFilename: ./logs/elk.log
+    archive: true
+    archivedLogFilenamePattern: ./logs/elk-%d.log.gz
+    archivedFileCount: 5

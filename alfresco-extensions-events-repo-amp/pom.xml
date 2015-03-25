@@ -1,0 +1,153 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.alfresco.services</groupId>
+        <artifactId>alfresco-services-amp-parent</artifactId>
+        <version>1.2.5-SNAPSHOT</version>
+    </parent>
+
+    <groupId>org.alfresco.extensions</groupId>
+    <artifactId>alfresco-extensions-events-repo-amp</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>amp</packaging>
+    <name>Alfresco Extensions Repository Events AMP</name>
+
+    <properties>
+        <applyamp.force>true</applyamp.force>
+        <applyamp.verbose>true</applyamp.verbose>
+        <!-- 
+        <war.file>${war.file.repo}</war.file>
+         -->
+        <alfresco.groupId>org.alfresco</alfresco.groupId>
+        <alfresco.version>5.1-SNAPSHOT</alfresco.version>
+        <war.file>${project.build.directory}/wars/${war.artifactId}.war</war.file>
+        <war.artifactId>alfresco-enterprise</war.artifactId>
+        <!-- 
+        <dependency.alfresco-events.version>${project.version}</dependency.alfresco-events.version>
+        <dependency.alfresco-messaging-repo.version>1.2.4</dependency.alfresco-messaging-repo.version>
+         -->
+        <dependency.alfresco-extensions-events-repo.version>${project.version}</dependency.alfresco-extensions-events-repo.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.alfresco.extensions</groupId>
+            <artifactId>alfresco-extensions-events-repo</artifactId>
+            <version>${dependency.alfresco-extensions-events-repo.version}</version>
+        </dependency>
+    <!-- 
+        <dependency>
+            <groupId>org.alfresco.services</groupId>
+            <artifactId>alfresco-events</artifactId>
+            <version>${dependency.alfresco-events.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.gytheio</groupId>
+            <artifactId>gytheio-messaging-camel</artifactId>
+            <version>${dependency.gytheio.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.alfresco.services</groupId>
+            <artifactId>alfresco-messaging-repo</artifactId>
+            <version>${dependency.alfresco-messaging-repo.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.alfresco.services</groupId>
+            <artifactId>alfresco-extensions-events-repo</artifactId>
+            <version>${dependency.alfresco-extensions-events-repo.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.alfresco.services</groupId>
+            <artifactId>alfresco-extensions-events-repo</artifactId>
+            <version>${dependency.alfresco-extensions-events-repo.version}</version>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.alfresco.services</groupId>
+            <artifactId>alfresco-events</artifactId>
+            <version>${dependency.alfresco-events.version}</version>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
+         -->
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.alfresco.maven.plugin</groupId>
+                <artifactId>alfresco-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+            </plugin>
+        </plugins>
+
+<!--  
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <id>copy</id>
+                            <phase>package</phase>
+                            <goals>
+                                <goal>copy</goal>
+                            </goals>
+                            <configuration>
+                                <artifactItems>
+                                    <artifactItem>
+                                        <groupId>${alfresco.groupId}</groupId>
+                                        <artifactId>${war.artifactId}</artifactId>
+                                        <version>${alfresco.version}</version>
+                                        <type>war</type>
+                                        <destFileName>${war.artifactId}.war</destFileName>
+                                    </artifactItem>
+                                </artifactItems>
+                                <outputDirectory>${project.build.directory}/wars</outputDirectory>
+                                <overWriteReleases>false</overWriteReleases>
+                                <overWriteSnapshots>true</overWriteSnapshots>
+                            </configuration>
+                        </execution>
+                        <execution>
+                            <id>copy1</id>
+                            <phase>package</phase>
+                            <goals>
+                                <goal>copy</goal>
+                            </goals>
+                            <configuration>
+                                <artifactItems>
+                                    <artifactItem>
+                                        <groupId>org.alfresco.services</groupId>
+                                        <artifactId>alfresco-events-repo-amp</artifactId>
+                                        <version>1.2.5-SNAPSHOT</version>
+                                        <type>amp</type>
+                                        <destFileName>alfresco-events-repo-amp.amp</destFileName>
+                                    </artifactItem>
+                                </artifactItems>
+                                <outputDirectory>${project.build.directory}/amps</outputDirectory>
+                                <overWriteReleases>false</overWriteReleases>
+                                <overWriteSnapshots>true</overWriteSnapshots>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+-->
+    </build>
+
+</project>

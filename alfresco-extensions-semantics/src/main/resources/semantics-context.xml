@@ -1,0 +1,32 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd
+       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd">
+
+    <bean id="semanticsMongoDbFactory" class="org.alfresco.service.common.mongo.MongoDbFactory">
+        <property name="mongoURI" value="${mongo.mongoURI}" />
+        <property name="dbName" value="${mongo.dbName}" />
+    </bean>
+
+   <bean id="semanticsMongoDb" factory-bean="semanticsMongoDbFactory" factory-method="createInstance" />
+
+   <bean id="semantics" class="org.alfresco.semantics.MongoSemantics" init-method="init">
+        <property name="db" ref="semanticsMongoDb"/>
+        <property name="relationsCollectionName" value="relations"/>
+   </bean>
+   
+   <bean id="tokenNameFinderLoader" class="org.alfresco.nlp.SpringClasspathModelLoader">
+   </bean>
+
+   <bean id="entityTagger" class="org.alfresco.nlp.CoreNLPEntityTagger">
+        <constructor-arg ref="tokenNameFinderLoader"/>
+   </bean>
+
+   <bean id="semanticsProcessor" class="org.alfresco.semantics.SemanticsProcessor">
+        <constructor-arg ref="entityTagger"/>
+        <constructor-arg ref="semantics"/>
+   </bean>
+</beans>

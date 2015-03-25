@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+      <parent>
+        <groupId>org.alfresco.extensions</groupId>
+        <artifactId>extensions-parent</artifactId>
+        <version>1.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+      </parent>
+
+    <name>Alfresco Extensions Semantics</name>
+    <artifactId>alfresco-extensions-semantics</artifactId>
+    <packaging>jar</packaging>
+    <description>Alfresco Extensions Semantics</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.alfresco.services</groupId>
+            <artifactId>services-common-dropwizard</artifactId>
+            <version>1.1-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>jaxb-impl</artifactId>
+                    <groupId>com.sun.xml.bind</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.alfresco.services</groupId>
+            <artifactId>services-common-mongo</artifactId>
+            <version>1.1-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.alfresco.extensions</groupId>
+            <artifactId>alfresco-extensions-nlp</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+      		  <groupId>commons-logging</groupId>
+		        <artifactId>commons-logging</artifactId>
+		        <version>1.1.3</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>15.0</version>
+        </dependency>
+        <!--
+        <dependency>
+            <groupId>org.apache.opennlp</groupId>
+            <artifactId>opennlp-tools</artifactId>
+            <version>1.5.3</version>
+        </dependency>
+    		<dependency>
+    		    <groupId>edu.stanford.nlp</groupId>
+    		    <artifactId>stanford-corenlp</artifactId>
+    		    <version>3.5.0</version>
+    		</dependency>
+    		<dependency>
+    		    <groupId>edu.stanford.nlp</groupId>
+    		    <artifactId>stanford-corenlp</artifactId>
+    		    <version>3.5.0</version>
+    		    <classifier>models</classifier>
+    		</dependency>
+      -->
+
+    		<dependency>
+    		    <groupId>org.jsoup</groupId>
+    		    <artifactId>jsoup</artifactId>
+    		    <version>1.7.2</version>
+    		</dependency>
+
+    		<dependency>
+    		    <groupId>cc.mallet</groupId>
+    		    <artifactId>mallet</artifactId>
+    		    <version>2.0.7</version>
+    		</dependency>
+
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <version>1.2.17</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.11</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest-core</artifactId>
+            <version>${hamcrest.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest-library</artifactId>
+            <version>${hamcrest.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>de.flapdoodle.embed</groupId>
+            <artifactId>de.flapdoodle.embed.mongo</artifactId>
+            <version>${dependency.flapdoodle.version}</version>
+            <scope>test</scope>
+        </dependency>
+     </dependencies>
+
+    <build>
+        <plugins>
+
+        <plugin>
+            <artifactId>maven-resources-plugin</artifactId>
+            <executions>
+                <execution>
+                    <id>copy-resources</id>
+                    <phase>validate</phase>
+                    <goals>
+                        <goal>copy-resources</goal>
+                    </goals>
+                    <configuration>
+                        <outputDirectory>${project.build.directory}</outputDirectory>
+                        <resources>
+                            <resource>
+                                <directory>src/main/resources</directory>
+                                <filtering>true</filtering>
+                            </resource>
+                        </resources>
+                    </configuration>
+                </execution>
+            </executions>
+        </plugin>
+
+
+      <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <version>2.3</version>
+          <configuration>
+              <createDependencyReducedPom>true</createDependencyReducedPom>
+              <!-- 
+              <minimizeJar>true</minimizeJar>
+               -->
+              <filters>
+                  <filter>
+                      <artifact>*:*</artifact>
+                      <excludes>
+                          <exclude>META-INF/*.SF</exclude>
+                          <exclude>META-INF/*.DSA</exclude>
+                          <exclude>META-INF/*.RSA</exclude>
+                      </excludes>
+                  </filter>
+              </filters>
+          </configuration>
+          <executions>
+              <execution>
+                  <phase>package</phase>
+                  <goals>
+                      <goal>shade</goal>
+                  </goals>
+                  <configuration>
+                      <transformers>
+                          <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                          <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                              <mainClass>org.alfresco.semantics.SemanticsService</mainClass>
+                          </transformer>
+                          <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                              <resource>META-INF/spring.handlers</resource>
+                          </transformer>
+                          <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                              <resource>META-INF/spring.schemas</resource>
+                          </transformer>
+                      </transformers>
+                  </configuration>
+              </execution>
+          </executions>
+      </plugin>
+
+      <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>2.3.2</version>
+          <configuration>
+              <archive>
+                  <manifest>
+                      <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                  </manifest>
+              </archive>
+          </configuration>
+      </plugin>
+      
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>-Xmx1024m</argLine>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.3.2</version>
+                <configuration>
+                    <source>1.7</source>
+                    <target>1.7</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>2.1.2</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

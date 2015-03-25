@@ -1,0 +1,41 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE beans PUBLIC '-//SPRING//DTD BEAN//EN' 'http://www.springframework.org/dtd/spring-beans.dtd'>
+
+<beans>
+
+    <bean id="modelLoader" class="org.alfresco.nlp.SpringClasspathModelLoader"/>
+
+   <bean id="entityTagger" class="org.alfresco.nlp.StanfordEntityTagger">
+        <constructor-arg value="2"/>
+   </bean>
+
+<!-- 
+	<bean id="taskExecutor" class="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">
+	    <property name="corePoolSize" value="5" />
+	    <property name="maxPoolSize" value="10" />
+	    <property name="queueCapacity" value="25" />
+	</bean>
+	 -->
+
+    <bean id="alfrescoApi" class="org.alfresco.util.AlfrescoApi">
+    </bean>
+
+   <bean id="entityExtracter" class="org.alfresco.nlp.EntityExtracter">
+        <constructor-arg ref="alfrescoApi"/>
+        <constructor-arg ref="entityTagger"/>
+   </bean>
+
+   <bean id="entitiesService" class="org.alfresco.entities.EntitiesServiceImpl" init-method="init">
+        <property name="entitiesDAO" ref="entitiesDAO"/>
+        <property name="entityExtracter" ref="entityExtracter"/>
+   </bean>
+
+   <bean id="userTrackingService" class="org.alfresco.entities.UserTrackingServiceImpl">
+        <property name="userTrackingDAO" ref="userTrackingDAO"/>
+   </bean>
+
+   <bean id="eventsListener" class="org.alfresco.entities.EventsListener">
+        <constructor-arg ref="entitiesService"/>
+        <constructor-arg ref="userTrackingService"/>
+   </bean>
+</beans>
