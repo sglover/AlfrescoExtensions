@@ -27,16 +27,19 @@ messaging.subsystem.autoStart=true
 Install the ElasticSearch Plugin
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Shut down ElasticSearch
+i) Shut down ElasticSearch
+
 bin/shutdown 
 
-# Remove existing plugin (if installed)
+ii) Remove existing plugin (if installed)
+
 bin/plugin --remove alfresco
 
-# Install the plugin
+iii) Install the plugin
+
 bin/plugin -install alfresco url file:////...alfresco-elasticsearch-plugin/target/releases/alfresco-elasticsearch-plugin-1.0-SNAPSHOT.zip
 
-# Start ElasticSearch
+iv) Start ElasticSearch
 bin/elasticsearch -d
 
 
