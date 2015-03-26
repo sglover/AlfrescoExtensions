@@ -69,25 +69,10 @@
             <artifactId>alfresco-extensions-events</artifactId>
             <version>${dependency.alfresco-extensions-events.version}</version>
         </dependency>
-        <!-- 
-        <dependency>
-            <groupId>org.alfresco.services.sync</groupId>
-            <artifactId>alfresco-device-sync-events</artifactId>
-            <version>1.1-SNAPSHOT</version>
-        </dependency>
-         -->
         <dependency>
             <groupId>org.alfresco.services</groupId>
             <artifactId>services-common-dropwizard</artifactId>
             <version>${dependency.alfresco-services.version}</version>
-            <!-- 
-            <exclusions>
-                <exclusion>
-                    <artifactId>jaxb-impl</artifactId>
-                    <groupId>com.sun.xml.bind</groupId>
-                </exclusion>
-            </exclusions>
-             -->
         </dependency>
         <dependency>
             <groupId>org.gytheio</groupId>
