@@ -1,0 +1,31 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+   <!-- Manual wiring of Spring Security components for now, full integration can come later  -->
+   <bean id="basicAuthAuthenticationProvider" 
+            class="org.alfresco.service.common.auth.BasicAuthAuthenticationProvider"
+            init-method="init">
+      <property name="basicAuthUrl" value="${cache.authentication.basicAuthUrl}" />
+   </bean>
+   
+   <bean id="cacheProvider" class="org.alfresco.service.common.auth.CachingAuthenticationProvider">
+      <property name="delegateAuthenticationProvider" ref="basicAuthAuthenticationProvider" />
+      <property name="expiryMs" value="${cache.authentication.cache.expiryMs}" />
+   </bean>
+   
+   <bean id ="userDetailsService" class="org.alfresco.service.common.auth.DummyUserDetailsService">
+   </bean>
+   
+   <bean id="cacheAuthenticator" class="org.alfresco.service.common.dropwizard.auth.SpringSecurityAuthenticator">
+      <property name="authenticationProvider" ref="cacheProvider" />
+      <property name="userDetailsService" ref="userDetailsService" />
+   </bean>
+   
+   <bean id="cacheAuthProvider" class="io.dropwizard.auth.basic.BasicAuthProvider">
+      <constructor-arg ref="cacheAuthenticator" />
+      <constructor-arg value="Alfresco Cache Server" />
+   </bean>
+   
+</beans>

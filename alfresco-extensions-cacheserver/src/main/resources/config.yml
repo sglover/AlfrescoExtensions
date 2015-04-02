@@ -1,0 +1,90 @@
+springContextFileLocation: spring.xml
+version: ${project.version}
+
+mongo:
+    dbName: alfresco
+    mongoURI: mongodb://127.0.0.1:27017
+    contentCollectionName: content
+    contentUsageCollectionName: contentUsage
+
+cache:
+    hostname: localhost
+    content:
+        rootFolder: content
+    authentication:
+        basicAuthUrl: http://localhost:8080/alfresco/api/-default-/public/cmis/versions/1.1/browser
+        cache:
+            expiryMs: 900000
+    socketTimeout: 60000
+    maxTotalConnections: 10
+    maxHostConnections: 10
+    connectionTimeout: 60000
+    baseUrl:
+
+repo:
+    hostname: localhost
+    port: 8080
+    sslPort: 8443
+    username: admin
+    password: admin
+    secureCommsType: HTTPS
+    maxTotalConnections: 10
+    maxHostConnections: 10
+    socketTimeout: 60000
+
+messaging:
+    broker:
+        url: tcp://localhost:61616
+
+camel:
+    node:
+        events:
+            txnManager: camelRequiredTxn
+            sourceTopic: activemq:topic:alfresco.events.repo.nodes
+            clientId: alfresco.events.node.edgeserver
+            durableSubscriptionName: alfresco.events.node.edgeserver
+            dataFormat: defaultDataFormat
+    cacheserver:
+        events:
+            txnManager: camelRequiredTxn
+            sourceTopic: activemq:topic:alfresco.events.cacheServer
+            clientId: alfresco.messages.cacheServer
+            durableSubscriptionName: alfresco.messages.cacheServer
+            dataFormat: defaultDataFormat
+
+ssl:
+    keyStore:
+        name: keystore
+        type: JCEKS
+        provider: ""
+        metadataFileLocation: classpath:ssl-keystore-passwords.properties
+        location: classpath:ssl.repo.client.keystore
+    trustStore:
+        name: keystore
+        type: JCEKS
+        provider: ""
+        metadataFileLocation: classpath:ssl-truststore-passwords.properties
+        location: classpath:ssl.repo.client.truststore
+
+server:
+    type: simple
+    applicationContextPath: /
+    connector:
+        type: http
+        port: 9199
+
+logging:
+  level: WARN
+  loggers:
+    "org.alfresco.edgeserver": DEBUG
+  appenders:
+    - type: console
+      threshold: ALL
+      timeZone: UTC
+      target: stdout
+    - type: file
+      threshold: ALL
+      currentLogFilename: ./logs/edge.log
+      archive: true
+      archivedLogFilenamePattern: ./logs/edge-%d.log.gz
+      archivedFileCount: 5

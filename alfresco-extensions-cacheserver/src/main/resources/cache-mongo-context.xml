@@ -1,0 +1,23 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <bean id="mongoDbFactory" class="org.alfresco.cacheserver.dao.mongo.MongoDbFactory">
+        <property name="mongoURI" value="${mongo.mongoURI}" />
+        <property name="dbName" value="${mongo.dbName}" />
+        <!-- 
+        <property name="enabled" value="${mongo.enabled}"/>
+         -->
+    </bean>
+    
+    <bean id="mongoDb" factory-bean="mongoDbFactory" factory-method="createInstance" />
+
+    <bean id="contentDAO" class="org.alfresco.cacheserver.dao.mongo.MongoContentDAO" init-method="init">
+       <constructor-arg ref="mongoDb" />
+       <constructor-arg value="${mongo.contentCollectionName}"/>
+       <constructor-arg value="${mongo.contentUsageCollectionName}"/>
+       <constructor-arg ref="cacheServerIdentity" />
+    </bean>
+
+</beans>

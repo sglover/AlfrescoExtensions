@@ -25,6 +25,7 @@
         <module>alfresco-extensions-entities</module>
         <module>alfresco-extensions-nlp</module>
         <module>alfresco-extensions-repo-client</module>
+        <module>alfresco-extensions-cacheserver</module>
     </modules>
 
     <properties>

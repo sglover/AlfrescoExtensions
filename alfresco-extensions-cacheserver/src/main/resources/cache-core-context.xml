@@ -1,0 +1,92 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+
+    <bean id="contentStore" class="org.alfresco.cacheserver.contentstore.ContentStore">
+        <constructor-arg value="${cache.content.rootFolder}"></constructor-arg>
+    </bean>
+
+    <bean id="keyResourceLoader" class="org.alfresco.encryption.SpringKeyResourceLoader">
+    </bean>
+
+    <bean id="keyStoreParameters" class="org.alfresco.encryption.KeyStoreParameters">
+        <constructor-arg value="${ssl.keyStore.name}"></constructor-arg>
+        <constructor-arg value="${ssl.keyStore.type}"></constructor-arg>
+        <constructor-arg value="${ssl.keyStore.provider}"></constructor-arg>
+        <constructor-arg value="${ssl.keyStore.metadataFileLocation}"></constructor-arg>
+        <constructor-arg value="${ssl.keyStore.location}"></constructor-arg>
+    </bean>
+
+    <bean id="trustStoreParameters" class="org.alfresco.encryption.KeyStoreParameters">
+        <constructor-arg value="${ssl.trustStore.name}"></constructor-arg>
+        <constructor-arg value="${ssl.trustStore.type}"></constructor-arg>
+        <constructor-arg value="${ssl.trustStore.provider}"></constructor-arg>
+        <constructor-arg value="${ssl.trustStore.metadataFileLocation}"></constructor-arg>
+        <constructor-arg value="${ssl.trustStore.location}"></constructor-arg>
+    </bean>
+
+    <bean id="sslEncryptionParameters" class="org.alfresco.encryption.ssl.SSLEncryptionParameters">
+        <constructor-arg ref="keyStoreParameters"></constructor-arg>
+        <constructor-arg ref="trustStoreParameters"></constructor-arg>
+    </bean>
+
+    <bean id="repoClientBuilder" class="org.alfresco.services.RepoClientBuilder">
+        <constructor-arg value="${repo.secureCommsType}"></constructor-arg>
+        <constructor-arg ref="sslEncryptionParameters"></constructor-arg>
+        <constructor-arg ref="keyResourceLoader"></constructor-arg>
+        <constructor-arg value="${repo.hostname}"></constructor-arg>
+        <constructor-arg value="${repo.port}"></constructor-arg>
+        <constructor-arg value="${repo.sslPort}"></constructor-arg>
+        <constructor-arg value="${repo.maxTotalConnections}"></constructor-arg>
+        <constructor-arg value="${repo.maxHostConnections}"></constructor-arg>
+        <constructor-arg value="${repo.socketTimeout}"></constructor-arg>
+    </bean>
+
+    <bean id="alfrescoApi" class="org.alfresco.services.AlfrescoApiImpl">
+        <constructor-arg value="${repo.hostname}"/>
+        <constructor-arg value="${repo.port}"/>
+        <constructor-arg value="${repo.username}"/> 
+        <constructor-arg value="${repo.password}"/>
+    </bean>
+
+    <bean id="contentGetter" class="org.alfresco.services.ContentGetterImpl">
+        <constructor-arg value="${repo.hostname}"></constructor-arg>
+        <constructor-arg value="${repo.port}"></constructor-arg>
+        <constructor-arg value="${repo.sslPort}"></constructor-arg>
+        <constructor-arg value="${repo.username}"></constructor-arg>
+        <constructor-arg value="${repo.password}"></constructor-arg>
+        <constructor-arg ref="repoClientBuilder"></constructor-arg>
+    </bean>
+
+    <bean id="cacheServerIdentity" class="org.alfresco.cacheserver.CacheServerIdentityImpl">
+        <constructor-arg value="${cache.hostname}"></constructor-arg>
+        <constructor-arg value="${server.connector.port}"></constructor-arg>
+    </bean>
+
+    <bean id="cacheHttpClient" class="org.alfresco.cacheserver.http.CacheHttpClient">
+    <!-- 
+        <constructor-arg value="${cache.socketTimeout}"/>
+        <constructor-arg value="${cache.maxTotalConnections}"/>
+        <constructor-arg value="${cache.maxHostConnections}"/>
+        <constructor-arg value="${cache.connectionTimeout}"/>
+        <constructor-arg value="${cache.baseUrl}"/>
+         -->
+    </bean>
+
+    <bean id="cacheMessageProducer" class="org.gytheio.messaging.camel.CamelMessageProducer">
+       <property name="producer" ref="camelProducerTemplate" />
+       <property name="endpoint" value="direct-vm:alfresco.events.edge" />
+    </bean>
+
+    <bean id="cacheServer" class="org.alfresco.cacheserver.CacheServer">
+        <constructor-arg ref="contentDAO"></constructor-arg>
+        <constructor-arg ref="contentStore"></constructor-arg>
+        <constructor-arg ref="contentGetter"></constructor-arg>
+        <constructor-arg ref="alfrescoApi"></constructor-arg>
+        <constructor-arg ref="cacheServerIdentity"></constructor-arg>
+        <constructor-arg ref="cacheMessageProducer"/>
+    </bean>
+
+</beans>

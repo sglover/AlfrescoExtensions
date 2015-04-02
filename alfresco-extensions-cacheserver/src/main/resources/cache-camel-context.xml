@@ -1,0 +1,54 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd
+       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd">
+
+    <!-- Any RouteBuilder in this package will be fired up -->
+    <context:component-scan base-package="org.alfresco.cacheserver.camel.routes"/>
+
+    <bean id="nodeEventListener" class="org.alfresco.cacheserver.camel.CacheServerNodeEventListener">
+        <constructor-arg ref="cacheServer"></constructor-arg>
+    </bean>
+
+    <bean id="messagesEventListener" class="org.alfresco.cacheserver.camel.CacheServerMessagesEventListener">
+        <constructor-arg ref="cacheServer"></constructor-arg>
+        <constructor-arg ref="cacheHttpClient"></constructor-arg>
+        <constructor-arg ref="cacheServerIdentity"></constructor-arg>
+    </bean>
+
+   <camelContext xmlns="http://camel.apache.org/schema/spring" id="alfrescoServiceCamelContext"> 
+
+      <jmxAgent id="agent" disabled="true"/>
+
+      <template id="camelProducerTemplate"
+            defaultEndpoint="amqp:topic:alfresco.events.edge" />
+
+      <endpoint id="cacheEvents" uri="amqp:topic:alfresco.events.edge"/>
+ 
+      <route>
+         <from uri="amqp:topic:alfresco.events.edge"/>
+         <unmarshal><custom ref="defaultDataFormat"/></unmarshal>
+         <bean ref="messagesEventListener" method="onMessage"/>
+      </route>
+
+      <route>
+          <from uri="direct-vm:alfresco.events.edge" />
+          <marshal><custom ref="defaultDataFormat" /></marshal>
+          <to uri="ref:cacheEvents" />
+      </route>
+
+   </camelContext>
+
+<!-- 
+    <bean id="camel" class="org.alfresco.edgeserver.camel.CamelService">
+        <constructor-arg value="${camel.brokerUrl}"></constructor-arg>
+        <constructor-arg value="${camel.sourceTopic}"></constructor-arg>
+        <constructor-arg value="${camel.clientId}"></constructor-arg>
+        <constructor-arg value="${camel.durableSubscriptionName}"></constructor-arg>
+        <constructor-arg ref="eventListener"></constructor-arg>
+    </bean>
+ -->
+</beans>
