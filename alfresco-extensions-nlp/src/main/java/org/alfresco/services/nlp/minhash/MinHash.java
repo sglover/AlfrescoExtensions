@@ -5,17 +5,17 @@
  * pursuant to a written agreement and any use of this program without such an 
  * agreement is prohibited. 
  */
-package org.alfresco.elasticsearch;
+package org.alfresco.services.nlp.minhash;
 
-import org.alfresco.services.AlfrescoApi;
+import java.util.Set;
 
 /**
  * 
  * @author sglover
  *
+ * @param <T>
  */
-//@Singleton
-public class ElasticSearchAlfrescoApi extends AlfrescoApi
+public interface MinHash<T>
 {
-
+	double similarity(Set<T> set1, Set<T> set2);
 }

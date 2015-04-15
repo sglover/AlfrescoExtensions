@@ -65,35 +65,124 @@ public class EntityExtracter
 		this(contentGetter, entityTagger, Executors.newFixedThreadPool(5));
 	}
 
-    public void getEntities(long nodeInternalId, long nodeVersion, String nodeType, EntityTaggerCallback callback)
+    public void getEntities(long nodeInternalId, String nodeType, EntityTaggerCallback callback)
     {
         if(includeNodeTypes.contains(nodeType))
         {
-        	logger.debug("Node " + nodeInternalId + "." + nodeVersion + ", node type " + nodeType + " extracting entities");
+        	logger.debug("Node " + nodeInternalId + ", node type " + nodeType + " extracting entities");
 
-        	ExtractEntities extractEntities = new ExtractEntities(nodeInternalId, nodeVersion, callback);
+        	ExtractEntitiesRunnable extractEntities = new ExtractEntitiesRunnable(nodeInternalId, callback);
         	executorService.execute(extractEntities);
         }
         else
         {
-        	logger.debug("Node " + nodeInternalId + "." + nodeVersion + ", node type " + nodeType + " ignored");
+        	logger.debug("Node " + nodeInternalId + ", node type " + nodeType + " ignored");
         }
     }
 
-    private class ExtractEntities implements Runnable
+//    public void getEntities(long nodeInternalId, String nodeType)
+//    {
+//        if(includeNodeTypes.contains(nodeType))
+//        {
+//        	logger.debug("Node " + nodeInternalId + ", node type " + nodeType + " extracting entities");
+//
+//        	ExtractEntitiesRunnable extractEntities = new ExtractEntitiesRunnable(nodeInternalId, callback);
+//        	executorService.execute(extractEntities);
+//        }
+//        else
+//        {
+//        	logger.debug("Node " + nodeInternalId + ", node type " + nodeType + " ignored");
+//        }
+//    }
+
+    public Entities getEntities(long nodeInternalId) throws IOException, AuthenticationException
     {
-    	private long nodeInternalId;
-    	private long nodeVersion;
+    	Entities entities = null;
+
+//        if(includeNodeTypes.contains(nodeType))
+//        {
+        	logger.debug("Node " + nodeInternalId + " extracting entities");
+
+        	ExtractEntities extractEntities = new ExtractEntities(nodeInternalId);
+        	entities = extractEntities.execute();
+//        }
+//        else
+//        {
+//        	logger.debug("Node " + nodeInternalId + " ignored");
+//        }
+
+        return entities;
+    }
+
+    private class ExtractEntitiesRunnable extends ExtractEntities implements Runnable
+    {
     	private EntityTaggerCallback callback;
 
-    	public ExtractEntities(long nodeInternalId, long nodeVersion, EntityTaggerCallback callback)
+    	public ExtractEntitiesRunnable(long nodeInternalId, EntityTaggerCallback callback)
         {
-    		this.nodeInternalId = nodeInternalId;
-    		this.nodeVersion = nodeVersion;
-    		this.callback = callback;
+	        super(nodeInternalId);
+	        this.callback = callback;
         }
 
+		@Override
 	    public void run()
+	    {
+	    	executeAsync(callback);
+	    }
+    }
+
+    private class ExtractEntities
+    {
+    	private long nodeInternalId;
+
+    	public ExtractEntities(long nodeInternalId)
+        {
+    		this.nodeInternalId = nodeInternalId;
+        }
+
+	    public Entities execute() throws IOException, AuthenticationException
+	    {
+	    	Entities entities = null;
+
+//	        try
+//	        {
+		        GetTextContentResponse response = contentGetter.getTextContent(nodeInternalId);
+	        	try
+	        	{
+			        InputStream in = (response != null ? response.getContent() : null);
+			        if(in != null)
+			        {
+		        		StringWriter writer = new StringWriter();
+						String encoding = "UTF-8";
+						IOUtils.copy(in, writer, encoding);
+						String content = writer.toString();
+		
+						logger.debug("OpenNlp node = " + nodeInternalId);
+
+						entities = entityTagger.getEntities(content);
+			        }
+			        else
+			        {
+			        	logger.warn("Unable to get text content for node " + nodeInternalId);
+			        }
+	        	}
+	        	finally
+	        	{
+	        		if(response != null)
+	        		{
+	        			response.release();
+	        		}
+	        	}
+//	        }
+//	        catch (IOException | AuthenticationException e)
+//	        {
+//	        	logger.warn("", e);
+//	        }
+
+			return entities;
+	    }
+
+	    public void executeAsync(EntityTaggerCallback callback)
 	    {
 	        try
 	        {
@@ -108,7 +197,7 @@ public class EntityExtracter
 						IOUtils.copy(in, writer, encoding);
 						String content = writer.toString();
 		
-						logger.debug("OpenNlp node = " + nodeInternalId + "." + nodeVersion);
+						logger.debug("OpenNlp node = " + nodeInternalId);
 		
 						entityTagger.getEntities(content, callback);
 			        }

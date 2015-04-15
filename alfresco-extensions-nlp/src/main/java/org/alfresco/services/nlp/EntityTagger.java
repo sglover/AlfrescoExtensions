@@ -8,6 +8,7 @@
 package org.alfresco.services.nlp;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URL;
 
 /**
@@ -17,6 +18,10 @@ import java.net.URL;
  */
 public interface EntityTagger
 {
+	Entities getEntities(String text) throws IOException;
+	Entities getEntities(URL url) throws IOException;
+	Entities getEntities(File file) throws IOException;
+
 	void getEntities(String text, EntityTaggerCallback callback);
 	void getEntities(URL url, EntityTaggerCallback callback);
 	void getEntities(File file, EntityTaggerCallback callback);

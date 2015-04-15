@@ -99,7 +99,7 @@ public class PropertySerializer
             break;
         case JSONOBJECT:
             JSON json = propertyValue.getJSON();
-            XContentBuilder builder1 = json.getXContent();
+            XContentBuilder builder1 = json.makeXContent();
             builder.field(propName, builder1);
             break;
 //        case FIXED_POINT:
@@ -148,7 +148,7 @@ public class PropertySerializer
             break;
         case JSONOBJECT:
             JSON json = propertyValue.getJSON();
-            DBObject builder1 = json.getDBObject();
+            DBObject builder1 = json.makeDBObject();
             builder.append(propName, builder1);
             break;
 //        case FIXED_POINT:
@@ -272,8 +272,46 @@ public class PropertySerializer
                                 + "\n" + "   Value:    " + collectionValueObj);
                     }
                     Serializable collectionValue = (Serializable) collectionValueObj;
-                    values.add(collectionValue);
+
+                    PropertyValue propertyValue = nodePropertyHelper.makeNodePropertyValue(propertyDef, collectionValue);
+                    switch(propertyValue.getPersistedValueType())
+                    {
+                    case NULL:
+                        values.add(null);
+                        break;
+                    case BOOLEAN:
+                        boolean boolValue = propertyValue.getBooleanValue();
+                        values.add(boolValue);
+                        break;
+                    case LONG:
+                        long longValue = propertyValue.getLongValue();
+                        values.add(longValue);
+                        break;
+                    case FLOAT:
+                        float floatValue = propertyValue.getFloatValue();
+                        values.add(floatValue);
+                        break;
+                    case DOUBLE:
+                        double doubleValue = propertyValue.getDoubleValue();
+                        values.add(doubleValue);
+                        break;
+                    case STRING:
+                        String stringValue = propertyValue.getStringValue();
+                        values.add(stringValue);
+                        break;
+                    case JSONOBJECT:
+                        JSON json = propertyValue.getJSON();
+                        values.add(json);
+                        break;
+                    case SERIALIZABLE:
+                        values.add(propertyValue.getSerializableValue());
+                        break;
+                    default:
+                        throw new AlfrescoRuntimeException("Unrecognised value type: "
+                                + propertyValue.getPersistedType());
+                    }
                 }
+
                 ret = values;
             }
             else
@@ -287,7 +325,38 @@ public class PropertySerializer
                                     + "   Property: " + propertyDef + "\n" + "   Type: " + propertyTypeQName + "\n"
                                     + "   Value: " + value);
                 }
-                ret = (Serializable)value;
+
+                PropertyValue propertyValue = nodePropertyHelper.makeNodePropertyValue(propertyDef, (Serializable)value);
+                switch(propertyValue.getPersistedValueType())
+                {
+                case NULL:
+                	ret = null;
+                    break;
+                case BOOLEAN:
+                    ret = propertyValue.getBooleanValue();
+                    break;
+                case LONG:
+                	ret = propertyValue.getLongValue();
+                    break;
+                case FLOAT:
+                	ret = propertyValue.getFloatValue();
+                    break;
+                case DOUBLE:
+                	ret = propertyValue.getDoubleValue();
+                    break;
+                case STRING:
+                	ret = propertyValue.getStringValue();
+                    break;
+                case JSONOBJECT:
+                	ret = propertyValue.getJSON();
+                    break;
+                case SERIALIZABLE:
+                	ret = propertyValue.getSerializableValue();
+                    break;
+                default:
+                    throw new AlfrescoRuntimeException("Unrecognised value type: "
+                            + propertyValue.getPersistedType());
+                }
             }
         }
 

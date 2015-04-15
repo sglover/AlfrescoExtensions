@@ -7,7 +7,7 @@
  */
 package org.alfresco.elasticsearch.service;
 
-import org.alfresco.services.AlfrescoApi;
+import org.alfresco.httpclient.AlfrescoHttpClient;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.common.component.AbstractLifecycleComponent;
 import org.elasticsearch.common.inject.Inject;
@@ -21,14 +21,15 @@ import org.elasticsearch.common.settings.Settings;
  */
 public class AlfrescoService extends AbstractLifecycleComponent<AlfrescoService>
 {
-	private AlfrescoApi alfrescoApi;
+	private AlfrescoHttpClient repoClient;
 	private ElasticSearchComponent elasticSearchComponent;
 
-	@Inject public AlfrescoService(Settings settings, AlfrescoApi alfrescoApi, ElasticSearchComponent elasticSearchComponent)
+	@Inject public AlfrescoService(Settings settings, AlfrescoHttpClient repoClient,
+			ElasticSearchComponent elasticSearchComponent)
     {
         super(settings);
 
-        this.alfrescoApi = alfrescoApi;
+        this.repoClient = repoClient;
         this.elasticSearchComponent = elasticSearchComponent;
     }
 
@@ -58,9 +59,9 @@ public class AlfrescoService extends AbstractLifecycleComponent<AlfrescoService>
 		{
 			elasticSearchComponent.close();
 		}
-    	if(alfrescoApi != null)
+    	if(repoClient != null)
     	{
-    		alfrescoApi.close();
+    		repoClient.close();
     	}
     }
 
@@ -71,9 +72,9 @@ public class AlfrescoService extends AbstractLifecycleComponent<AlfrescoService>
 		{
 			elasticSearchComponent.close();
 		}
-    	if(alfrescoApi != null)
+    	if(repoClient != null)
     	{
-    		alfrescoApi.close();
+    		repoClient.close();
     	}
     }
 }

@@ -7,18 +7,29 @@
  */
 package org.alfresco.services;
 
-import java.io.IOException;
-
-import org.alfresco.httpclient.AuthenticationException;
-import org.alfresco.services.solr.GetTextContentResponse;
-
 /**
  * 
  * @author sglover
  *
  */
-public interface ContentGetter
+public class NodeId
 {
-	Content getContent(String nodeId, String nodeVersion);
-	GetTextContentResponse getTextContent(long nodeId) throws AuthenticationException, IOException;
+	private String nodeId;
+	private String nodeVersion;
+	public NodeId(String nodeId, String nodeVersion)
+    {
+	    super();
+	    this.nodeId = nodeId;
+	    this.nodeVersion = nodeVersion;
+    }
+	public String getNodeId()
+	{
+		return nodeId;
+	}
+	public String getNodeVersion()
+	{
+		return nodeVersion;
+	}
+
+	
 }

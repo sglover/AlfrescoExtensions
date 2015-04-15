@@ -22,9 +22,15 @@ import org.alfresco.services.nlp.Entity;
 public interface EntitiesDAO
 {
 	List<Node> matchingNodes(String type, String name);
-	Entities getEntities(long nodeId, long nodeVersion, Set<String> types);
-	Collection<Entity<String>> getNames(long nodeInternalId, long nodeVersion);
-	void addEntities(long nodeInternalId, long nodeVersion, Entities entities);
-	EntityCounts<String> getEntityCounts(long nodeInternalId, long nodeVersion);
-	EntityCounts<String> overlap(long nodeInternalId, long nodeVersion);
+	Entities getEntities(Node node, Set<String> types);
+	Collection<Entity<String>> getNames(Node node);
+	void addEntities(Node node, Entities entities);
+	EntityCounts<String> getEntityCounts(Node node);
+//	EntityCounts<String> overlap(String nodeId, String nodeVersion);
+
+	List<Entities> getEntities();
+	List<Entities> unprocessedEntites();
+
+	void saveSimilarity(Node node1, Node node2, double similarity);
+	double getSimilarity(Node node1, Node node2);
 }

@@ -3,6 +3,8 @@ version: ${project.version} (${buildNumber})
 
 # ActiveMQ broker url
 messaging:
+    dataFormat: defaultDataFormat
+    txnManager: camelRequiredTxn
     routing:
         numThreads: 10
     broker:
@@ -11,8 +13,9 @@ messaging:
         repo:
             node:
                 sourceTopic:
-                    endpoint: activemq:topic:alfresco.repo.events.nodes
-    clientId: entities
+                    endpoint: amqp:topic:alfresco.events.repo.ext.nodes
+#amqp:topic:alfresco.repo.events.nodes
+    clientId: entities1
     durableSubscriptionName: entities
 
 # Mongo persistence config
@@ -20,18 +23,41 @@ mongo:
     dbName: alfresco
     mongoURI: mongodb://127.0.0.1:27017
 
-http:
-    port: 9292
-    adminPort: 9293
+encryption:
+    ssl:
+        keystore:
+            location: classpath:ssl.repo.client.keystore
+            type: JCEKS
+#            provider: "null"
+            keyMetaData:
+                location: classpath:ssl-keystore-passwords.properties
+
+        truststore:
+            location: classpath:ssl.repo.client.truststore
+            type: JCEKS
+#            provider: "null"
+            keyMetaData:
+                location: classpath:ssl-truststore-passwords.properties
+
+server:
+    type: simple
+    applicationContextPath: /
+    connector:
+        type: http
+        port: 9292
 
 logging:
   level: INFO
   loggers:
     "org.alfresco.entities": DEBUG
-  file:
-    enabled: true
-    threshold: ALL
-    currentLogFilename: ./logs/elk.log
-    archive: true
-    archivedLogFilenamePattern: ./logs/elk-%d.log.gz
-    archivedFileCount: 5
+  appenders:
+    - type: console
+      threshold: ALL
+      timeZone: UTC
+      target: stdout
+    - type: file
+      threshold: ALL
+      currentLogFilename: ./logs/service-entities.log
+      archive: true
+      archivedLogFilenamePattern: ./logs/service-entities-%d.log.gz
+      archivedFileCount: 5

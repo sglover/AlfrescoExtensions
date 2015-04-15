@@ -37,10 +37,13 @@ public class EntityTaggerCallbackImpl implements EntityTaggerCallback
 	private long nodeVersion;
 	private String versionLabel;
 	private String indexId;
+//	private ElasticSearchEntitiesGetter entitiesService;
 
-	public EntityTaggerCallbackImpl(Client client, long nodeInternalId, long nodeVersion, String versionLabel,
+	public EntityTaggerCallbackImpl(Client client, /*ElasticSearchEntitiesGetter entitiesService,*/
+			long nodeInternalId, long nodeVersion, String versionLabel,
 	        String indexId)
 	{
+//		this.entitiesService = entitiesService;
 		this.client = client;
 		this.nodeInternalId = nodeInternalId;
 		this.nodeVersion = nodeVersion;
@@ -53,6 +56,11 @@ public class EntityTaggerCallbackImpl implements EntityTaggerCallback
 		xb.startArray(fieldName);
 		for(Entity<String> entity : entities)
 		{
+//            xb
+//            	.startObject()
+//            	.field("n", entity.getEntity())
+//            	.field("c", entity.getCount())
+//            	.endObject();
             xb
             	.startObject()
             	.field("n", entity.getEntity())
@@ -62,6 +70,21 @@ public class EntityTaggerCallbackImpl implements EntityTaggerCallback
 		xb.endArray();
 	}
 
+	private XContentBuilder toBuilder(Entities namedEntities) throws IOException
+	{
+        XContentBuilder xb = jsonBuilder()
+                .startObject();
+        addEntities(xb, "names", namedEntities.getNames());
+        addEntities(xb, "locations", namedEntities.getLocations());
+        addEntities(xb, "dates", namedEntities.getDates());
+        addEntities(xb, "orgs", namedEntities.getOrgs());
+        addEntities(xb, "money", namedEntities.getMoney());
+        addEntities(xb, "misc", namedEntities.getMisc());
+        xb.endObject();
+
+        return xb;
+	}
+
 	@Override
     public void onSuccess(Entities namedEntities)
     {
@@ -69,15 +92,7 @@ public class EntityTaggerCallbackImpl implements EntityTaggerCallback
 
         try
         {
-            XContentBuilder xb = jsonBuilder()
-                    .startObject();
-            addEntities(xb, "names", namedEntities.getNames());
-            addEntities(xb, "locations", namedEntities.getLocations());
-            addEntities(xb, "dates", namedEntities.getDates());
-            addEntities(xb, "orgs", namedEntities.getOrgs());
-            addEntities(xb, "money", namedEntities.getMoney());
-            addEntities(xb, "misc", namedEntities.getMisc());
-            xb.endObject();
+        	XContentBuilder xb = toBuilder(namedEntities);
 
             UpdateResponse response = client.prepareUpdate("alfresco", IndexType.node.toString(), indexId)
             	.setDoc(xb)

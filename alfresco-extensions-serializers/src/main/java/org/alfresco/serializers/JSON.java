@@ -108,7 +108,7 @@ public class JSON implements Serializable
         return new HashSet<>(map.keySet());
     }
 
-    public XContentBuilder getXContent() throws IOException
+    public XContentBuilder makeXContent() throws IOException
     {
         XContentBuilder builder = jsonBuilder();
         for(Map.Entry<String, Object> entry : map.entrySet())
@@ -118,7 +118,7 @@ public class JSON implements Serializable
         return builder;
     }
 
-    public DBObject getDBObject()
+    public DBObject makeDBObject()
     {
         BasicDBObjectBuilder builder = BasicDBObjectBuilder.start();
         for(Map.Entry<String, Object> entry : map.entrySet())

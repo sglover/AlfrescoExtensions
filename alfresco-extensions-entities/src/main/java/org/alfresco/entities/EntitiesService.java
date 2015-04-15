@@ -21,6 +21,8 @@ import org.alfresco.services.nlp.Entity;
  */
 public interface EntitiesService
 {
-	Collection<Entity<String>> getNames(long nodeId, long nodeVersion);
+	Collection<Entity<String>> getNames(Node node);
+	void getEntitiesAsync(NodeEvent nodeEvent) throws AuthenticationException, IOException;
 	void getEntities(NodeEvent nodeEvent) throws AuthenticationException, IOException;
+	double getSimilarity(Node node1, Node node2);
 }

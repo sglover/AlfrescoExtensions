@@ -47,9 +47,9 @@ public class Entity<T> implements Serializable
 		return type;
 	}
 
-	public void addLocation(Long startOffset, long endOffset, double probability, String context)
+	public void addLocation(EntityLocation entityLocation)
 	{
-		EntityLocation entityLocation = new EntityLocation(startOffset, endOffset, probability, context);
+//		EntityLocation entityLocation = new EntityLocation(startOffset, endOffset, probability, context);
 		locations.add(entityLocation);
 		count.incrementAndGet();
 	}

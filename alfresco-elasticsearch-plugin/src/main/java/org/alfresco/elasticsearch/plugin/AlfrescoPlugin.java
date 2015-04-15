@@ -11,7 +11,6 @@ import static org.elasticsearch.common.collect.Lists.newArrayList;
 
 import java.util.Collection;
 
-import org.alfresco.elasticsearch.service.AlfrescoService;
 import org.alfresco.elasticsearch.service.CamelService;
 import org.elasticsearch.common.component.LifecycleComponent;
 import org.elasticsearch.common.inject.Module;
@@ -40,8 +39,8 @@ public class AlfrescoPlugin extends AbstractPlugin
     @Override public Collection<Class<? extends LifecycleComponent>> services()
     {
         Collection<Class<? extends LifecycleComponent>> services = newArrayList();
-        services.add(AlfrescoService.class);
-//        services.add(CamelService.class);
+//        services.add(AlfrescoService.class);
+        services.add(CamelService.class);
         return services;
     }
 

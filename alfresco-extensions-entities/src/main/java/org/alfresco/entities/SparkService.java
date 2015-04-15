@@ -60,9 +60,9 @@ public class SparkService implements Serializable
 		sc.close();
 	}
 
-	public Nodes matchingNodes(long nodeInternalId, long nodeVersion)
+	public Nodes matchingNodes(String nodeId, String nodeVersion)
 	{
-	    JavaRDD<Node> initialNodes = sc.parallelize(Arrays.asList(new Node(1l, 1l)));
+	    JavaRDD<Node> initialNodes = sc.parallelize(Arrays.asList(new Node("1", "1")));
 
 	    JavaRDD<Entity<String>> names = initialNodes.flatMap(new FlatMapFunction<Node, Entity<String>>()
 		{
@@ -70,9 +70,7 @@ public class SparkService implements Serializable
 
 			public Iterable<Entity<String>> call(Node node) throws Exception
 	    	{
-				long nodeInternalId = node.getNodeInternalId();
-				long nodeVersion = node.getNodeVersion();
-				Entities entities = entitiesDAO.getEntities(nodeInternalId, nodeVersion, Collections.singleton("name"));
+				Entities entities = entitiesDAO.getEntities(node, Collections.singleton("name"));
 				return entities.getNames();
 	    	}
 		});

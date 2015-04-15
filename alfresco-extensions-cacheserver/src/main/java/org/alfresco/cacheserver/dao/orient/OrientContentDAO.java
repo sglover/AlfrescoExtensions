@@ -52,7 +52,7 @@ public class OrientContentDAO implements ContentDAO
 	public void init() throws Exception
 	{
 		this.serverAdmin = new OServerAdmin("remote:" + hostname);
-		serverAdmin.connect("root", "tasnu573");
+		serverAdmin.connect("root", "admin");
 
 		OPartitionedDatabasePoolFactory poolFactory = new OPartitionedDatabasePoolFactory(10);
 		this.pool = poolFactory.get("remote:" + hostname + "/" + dbName, username, password);
@@ -64,12 +64,12 @@ public class OrientContentDAO implements ContentDAO
 		{
 			serverAdmin.createDatabase(dbName, "document", "plocal");
 			dbServerAdmin = new OServerAdmin("remote:" + hostname + "/" + dbName);
-			dbServerAdmin.connect("root", "tasnu573");
+			dbServerAdmin.connect("root", "admin");
 		}
 		else
 		{
 			dbServerAdmin = new OServerAdmin("remote:" + hostname + "/" + dbName);
-			dbServerAdmin.connect("root", "tasnu573");
+			dbServerAdmin.connect("root", "admin");
 
 			if(recreate)
 			{

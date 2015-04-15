@@ -12,6 +12,7 @@ import java.io.InputStream;
 import java.io.Serializable;
 import java.io.StringWriter;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -26,16 +27,21 @@ import org.alfresco.serializers.HierarchicalNodeMetadataSerializer;
 import org.alfresco.serializers.NodeMetadataSerializer;
 import org.alfresco.serializers.NodeVersionKey;
 import org.alfresco.serializers.PropertySerializer;
-import org.alfresco.serializers.types.QNameSerializer;
 import org.alfresco.serializers.types.SerializerRegistry;
 import org.alfresco.serializers.types.Serializers;
 import org.alfresco.service.cmr.dictionary.DictionaryService;
+import org.alfresco.service.common.elasticsearch.entities.ElasticSearchEntitiesGetter;
 import org.alfresco.service.common.elasticsearch.entities.EntityTaggerCallbackImpl;
 import org.alfresco.service.namespace.NamespaceService;
 import org.alfresco.services.AlfrescoApi;
+import org.alfresco.services.AlfrescoDictionary;
 import org.alfresco.services.ContentGetter;
+import org.alfresco.services.nlp.Entities;
 import org.alfresco.services.nlp.EntityExtracter;
 import org.alfresco.services.nlp.EntityTaggerCallback;
+import org.alfresco.services.nlp.EntityType;
+import org.alfresco.services.nlp.minhash.MinHash;
+import org.alfresco.services.nlp.minhash.MinHashImpl;
 import org.alfresco.services.solr.GetTextContentResponse;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
@@ -59,8 +65,8 @@ public class ElasticSearchIndexer
 
     private ElasticSearchClient elasticSearchClient;
 
-    private AlfrescoApi alfrescoApi;
     private EntityExtracter entityExtracter;
+//	private ElasticSearchEntitiesGetter entitiesService;
 
     private String indexName;
 
@@ -73,18 +79,25 @@ public class ElasticSearchIndexer
 
     private AtomicBoolean initialized = new AtomicBoolean(false);
 
-    public ElasticSearchIndexer(AlfrescoApi alfrescoApi, EntityExtracter entityExtracter, Client client,
-    		String indexName) throws Exception
+    public ElasticSearchIndexer(AlfrescoApi alfrescoApi, ContentGetter contentGetter, EntityExtracter entityExtracter,
+    		Client client, AlfrescoDictionary alfrescoDictionary, /*ElasticSearchEntitiesGetter entitiesService,*/
+    		ElasticSearchClient elasticSearchClient, String indexName) throws Exception
 	{
-    	this.alfrescoApi = alfrescoApi;
-    	this.contentGetter = alfrescoApi.getContentGetter();
+    	this.contentGetter = contentGetter;
     	this.entityExtracter = entityExtracter;
+//    	this.entitiesService = entitiesService;
         this.files = new DefaultFilesImpl();
         this.serializerRegistry = new Serializers();
-		this.elasticSearchClient = new ElasticSearchClient(client, indexName);
-		this.propertySerializer = alfrescoApi.getPropertySerializer();
 		this.client = client;
+		this.elasticSearchClient = elasticSearchClient;
 		this.indexName = indexName;
+
+		NamespaceService namespaceService = alfrescoDictionary.getNamespaceService();
+		DictionaryService dictionaryService = alfrescoDictionary.getDictionaryService();
+
+		this.propertySerializer = new PropertySerializer(dictionaryService, namespaceService);
+		this.nodeMetadataSerializer = new HierarchicalNodeMetadataSerializer(dictionaryService, namespaceService,
+				serializerRegistry, files, propertySerializer);
 	}
 
     public void init(boolean checkIndexes)
@@ -93,15 +106,6 @@ public class ElasticSearchIndexer
     	{
 	    	try
 	    	{
-				NamespaceService namespaceService = alfrescoApi.getNamespaceService();
-				DictionaryService dictionaryService = alfrescoApi.getDictionaryService();
-		
-				new QNameSerializer(serializerRegistry, namespaceService);
-		
-				PropertySerializer propertySerializer = new PropertySerializer(dictionaryService, namespaceService);
-				this.nodeMetadataSerializer = new HierarchicalNodeMetadataSerializer(dictionaryService, namespaceService,
-						serializerRegistry, files, propertySerializer);
-		
 		        elasticSearchClient.init(checkIndexes);
 
 		        initialized.set(true);
@@ -429,8 +433,23 @@ public class ElasticSearchIndexer
 
 	public void indexEntities(long nodeInternalId, long nodeVersion, String nodeType, String versionLabel, String indexId)
 	{
-    	EntityTaggerCallback callback = new EntityTaggerCallbackImpl(client, nodeInternalId, nodeVersion, versionLabel, 
+    	EntityTaggerCallback callback = new EntityTaggerCallbackImpl(client, /*entitiesService,*/
+    			nodeInternalId, nodeVersion, versionLabel, 
     	        indexId);
-    	entityExtracter.getEntities(nodeInternalId, nodeVersion, nodeType, callback);
+    	entityExtracter.getEntities(nodeInternalId, nodeType, callback);
 	}
+
+//    public double similarity(long nodeInternalId1, long nodeInternalId2) throws Exception
+//    {
+//    	Set<EntityType> entityTypes = new HashSet<>();
+//    	entityTypes.add(EntityType.locations);
+//    	Entities entities1 = entitiesService.entities(nodeInternalId1, entityTypes);
+//		Set<String> locations1 = entities1.getLocationsAsSet();
+//    	Entities entities2 = entitiesService.entities(nodeInternalId2, entityTypes);
+//		Set<String> locations2 = entities2.getLocationsAsSet();
+//
+//		MinHash<String> minHash = new MinHashImpl<String>(locations1.size()+locations2.size());
+//		double similarity = minHash.similarity(locations1, locations2);
+//		return similarity;
+//    }
 }

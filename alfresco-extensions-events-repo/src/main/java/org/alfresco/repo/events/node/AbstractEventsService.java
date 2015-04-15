@@ -24,6 +24,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.alfresco.events.node.EventRegistry;
 import org.alfresco.events.node.types.Event;
+import org.alfresco.events.node.types.NodeEvent;
 import org.alfresco.events.node.types.TransactionCommittedEvent;
 import org.alfresco.events.node.types.TransactionRolledBackEvent;
 import org.alfresco.model.ContentModel;
@@ -195,17 +196,22 @@ public abstract class AbstractEventsService extends TransactionListenerAdapter
 	@Override
     public void beforeCommit(boolean readOnly)
     {
+    }
+
+	@Override
+    public void beforeCompletion()
+    {
 	    if(sendEventsBeforeCommit)
 	    {
 	        // send all events
-    		final TxnEvents events = (TxnEvents)AlfrescoTransactionSupport.getResource(EVENTS_KEY);
-    		if(events != null)
-    		{
-    			events.sendEvents();
-    		}
+			final TxnEvents events = (TxnEvents)AlfrescoTransactionSupport.getResource(EVENTS_KEY);
+			if(events != null)
+			{
+				events.sendEvents();
+			}
 	    }
     }
-
+	
 	protected Client getAlfrescoClient(Client knownClientType)
 	{
 		String alfrescoClientId = null;
@@ -757,6 +763,19 @@ public abstract class AbstractEventsService extends TransactionListenerAdapter
     			{
     				for(Event event : events)
     				{
+    					// nasty hack to get around the fact that the VersionableAspect auto-versions
+    					// on transaction commit
+    					// TODO optimisation - check if the node is auto-versioned. If not, this can
+    					// be skipped
+    					if(event instanceof NodeEvent)
+    					{
+    						NodeEvent nodeEvent = (NodeEvent)event;
+
+    						Map<String, Serializable> properties = nodeEvent.getNodeProperties();
+    				    	String versionLabel = (String)properties.get(ContentModel.PROP_VERSION_LABEL);
+    						nodeEvent.setVersionLabel(versionLabel);
+    					}
+
     					messageProducer.send(event);
     				}
     			}
@@ -808,8 +827,8 @@ public abstract class AbstractEventsService extends TransactionListenerAdapter
 				String txnId = AlfrescoTransactionSupport.getTransactionId();
 				Status status = nodeService.getNodeStatus(nodeRef);
 				long nodeInternalId = (status != null ? status.getDbId() : -1);
-//				Status status1 = nodeDAO.getNodeIdStatus(nodeInternalId);
 
+				// TODO Can't get access to this
 				Long nodeVersion = 0l;
 
 				if(!includeEventType(eventType))

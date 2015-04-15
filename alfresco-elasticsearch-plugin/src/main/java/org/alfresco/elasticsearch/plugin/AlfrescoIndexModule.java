@@ -6,10 +6,13 @@
  * agreement is prohibited. 
  */package org.alfresco.elasticsearch.plugin;
 
-import org.alfresco.elasticsearch.providers.AlfrescoProvider;
+import org.alfresco.elasticsearch.providers.AlfrescoApiProvider;
+import org.alfresco.elasticsearch.providers.AlfrescoHttpClientProvider;
+import org.alfresco.elasticsearch.providers.ContentGetterProvider;
+import org.alfresco.httpclient.AlfrescoHttpClient;
 import org.alfresco.services.AlfrescoApi;
+import org.alfresco.services.ContentGetter;
 import org.elasticsearch.common.inject.AbstractModule;
-import org.elasticsearch.common.inject.Singleton;
 
 /**
  * 
@@ -22,6 +25,8 @@ public class AlfrescoIndexModule extends AbstractModule
     protected void configure()
     {
         bind(RegisterAlfrescoType.class).asEagerSingleton();
-    	bind(AlfrescoApi.class).toProvider(AlfrescoProvider.class).in(Singleton.class);//asEagerSingleton();
+    	bind(AlfrescoApi.class).toProvider(AlfrescoApiProvider.class).asEagerSingleton();//in(Singleton.class)
+    	bind(AlfrescoHttpClient.class).toProvider(AlfrescoHttpClientProvider.class).asEagerSingleton();//in(Singleton.class)
+    	bind(ContentGetter.class).toProvider(ContentGetterProvider.class).asEagerSingleton();//in(Singleton.class)
     }
 }

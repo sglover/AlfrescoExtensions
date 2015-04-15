@@ -15,8 +15,6 @@ import java.io.InputStream;
 
 import org.alfresco.MockAlfrescoApi;
 import org.alfresco.MockContentGetter;
-import org.alfresco.cacheserver.CacheServer;
-import org.alfresco.cacheserver.CacheServerIdentity;
 import org.alfresco.cacheserver.contentstore.ContentStore;
 import org.alfresco.cacheserver.dao.ContentDAO;
 import org.alfresco.cacheserver.dao.mongo.MongoContentDAO;
@@ -107,6 +105,7 @@ public class TestEdgeServer
 	@Test
 	public void test1() throws Exception
 	{
+		long nodeInternalId = 1l;
 		String nodeId = GUID.generate();
 		String nodeVersion = "1";
 		String nodePath = "/1/2/3";
@@ -118,7 +117,7 @@ public class TestEdgeServer
 		try
 		{
 	
-			contentGetter.addTestContent(nodeId, nodeVersion, nodeContent, expectedMimeType, expectedSize);
+			contentGetter.addTestContent(nodeInternalId, nodeId, nodeVersion, "test", expectedMimeType);
 
 //			edgeServer.nodeAdded(nodeId, nodeVersion, nodePath);
 			edgeServer.contentUpdated(nodeId, nodeVersion, nodePath, expectedMimeType, expectedSize);

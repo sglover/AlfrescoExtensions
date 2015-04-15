@@ -264,6 +264,7 @@ public class ElasticSearchClient
 
 	public UpdateResponse reindex(String indexName, String id, IndexType indexType, String json, boolean refresh)
 	{
+//		XContentFactory.xContent(XContentType.JSON).createParser(reader)
         UpdateResponse response = client.prepareUpdate(indexName, indexType.getName(), id)
         		.setRefresh(refresh)
         		.setDocAsUpsert(true)

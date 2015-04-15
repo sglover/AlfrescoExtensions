@@ -18,22 +18,22 @@ public class EntityLocation implements Serializable
 {
 	private static final long serialVersionUID = -6996952615671789330L;
 
-	private long startOffset;
+	private long beginOffset;
 	private long endOffset;
 	private double probability;
 	private String context;
 
-	public EntityLocation(long startOffset, long endOffset, double probability, String context)
+	public EntityLocation(long beginOffset, long endOffset, double probability, String context)
     {
 	    super();
-	    this.startOffset = startOffset;
+	    this.beginOffset = beginOffset;
 	    this.endOffset = endOffset;
 	    this.probability = probability;
 	    this.context = context;
     }
-	public long getStartOffset()
+	public long getBeginOffset()
 	{
-		return startOffset;
+		return beginOffset;
 	}
 	
 	public long getEndOffset()
@@ -51,7 +51,7 @@ public class EntityLocation implements Serializable
 	@Override
     public String toString()
     {
-	    return "EntityLocation [startOffset=" + startOffset + ", endOffset=" + endOffset + ", probability="
+	    return "EntityLocation [beginOffset=" + beginOffset + ", endOffset=" + endOffset + ", probability="
 	            + probability + ", context=" + context + "]";
     }
 

@@ -8,9 +8,12 @@
 package org.alfresco.services.nlp;
 
 import java.io.Serializable;
+import java.util.AbstractSet;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 /**
@@ -22,12 +25,22 @@ public class Entities implements Serializable
 {
 	private static final long serialVersionUID = -3458489259159059095L;
 
+	private String nodeId;
+	private String nodeVersion;
+
 	private Map<String, Entity<String>> locations;
 	private Map<String, Entity<String>> names;
 	private Map<String, Entity<String>> orgs;
 	private Map<String, Entity<String>> dates;
 	private Map<String, Entity<String>> money;
 	private Map<String, Entity<String>> misc;
+
+	private Entities(String nodeId, String nodeVersion)
+	{
+		this();
+		this.nodeId = nodeId;
+		this.nodeVersion = nodeVersion;
+	}
 
 	private Entities()
 	{
@@ -45,12 +58,28 @@ public class Entities implements Serializable
 		return entities;
 	}
 
+	public static Entities empty(String nodeId, String nodeVersion)
+	{
+		Entities entities = new Entities(nodeId, nodeVersion);
+		return entities;
+	}
+
+	public String getNodeId()
+	{
+		return nodeId;
+	}
+
+	public String getNodeVersion()
+	{
+		return nodeVersion;
+	}
+
 	public Collection<Entity<String>> getLocations()
 	{
 		return locations.values();
 	}
 
-	public Entities addLocation(String name, String context, long beginOffset, long endOffset, double probability)
+	public Entities addLocation(String name, EntityLocation location)
 	{
 		Entity<String> locationEntity = locations.get(name);
 		if(locationEntity == null)
@@ -58,7 +87,11 @@ public class Entities implements Serializable
 			locationEntity = new Entity<String>("location", name);
 			locations.put(name, locationEntity);
 		}
-		locationEntity.addLocation(beginOffset, endOffset, probability, context);
+
+		if(location != null)
+		{
+			locationEntity.addLocation(location);
+		}
 
 		return this;
 	}
@@ -78,7 +111,7 @@ public class Entities implements Serializable
 		return orgs.containsKey(org);
 	}
 
-	public Entities addName(String name, String context, long beginOffset, long endOffset, double probability)
+	public Entities addName(String name, EntityLocation location)
 	{
 		Entity<String> nameEntity = names.get(name);
 		if(nameEntity == null)
@@ -86,7 +119,11 @@ public class Entities implements Serializable
 			nameEntity = new Entity<String>("name", name);
 			names.put(name, nameEntity);
 		}
-		nameEntity.addLocation(beginOffset, endOffset, probability, context);
+
+		if(location != null)
+		{
+			nameEntity.addLocation(location);
+		}
 
 		return this;
 	}
@@ -94,8 +131,16 @@ public class Entities implements Serializable
 	public Entities addName(String name, String context, double probability)
 	{
 		long beginOffset = context.indexOf(name);
-		long endOffset = beginOffset + name.length(); 
-		addName(name, context, beginOffset, endOffset, probability);
+		long endOffset = beginOffset + name.length();
+		EntityLocation location = new EntityLocation(beginOffset, endOffset, probability, context);
+		addName(name, location);
+
+		return this;
+	}
+
+	public Entities addName(String name)
+	{
+		addName(name, null);
 
 		return this;
 	}
@@ -105,7 +150,7 @@ public class Entities implements Serializable
 		return orgs.values();
 	}
 	
-	public Entities addOrg(String name, String context, long beginOffset, long endOffset, double probability)
+	public Entities addOrg(String name, EntityLocation location)
 	{
 		Entity<String> orgEntity = orgs.get(name);
 		if(orgEntity == null)
@@ -113,7 +158,11 @@ public class Entities implements Serializable
 			orgEntity = new Entity<String>("org", name);
 			orgs.put(name, orgEntity);
 		}
-		orgEntity.addLocation(beginOffset, endOffset, probability, context);
+
+		if(location != null)
+		{
+			orgEntity.addLocation(location);
+		}
 
 		return this;
 	}
@@ -121,8 +170,9 @@ public class Entities implements Serializable
 	public Entities addOrg(String name, String context, double probability)
 	{
 		long beginOffset = context.indexOf(name);
-		long endOffset = beginOffset + name.length(); 
-		addOrg(name, context, beginOffset, endOffset, probability);
+		long endOffset = beginOffset + name.length();
+		EntityLocation location = new EntityLocation(beginOffset, endOffset, probability, context);
+		addOrg(name, location);
 
 		return this;
 	}
@@ -138,62 +188,32 @@ public class Entities implements Serializable
 			{
 			case "name":
 			{
-				String context = location.getContext();
-				long beginOffset = location.getStartOffset();
-				long endOffset = location.getEndOffset();
-				double probability = location.getProbability();
-
-				addName(name, context, beginOffset, endOffset, probability);
+				addName(name, location);
 				break;
 			}
 			case "location":
 			{
-				String context = location.getContext();
-				long beginOffset = location.getStartOffset();
-				long endOffset = location.getEndOffset();
-				double probability = location.getProbability();
-
-				addLocation(name, context, beginOffset, endOffset, probability);
+				addLocation(name, location);
 				break;
 			}
 			case "org":
 			{
-				String context = location.getContext();
-				long beginOffset = location.getStartOffset();
-				long endOffset = location.getEndOffset();
-				double probability = location.getProbability();
-
-				addOrg(name, context, beginOffset, endOffset, probability);
+				addOrg(name, location);
 				break;
 			}
 			case "misc":
 			{
-				String context = location.getContext();
-				long beginOffset = location.getStartOffset();
-				long endOffset = location.getEndOffset();
-				double probability = location.getProbability();
-
-				addMisc(name, context, beginOffset, endOffset, probability);
+				addMisc(name, location);
 				break;
 			}
 			case "money":
 			{
-				String context = location.getContext();
-				long beginOffset = location.getStartOffset();
-				long endOffset = location.getEndOffset();
-				double probability = location.getProbability();
-
-				addMoney(name, context, beginOffset, endOffset, probability);
+				addMoney(name, location);
 				break;
 			}
 			case "date":
 			{
-				String context = location.getContext();
-				long beginOffset = location.getStartOffset();
-				long endOffset = location.getEndOffset();
-				double probability = location.getProbability();
-
-				addMoney(name, context, beginOffset, endOffset, probability);
+				addMoney(name, location);
 				break;
 			}
 			default:
@@ -209,7 +229,7 @@ public class Entities implements Serializable
 		return dates.values();
 	}
 
-	public void addDate(String name, String context, long beginOffset, long endOffset, double probability)
+	public void addDate(String name, EntityLocation location)
 	{
 		Entity<String> dateEntity = dates.get(name);
 		if(dateEntity == null)
@@ -217,7 +237,11 @@ public class Entities implements Serializable
 			dateEntity = new Entity<String>("date", name);
 			dates.put(name, dateEntity);
 		}
-		dateEntity.addLocation(beginOffset, endOffset, probability, context);
+
+		if(location != null)
+		{
+			dateEntity.addLocation(location);
+		}
 	}
 
 	public Collection<Entity<String>> getMoney()
@@ -225,7 +249,7 @@ public class Entities implements Serializable
 		return money.values();
 	}
 
-	public void addMoney(String name, String context, long beginOffset, long endOffset, double probability)
+	public void addMoney(String name, EntityLocation location)
 	{
 		Entity<String> moneyEntity = money.get(name);
 		if(moneyEntity == null)
@@ -233,7 +257,11 @@ public class Entities implements Serializable
 			moneyEntity = new Entity<String>("money", name);
 			money.put(name, moneyEntity);
 		}
-		moneyEntity.addLocation(beginOffset, endOffset, probability, context);
+
+		if(location != null)
+		{
+			moneyEntity.addLocation(location);
+		}
 	}
 
 	public Collection<Entity<String>> getMisc()
@@ -241,7 +269,7 @@ public class Entities implements Serializable
 		return misc.values();
 	}
 
-	public void addMisc(String name, String context, long beginOffset, long endOffset, double probability)
+	public void addMisc(String name, EntityLocation location)
 	{
 		Entity<String> miscEntity = misc.get(name);
 		if(miscEntity == null)
@@ -249,7 +277,11 @@ public class Entities implements Serializable
 			miscEntity = new Entity<String>("misc", name);
 			misc.put(name, miscEntity);
 		}
-		miscEntity.addLocation(beginOffset, endOffset, probability, context);
+
+		if(location != null)
+		{
+			miscEntity.addLocation(location);
+		}
 	}
 
 	private void appendEntities(String entityName, StringBuilder sb, Collection<Entity<String>> entities)
@@ -269,6 +301,66 @@ public class Entities implements Serializable
     		sb.append("\n");
         }
 		sb.append("\n");
+	}
+
+	private Set<String> getAsSet(final Collection<Entity<String>> entities)
+	{
+		final Set<String> set = new AbstractSet<String>()
+		{
+			@Override
+            public Iterator<String> iterator()
+            {
+				final Iterator<Entity<String>> entitiesIt = entities.iterator();
+				final Iterator<String> it = new Iterator<String>()
+				{
+					@Override
+		            public boolean hasNext()
+		            {
+		                return entitiesIt.hasNext();
+		            }
+
+					@Override
+		            public String next()
+		            {
+						Entity<String> entity = entitiesIt.next();
+		                return entity.getEntity();
+		            }
+
+					@Override
+		            public void remove()
+		            {
+						throw new UnsupportedOperationException();
+		            }
+				};
+                return it;
+            }
+
+			@Override
+            public int size()
+            {
+                return entities.size();
+            }
+		};
+
+		return set;
+	}
+
+	public Set<String> getOrgsAsSet()
+	{
+		final Collection<Entity<String>> orgs = getOrgs();
+		return getAsSet(orgs);
+	}
+
+	public Set<String> getLocationsAsSet()
+	{
+		final Collection<Entity<String>> locations = getLocations();
+		return getAsSet(locations);
+	}
+
+	public Set<String> getNamesAsSet()
+	{
+		final Collection<Entity<String>> names = getNames();
+		return getAsSet(names);
 	}
 
 	public String toString()

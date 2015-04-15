@@ -48,9 +48,9 @@ public class MatchNodesFunction implements FlatMapFunction<Tuple2<Object, BSONOb
 			{
 				if(entities.hasName(name))
 				{
-					long nodeInternalId = (Long)t._2.get("n");
-					long nodeVersion = (Long)t._2.get("v");
-					Node node = new Node(nodeInternalId, nodeVersion);
+					String nodeId = (String)t._2.get("n");
+					String nodeVersion = (String)t._2.get("v");
+					Node node = new Node(nodeId, nodeVersion);
 					ret.add(node);
 				}
 			}
@@ -63,9 +63,9 @@ public class MatchNodesFunction implements FlatMapFunction<Tuple2<Object, BSONOb
 			{
 				if(entities.hasOrg(name))
 				{
-					long nodeInternalId = (Long)t._2.get("n");
-					long nodeVersion = (Long)t._2.get("v");
-					Node node = new Node(nodeInternalId, nodeVersion);
+					String nodeId = (String)t._2.get("n");
+					String nodeVersion = (String)t._2.get("v");
+					Node node = new Node(nodeId, nodeVersion);
 					ret.add(node);
 				}
 			}

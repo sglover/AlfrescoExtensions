@@ -35,7 +35,7 @@ public class GetTextContentResponse extends SOLRResponse
         this.transformStatusStr = response.getHeader("X-Alfresco-transformStatus");
         this.transformException = response.getHeader("X-Alfresco-transformException");
         String tmp = response.getHeader("X-Alfresco-transformDuration");
-        this.transformDuration = (tmp != null ? Long.valueOf(tmp) : null);
+        this.transformDuration = (tmp != null && !tmp.equals("") ? Long.valueOf(tmp) : null);
         setStatus();
     }
 

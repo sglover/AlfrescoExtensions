@@ -30,6 +30,7 @@ import edu.stanford.nlp.util.CoreMap;
  * @author sglover
  *
  */
+// TODO probabilities
 public class StanfordEntityTagger extends AbstractEntityTagger
 {
     private static final Log logger = LogFactory.getLog(StanfordEntityTagger.class);
@@ -81,23 +82,41 @@ public class StanfordEntityTagger extends AbstractEntityTagger
 	        switch(ne)
 	        {
 	        case "LOCATION":
-	        	entities.addLocation(word, "", beginOffset, endOffset, 0.0);
+	        {
+	        	EntityLocation location = new EntityLocation(beginOffset, endOffset, 1.0, "");
+	        	entities.addLocation(word, location);
 	        	break;
+	        }
 	        case "DATE":
-	        	entities.addDate(word, "", beginOffset, endOffset, 0.0);
+	        {
+	        	EntityLocation location = new EntityLocation(beginOffset, endOffset, 1.0, "");
+	        	entities.addDate(word, location);
 	        	break;
+	        }
 	        case "MONEY":
-	        	entities.addMoney(word, "", beginOffset, endOffset, 0.0);
+	        {
+	        	EntityLocation location = new EntityLocation(beginOffset, endOffset, 1.0, "");
+	        	entities.addMoney(word, location);
 	        	break;
+	        }
 	        case "PERSON":
-	        	entities.addName(word, "", beginOffset, endOffset, 0.0);
+	        {
+	        	EntityLocation location = new EntityLocation(beginOffset, endOffset, 1.0, "");
+	        	entities.addName(word, location);
 	        	break;
+	        }
 	        case "ORGANIZATION":
-	        	entities.addOrg(word, "", beginOffset, endOffset, 0.0);
+	        {
+	        	EntityLocation location = new EntityLocation(beginOffset, endOffset, 1.0, "");
+	        	entities.addOrg(word, location);
 	        	break;
+	        }
 	        case "MISC":
-	        	entities.addMisc(word, "", beginOffset, endOffset, 0.0);
+	        {
+	        	EntityLocation location = new EntityLocation(beginOffset, endOffset, 1.0, "");
+	        	entities.addMisc(word, location);
 	        	break;
+	        }
 	        default:
 	        	logger.warn("Can't handle type " + ne);
 	        }

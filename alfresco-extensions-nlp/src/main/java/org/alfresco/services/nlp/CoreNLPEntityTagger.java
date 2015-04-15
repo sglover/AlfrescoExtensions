@@ -293,20 +293,20 @@ public class CoreNLPEntityTagger extends AbstractEntityTagger
     public void convertTextAnnotationsToNamedEntities(String[] tokens, List<TextAnnotation> TextAnnotations,
     		Entities namedEntities) {
         for (TextAnnotation textAnnotation : TextAnnotations) {
-            int start = textAnnotation.getSpan().getStart();
-            int end = textAnnotation.getSpan().getEnd();
-            int contextStart = start - 2;
+            int beginOffset = textAnnotation.getSpan().getStart();
+            int endOffset = textAnnotation.getSpan().getEnd();
+            int contextStart = beginOffset - 2;
             if(contextStart < 0)
             {
             	contextStart = 0;
             }
-            int contextEnd = end + 2;
+            int contextEnd = endOffset + 2;
             if(contextEnd >= tokens.length)
             {
             	contextEnd = tokens.length - 1;
             }
             String[] contextData = Arrays.copyOfRange(tokens, contextStart, contextEnd);
-            String[] textAnnotationData = Arrays.copyOfRange(tokens, start, end);
+            String[] textAnnotationData = Arrays.copyOfRange(tokens, beginOffset, endOffset);
             String context = Joiner.on(" ").join(contextData);
             String content = Joiner.on(" ").join(textAnnotationData);
 
@@ -316,20 +316,35 @@ public class CoreNLPEntityTagger extends AbstractEntityTagger
             switch(type)
             {
             case "location":
-                namedEntities.addLocation(content, context, start, end, prob);
+            {
+            	EntityLocation location = new EntityLocation(beginOffset, endOffset, prob, context);
+                namedEntities.addLocation(content, location);
             	break;
+            }
             case "name":
-            	namedEntities.addName(content, context, start, end, prob);
+            {
+            	EntityLocation location = new EntityLocation(beginOffset, endOffset, prob, context);
+            	namedEntities.addName(content, location);
             	break;
+            }
             case "date":
-                namedEntities.addDate(content, context, start, end, prob);
+            {
+            	EntityLocation location = new EntityLocation(beginOffset, endOffset, prob, context);
+                namedEntities.addDate(content, location);
             	break;
+            }
             case "orgs":
-                namedEntities.addOrg(content, context, start, end, prob);
+            {
+            	EntityLocation location = new EntityLocation(beginOffset, endOffset, prob, context);
+                namedEntities.addOrg(content, location);
             	break;
+            }
             case "money":
-                namedEntities.addMoney(content, context, start, end, prob);
+            {
+            	EntityLocation location = new EntityLocation(beginOffset, endOffset, prob, context);
+                namedEntities.addMoney(content, location);
             	break;
+            }
             default:
             	logger.warn("Don't know how to handle type " + type);
             }

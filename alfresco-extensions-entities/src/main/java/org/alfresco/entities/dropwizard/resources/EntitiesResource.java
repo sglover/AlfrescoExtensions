@@ -22,6 +22,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.alfresco.entities.EntitiesService;
+import org.alfresco.entities.Node;
 import org.alfresco.services.nlp.Entity;
 import org.apache.log4j.Logger;
 
@@ -44,25 +45,24 @@ public class EntitiesResource
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Map<String, Long> names(
-    		@PathParam("nodeId") String nodeIdStr,
-    		@PathParam("nodeVersion") String nodeVersionStr,
+    		@PathParam("nodeId") String nodeId,
+    		@PathParam("nodeVersion") String nodeVersion,
     		@Context final HttpServletResponse httpResponse)
     {
     	Map<String, Long> ret = new HashMap<>();
 
         try
         {
-            if (LOGGER.isDebugEnabled()) LOGGER.debug("entities " + nodeIdStr + "." + nodeVersionStr);
+            if (LOGGER.isDebugEnabled()) LOGGER.debug("entities " + nodeId + "." + nodeVersion);
 
-            if((nodeIdStr == null || nodeIdStr.equals("")) && (nodeVersionStr == null || nodeVersionStr.equals("")))
+            if((nodeId == null || nodeId.equals("")) && (nodeVersion== null || nodeVersion.equals("")))
             {
                 throw new WebApplicationException(Response.Status.BAD_REQUEST);
             }
             else
             {
-            	long nodeId = Long.parseLong(nodeIdStr);
-            	long nodeVersion = Long.parseLong(nodeVersionStr);
-            	Collection<Entity<String>> names = entitiesService.getNames(nodeId, nodeVersion);
+            	Node node = new Node(nodeId, nodeVersion);
+            	Collection<Entity<String>> names = entitiesService.getNames(node);
             	for(Entity<String> name : names)
             	{
             		ret.put(name.getEntity(), name.getCount());

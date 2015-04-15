@@ -9,6 +9,16 @@
    <!-- Any RouteBuilder in this package will be fired up -->
    <context:component-scan base-package="org.alfresco.entities.camel.routes"/>
 
+    <bean id="messagingConnectionFactory" class="org.apache.activemq.ActiveMQConnectionFactory">
+        <property name="brokerURL" value="${messaging.broker.url}" />
+        <property name="clientID" value="entities1" />
+    </bean>
+
+    <bean id="camelRequiredTxn" class="org.apache.camel.spring.spi.SpringTransactionPolicy">
+      <property name="transactionManager" ref="messagingTransactionManager"/>
+      <property name="propagationBehaviorName" value="PROPAGATION_REQUIRED"/>
+    </bean>
+
    <camelContext xmlns="http://camel.apache.org/schema/spring" id="alfrescoServiceCamelContext"> 
       <contextScan/>
 

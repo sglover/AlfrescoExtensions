@@ -19,20 +19,60 @@ public class Node implements Serializable
 	private static final long serialVersionUID = 1038231899658487035L;
 
 	private long nodeInternalId;
-	private long nodeVersion;
+	private String nodeId;
+	private String nodeVersion;
 
-	public Node(long nodeInternalId, long nodeVersion)
+	private Node()
+	{
+	}
+
+	public static Node build()
+	{
+		return new Node();
+	}
+	
+	public Node nodeInternalId(long nodeInternalId)
+	{
+		this.nodeInternalId = nodeInternalId;
+		return this;
+	}
+
+	public Node nodeId(String nodeId)
+	{
+		this.nodeId = nodeId;
+		return this;
+	}
+
+	public Node nodeVersion(String nodeVersion)
+	{
+		this.nodeVersion = nodeVersion;
+		return this;
+	}
+
+	public Node(long nodeInternalId, String nodeId, String nodeVersion)
+    {
+		this(nodeId, nodeVersion);
+		this.nodeInternalId = nodeInternalId;
+    }
+
+	public Node(String nodeId, String nodeVersion)
     {
 	    super();
-	    this.nodeInternalId = nodeInternalId;
+	    this.nodeId = nodeId;
 	    this.nodeVersion = nodeVersion;
     }
+
+	public String getNodeId()
+	{
+		return nodeId;
+	}
 
 	public long getNodeInternalId()
 	{
 		return nodeInternalId;
 	}
-	public long getNodeVersion()
+
+	public String getNodeVersion()
 	{
 		return nodeVersion;
 	}

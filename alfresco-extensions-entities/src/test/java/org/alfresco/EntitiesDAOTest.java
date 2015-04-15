@@ -8,8 +8,8 @@
 package org.alfresco;
 
 import org.alfresco.entities.EntitiesDAO;
-import org.alfresco.entities.EntityCounts;
 import org.alfresco.entities.MongoEntitiesDAO;
+import org.alfresco.entities.Node;
 import org.alfresco.service.common.mongo.MongoDbFactory;
 import org.alfresco.services.nlp.Entities;
 import org.junit.AfterClass;
@@ -86,18 +86,18 @@ public class EntitiesDAOTest
 				.empty()
 				.addOrg("Alfresco", "Steve Glover works for Alfresco", 1.0);
 
-		long node1InternalId = 1l;
-		long node1Version = 1l;
-		long node2InternalId = 2l;
-		long node2Version = 2l;
-		long node3InternalId = 3l;
-		long node3Version = 3l;
+		String node1Id = "1";
+		String node1Version = "1";
+		String node2Id = "2";
+		String node2Version = "2";
+		String node3Id = "3";
+		String node3Version = "3";
 
-		entitiesDAO.addEntities(node1InternalId, node1Version, entities1);
-		entitiesDAO.addEntities(node2InternalId, node2Version, entities2);
-		entitiesDAO.addEntities(node3InternalId, node3Version, entities3);
+		entitiesDAO.addEntities(Node.build().nodeId(node1Id).nodeVersion(node1Version), entities1);
+		entitiesDAO.addEntities(Node.build().nodeId(node2Id).nodeVersion(node2Version), entities2);
+		entitiesDAO.addEntities(Node.build().nodeId(node2Id).nodeVersion(node2Version), entities3);
 
-		EntityCounts<String> counts = entitiesDAO.overlap(node1InternalId, node1Version);
-		System.out.println(counts);
+//		EntityCounts<String> counts = entitiesDAO.overlap(node1InternalId, node1Version);
+//		System.out.println(counts);
 	}
 }

@@ -62,29 +62,52 @@ public abstract class AbstractEntityTagger implements EntityTagger
         });
     }
 
-    private class TaggerCall implements Callable<Entities>
+    private class TaggerCall extends Tagger implements Callable<Entities>
+    {
+        public TaggerCall(String text)
+        {
+        	super(text);
+        }
+
+        public TaggerCall(File file)
+        {
+        	super(file);
+        }
+
+        public TaggerCall(URL url)
+        {
+        	super(url);
+        }
+
+        @Override
+        public Entities call() throws Exception
+        {
+        	return execute();
+        }
+    }
+
+    private class Tagger
     {
     	private URL url;
     	private File file;
     	private String text;
 
-        public TaggerCall(String text)
+        public Tagger(String text)
         {
         	this.text = text;
         }
 
-        public TaggerCall(File file)
+        public Tagger(File file)
         {
         	this.file = file;
         }
 
-        public TaggerCall(URL url)
+        public Tagger(URL url)
         {
     		this.url = url;
         }
 
-        @Override
-        public Entities call() throws Exception
+        Entities execute() throws IOException
         {
         	if(text != null)
         	{
@@ -192,6 +215,27 @@ public abstract class AbstractEntityTagger implements EntityTagger
         traversor.traverse(doc); // walk the DOM, and call .head() and .tail() for each node
 
         return formatter.toString();
+    }
+
+	@Override
+    public Entities getEntities(String text) throws IOException
+    {
+        final Tagger tagger = new Tagger(text);
+        return tagger.execute();
+    }
+
+	@Override
+    public Entities getEntities(URL url) throws IOException
+    {
+        final Tagger tagger = new Tagger(url);
+        return tagger.execute();
+    }
+
+	@Override
+    public Entities getEntities(File file) throws IOException
+    {
+        final Tagger tagger = new Tagger(file);
+        return tagger.execute();
     }
 
 	@Override

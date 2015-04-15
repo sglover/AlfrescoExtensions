@@ -10,8 +10,12 @@ package org.alfresco.elasticsearch.service;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 
+import org.alfresco.httpclient.AlfrescoHttpClient;
+import org.alfresco.service.common.elasticsearch.ElasticSearchClient;
 import org.alfresco.service.common.elasticsearch.ElasticSearchIndexer;
+import org.alfresco.service.common.elasticsearch.entities.ElasticSearchEntitiesGetter;
 import org.alfresco.services.AlfrescoApi;
+import org.alfresco.services.AlfrescoDictionary;
 import org.alfresco.services.ContentGetter;
 import org.alfresco.services.nlp.EntityExtracter;
 import org.apache.commons.logging.Log;
@@ -36,18 +40,23 @@ public class ElasticSearchComponent
 	private ElasticSearchIndexer elasticSearch;
 	private ThreadPoolExecutor threadPool;
 
-	@Inject public ElasticSearchComponent(Settings settings, Client client, AlfrescoApi alfrescoApi)
-			throws Exception
+	@Inject public ElasticSearchComponent(Settings settings, Client client, AlfrescoApi alfrescoApi, ContentGetter contentGetter,
+			AlfrescoHttpClient alfrescoHttpClient) throws Exception
 	{
         String extracterType = settings.get("entities.extracter.type", "CoreNLP");
+        String indexName = "alfresco";
 
     	ThreadFactory threadFactory = EsExecutors.daemonThreadFactory(settings);
     	this.threadPool = EsExecutors.newFixed(4, -1, threadFactory);
 
-    	ContentGetter contentGetter = alfrescoApi.getContentGetter();
+		ElasticSearchClient elasticSearchClient = new ElasticSearchClient(client, indexName);
+    	//ElasticSearchEntitiesGetter entitiesService = new ElasticSearchEntitiesGetter(elasticSearchClient);
     	EntityExtracter entityExtracter = buildEntityExtracter(threadPool, extracterType, contentGetter);
 
-     	this.elasticSearch = new ElasticSearchIndexer(alfrescoApi, entityExtracter, client, "alfresco");
+    	AlfrescoDictionary alfrescoDictionary = new AlfrescoDictionary(alfrescoHttpClient);
+
+     	this.elasticSearch = new ElasticSearchIndexer(alfrescoApi, contentGetter, entityExtracter, client,
+     			alfrescoDictionary, /*entitiesService, */elasticSearchClient, indexName);
 	}
 
 	private EntityExtracter buildEntityExtracter(ThreadPoolExecutor threadPool, String extracterType, ContentGetter contentGetter)

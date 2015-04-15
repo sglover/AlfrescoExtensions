@@ -7,7 +7,9 @@
  */
 package org.alfresco.elasticsearch.providers;
 
-import org.alfresco.services.AlfrescoApi;
+import org.alfresco.httpclient.AlfrescoHttpClient;
+import org.alfresco.httpclient.HttpClientFactory.SecureCommsType;
+import org.alfresco.services.RepoClientFactory;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.inject.Provider;
 import org.elasticsearch.common.settings.Settings;
@@ -17,26 +19,27 @@ import org.elasticsearch.common.settings.Settings;
  * @author sglover
  *
  */
-public class AlfrescoProvider implements Provider<AlfrescoApi>
+public class AlfrescoHttpClientProvider implements Provider<AlfrescoHttpClient>
 {
 	private Settings settings;
 
-	private AlfrescoApi alfrescoApi;
+	private AlfrescoHttpClient repoClient;
 
-	@Inject public AlfrescoProvider(Settings settings)
+	@Inject public AlfrescoHttpClientProvider(Settings settings)
 	{
 		this.settings = settings;
-		buildAlfrescoApi();
+		buildAlfrescoHttpClient();
 	}
 
-	private void buildAlfrescoApi()
+	private void buildAlfrescoHttpClient()
 	{
-		String alfrescoHost = settings.get("alfrescoHost", "localhost");
-		int alfrescoPort = settings.getAsInt("alfrescoPort", 8080);
-		int alfrescoSSLPort = settings.getAsInt("alfrescoSSLPort", 8080);
+		String repoHost = settings.get("alfrescoHost", "localhost");
+		int repoPort = settings.getAsInt("alfrescoPort", 8080);
+		int repoSSLPort = settings.getAsInt("alfrescoSSLPort", 8080);
 		int socketTimeout = settings.getAsInt("socketTimeout", 60000);
 		int maxHostConnections = settings.getAsInt("maxHostConnections", 10);
 		int maxTotalConnections = settings.getAsInt("maxTotalConnections", 10);
+		String commsType = settings.get("secureCommsType", SecureCommsType.HTTPS.toString());
 		String sslKeyStoreLocation = settings.get("repo.sslKeyStoreLocation", "classpath:ssl.repo.client.keystore");
 		String sslTrustStoreLocation = settings.get("repo.ssltrustStoreLocation", "classpath:ssl.repo.client.truststore");
 		String sslKeyStoreType = settings.get("repo.sslKeyStoreType", "JCEKS");
@@ -46,14 +49,14 @@ public class AlfrescoProvider implements Provider<AlfrescoApi>
 		String sslKeyStorePasswordFileLocation = settings.get("repo.sslKeyStorePasswordFileLocation", "classpath:ssl-keystore-passwords.properties");
 		String sslTrustStorePasswordFileLocation = settings.get("repo.sslTrustStorePasswordFileLocation", "classpath:ssl-truststore-passwords.properties");
 
-		this.alfrescoApi = AlfrescoApi
-			.build()
-			.setAlfrescoHost(alfrescoHost)
-			.setAlfrescoPort(alfrescoPort)
-			.setSocketTimeout(socketTimeout)
-			.setAlfrescoSSLPort(alfrescoSSLPort)
+		RepoClientFactory repoClientFactory = new RepoClientFactory();
+		repoClientFactory
+			.setAlfrescoHost(repoHost)
+			.setAlfrescoPort(repoPort)
+			.setAlfrescoPortSSL(repoSSLPort)
+			.setCommsType(commsType)
 			.setMaxHostConnections(maxHostConnections)
-			.setMaxTotalConnections(maxTotalConnections)
+						.setMaxTotalConnections(maxTotalConnections)
 			.setSslKeyStoreLocation(sslKeyStoreLocation)
 			.setSslTrustStoreLocation(sslTrustStoreLocation)
 			.setSslKeyStoreType(sslKeyStoreType)
@@ -61,13 +64,15 @@ public class AlfrescoProvider implements Provider<AlfrescoApi>
 			.setSslKeyStoreProvider(sslKeyStoreProvider)
 			.setSslTrustStoreProvider(sslTrustStoreProvider)
 			.setSslKeyStorePasswordFileLocation(sslKeyStorePasswordFileLocation)
-			.setSslTrustStorePasswordFileLocation(sslTrustStorePasswordFileLocation);
+			.setSslTrustStorePasswordFileLocation(sslTrustStorePasswordFileLocation)
+			.setSocketTimeout(socketTimeout);
+		this.repoClient = repoClientFactory.get();
 	}
 
 	@Override
-    public AlfrescoApi get()
+    public AlfrescoHttpClient get()
     {
-	    return alfrescoApi;
+	    return repoClient;
     }
 
 }

@@ -14,20 +14,20 @@ public class DiscoveryServiceImpl
 	private UserTrackingDAO userTrackingDAO;
 	private EntitiesDAO entitiesDAO;
 
-	public void a(String username)
-	{
-		List<ViewedNode> viewedNodes = userTrackingDAO.viewedNodes(username, 1000*60*60*24*30);
-		for(ViewedNode viewedNode : viewedNodes)
-		{
-			long nodeInternalId = viewedNode.getNodeInternalId();
-			long nodeVersion = viewedNode.getNodeVersion();
-
-			entitiesDAO.overlap(nodeInternalId, nodeVersion);
-
-//			for(Entity<String> entity : entitiesDAO.getNames(nodeInternalId, nodeVersion))
-//			{
-//				String entityValue = entity.getEntity();
-//			}
-		}
-	}
+//	public void a(String username)
+//	{
+//		List<ViewedNode> viewedNodes = userTrackingDAO.viewedNodes(username, 1000*60*60*24*30);
+//		for(ViewedNode viewedNode : viewedNodes)
+//		{
+//			long nodeInternalId = viewedNode.getNodeInternalId();
+//			long nodeVersion = viewedNode.getNodeVersion();
+//
+//			entitiesDAO.overlap(nodeInternalId, nodeVersion);
+//
+////			for(Entity<String> entity : entitiesDAO.getNames(nodeInternalId, nodeVersion))
+////			{
+////				String entityValue = entity.getEntity();
+////			}
+//		}
+//	}
 }

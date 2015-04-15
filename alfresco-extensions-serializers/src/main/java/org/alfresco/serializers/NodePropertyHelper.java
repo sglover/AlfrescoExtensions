@@ -9,7 +9,6 @@ package org.alfresco.serializers;
 
 import java.io.Serializable;
 
-import org.alfresco.repo.domain.node.NodePropertyValue;
 import org.alfresco.service.cmr.dictionary.DataTypeDefinition;
 import org.alfresco.service.cmr.dictionary.PropertyDefinition;
 import org.alfresco.service.cmr.repository.datatype.TypeConversionException;

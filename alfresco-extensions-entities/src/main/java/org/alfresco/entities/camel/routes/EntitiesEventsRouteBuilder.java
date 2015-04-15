@@ -12,6 +12,7 @@ import org.apache.camel.spring.SpringRouteBuilder;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -25,20 +26,30 @@ public class EntitiesEventsRouteBuilder extends SpringRouteBuilder
 {
     private static Log logger = LogFactory.getLog(EntitiesEventsRouteBuilder.class);
 
-    @Value("${messaging.events.repo.node.sourceTopic.endpoint}")
-    public String sourceTopic = "activemq:topic:alfresco.repo.events.nodes";
+    private String routeId = "topic:alfresco.repo.events.nodes -> bean";
+    private String sourceTopic = "amqp:topic:alfresco.repo.events.nodes";
+    private EventsListener eventsListener;
+    private String clientId;
+    private String dataFormat;
+    private String txnManager;
+    private String durableSubscriptionName;
 
     @Autowired
-    private EventsListener eventsListener;
-
-    @Value("${messaging.clientId}")
-    private String clientId;
-
-    @Value("${messaging.routing.numThreads}")
-    private int numThreads;
-
-    @Value("${messaging.durableSubscriptionName}")
-    private String durableSubscriptionName;
+    public EntitiesEventsRouteBuilder(@Qualifier("eventsListener") EventsListener eventsListener,
+    		@Value("${messaging.events.repo.node.sourceTopic.endpoint}") String sourceTopic,
+    		@Value("${messaging.clientId}") String clientId,
+    		@Value("${messaging.durableSubscriptionName}") String durableSubscriptionName,
+    		@Value("${messaging.routing.numThreads}") int numThreads,
+    		@Value("${messaging.dataFormat}") String dataFormat,
+    		@Value("${messaging.txnManager}") String txnManager)
+    {
+    	this.eventsListener = eventsListener;
+    	this.dataFormat = dataFormat;
+    	this.txnManager = txnManager;
+    	this.sourceTopic = sourceTopic;
+    	this.clientId = clientId;
+    	this.durableSubscriptionName = durableSubscriptionName;
+    }
 
     private String getSourceTopic()
     {
@@ -58,20 +69,16 @@ public class EntitiesEventsRouteBuilder extends SpringRouteBuilder
     {
         if (logger.isDebugEnabled())
         {
-            logger.debug("Subscription service node events routes config: ");
+            logger.debug("Entities service node events routes config: ");
             logger.debug("sourceTopic is "+sourceTopic);
             logger.debug("targetbean is "+eventsListener);
         }
 
-//        onException(com.mongodb.MongoException.Network.class)
-//        .setBody(simple(exceptionMessage().toString()))
-//        .beanRef("messagingExceptionProcessor", "onReceive")
-//        .end();
-
-        from(getSourceTopic())
-        .routeId("topic:alfresco.repo.events.nodes -> bean")
-        .transacted()
-        .unmarshal("defaultDataFormat")
+        String sourceTopic = getSourceTopic();
+        from(sourceTopic)
+        .routeId(routeId)
+        .transacted(txnManager)
+        .unmarshal(dataFormat)
         .beanRef("eventsListener", "onChange")
         .end();
     }

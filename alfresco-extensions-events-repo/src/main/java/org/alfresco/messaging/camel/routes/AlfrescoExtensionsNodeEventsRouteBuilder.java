@@ -23,11 +23,11 @@ public class AlfrescoExtensionsNodeEventsRouteBuilder extends SpringRouteBuilder
 {
     private static Log logger = LogFactory.getLog(AlfrescoExtensionsNodeEventsRouteBuilder.class);
     
-    @Value("${messaging.events.repo.nodes.sourceQueue.endpoint}")
-    public String sourceQueue = "direct-vm:alfresco.events.repo.nodes"; //defaults to an invalid notset value
+    @Value("${messaging.events.repo.ext.nodes.sourceQueue.endpoint}")
+    public String sourceQueue = "direct-vm:alfresco.events.repo.ext.nodes"; //defaults to an invalid notset value
     
-    @Value("${messaging.events.repo.nodes.targetTopic.endpoint}")
-    public String targetTopic = "amqp:topic:alfresco.events.repo.nodes?jmsMessageType=Text"; //defaults to an invalid notset value
+    @Value("${messaging.events.repo.ext.nodes.targetTopic.endpoint}")
+    public String targetTopic = "amqp:topic:alfresco.events.repo.ext.nodes?jmsMessageType=Text"; //defaults to an invalid notset value
 
     @Override
     public void configure() throws Exception
@@ -39,8 +39,9 @@ public class AlfrescoExtensionsNodeEventsRouteBuilder extends SpringRouteBuilder
             logger.debug("targetTopic is "+targetTopic);
         }
 
-        from(sourceQueue).routeId("alfresco.events.repo.nodes -> topic:alfresco.events.repo.nodes")
+        from(sourceQueue).routeId("alfresco.events.repo.ext.nodes -> topic:alfresco.events.repo.ext.nodes")
         .marshal("defaultDataFormat").to(targetTopic)
+//        .transacted("")
         .end();
     }
 }

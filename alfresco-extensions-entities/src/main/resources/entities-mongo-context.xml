@@ -13,11 +13,12 @@
    <bean id="entitiesDAO" class="org.alfresco.entities.MongoEntitiesDAO" init-method="init">
         <property name="db" ref="mongoDb"/>
         <property name="entitiesCollectionName" value="entities"/>
+        <property name="similarityCollectionName" value="similarity"/>
    </bean>
 
    <bean id="userTrackingDAO" class="org.alfresco.entities.MongoUserTrackingDAO" init-method="init">
         <property name="db" ref="mongoDb"/>
-        <property name="collectionName" value="entities"/>
+        <property name="collectionName" value="userTracking"/>
    </bean>
 
 </beans>
