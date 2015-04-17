@@ -5,9 +5,13 @@
  * pursuant to a written agreement and any use of this program without such an 
  * agreement is prohibited. 
  */
-package org.alfresco.entities;
+package org.alfresco.entities.dao;
 
 import java.util.List;
+
+import org.alfresco.entities.values.ViewedNode;
+import org.alfresco.events.node.types.NodeContentGetEvent;
+import org.alfresco.events.node.types.TransactionCommittedEvent;
 
 /**
  * 
@@ -16,6 +20,7 @@ import java.util.List;
  */
 public interface UserTrackingDAO
 {
-	void addUserNodeView(long nodeInternalId, long nodeVersion, String username, long timestamp);
+	void addUserNodeView(NodeContentGetEvent event);
 	List<ViewedNode> viewedNodes(String username, long timeDelta);
+	void txnCommitted(TransactionCommittedEvent event);
 }

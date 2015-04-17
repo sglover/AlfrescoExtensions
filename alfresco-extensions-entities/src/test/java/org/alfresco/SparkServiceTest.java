@@ -7,9 +7,9 @@
  */
 package org.alfresco;
 
-import org.alfresco.entities.EntitiesDAO;
-import org.alfresco.entities.MongoEntitiesDAO;
-import org.alfresco.entities.Spark1;
+import org.alfresco.entities.dao.EntitiesDAO;
+import org.alfresco.entities.dao.mongo.MongoEntitiesDAO;
+import org.alfresco.entities.spark.Spark1;
 import org.alfresco.service.common.mongo.MongoDbFactory;
 import org.alfresco.services.nlp.Entities;
 import org.junit.After;

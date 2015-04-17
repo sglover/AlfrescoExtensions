@@ -7,11 +7,12 @@
  */
 package org.alfresco;
 
-import org.alfresco.entities.EntitiesDAO;
-import org.alfresco.entities.MongoEntitiesDAO;
-import org.alfresco.entities.Node;
+import org.alfresco.entities.dao.EntitiesDAO;
+import org.alfresco.entities.dao.mongo.MongoEntitiesDAO;
+import org.alfresco.entities.values.Node;
 import org.alfresco.service.common.mongo.MongoDbFactory;
 import org.alfresco.services.nlp.Entities;
+import org.alfresco.util.GUID;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -86,6 +87,7 @@ public class EntitiesDAOTest
 				.empty()
 				.addOrg("Alfresco", "Steve Glover works for Alfresco", 1.0);
 
+		String txnId = GUID.generate();
 		String node1Id = "1";
 		String node1Version = "1";
 		String node2Id = "2";
@@ -93,9 +95,9 @@ public class EntitiesDAOTest
 		String node3Id = "3";
 		String node3Version = "3";
 
-		entitiesDAO.addEntities(Node.build().nodeId(node1Id).nodeVersion(node1Version), entities1);
-		entitiesDAO.addEntities(Node.build().nodeId(node2Id).nodeVersion(node2Version), entities2);
-		entitiesDAO.addEntities(Node.build().nodeId(node2Id).nodeVersion(node2Version), entities3);
+		entitiesDAO.addEntities(txnId, Node.build().nodeId(node1Id).nodeVersion(node1Version), entities1);
+		entitiesDAO.addEntities(txnId, Node.build().nodeId(node2Id).nodeVersion(node2Version), entities2);
+		entitiesDAO.addEntities(txnId, Node.build().nodeId(node3Id).nodeVersion(node3Version), entities3);
 
 //		EntityCounts<String> counts = entitiesDAO.overlap(node1InternalId, node1Version);
 //		System.out.println(counts);

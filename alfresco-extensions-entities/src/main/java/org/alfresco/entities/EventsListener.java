@@ -14,6 +14,7 @@ import org.alfresco.events.node.types.NodeContentGetEvent;
 import org.alfresco.events.node.types.NodeContentPutEvent;
 import org.alfresco.events.node.types.NodeEvent;
 import org.alfresco.events.node.types.NodeUpdatedEvent;
+import org.alfresco.events.node.types.TransactionCommittedEvent;
 import org.alfresco.httpclient.AuthenticationException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -40,18 +41,28 @@ public class EventsListener
 	/** Entry point for consuming messages from the repository. 
 	 * @throws IOException 
 	 * @throws AuthenticationException */
-    public synchronized void onChange(Object message) throws AuthenticationException, IOException
+    public synchronized void onEvent(Object message) throws AuthenticationException, IOException
     {
+    	logger.debug("message = " + message);
+
 		if(message instanceof NodeContentPutEvent || message instanceof NodeAddedEvent ||
 				message instanceof NodeUpdatedEvent)
 		{
 			NodeEvent nodeEvent = (NodeEvent)message;
 			entitiesService.getEntities(nodeEvent);
 		}
-		else if(message instanceof NodeContentGetEvent)
+		if(message instanceof NodeContentGetEvent)
 		{
 			NodeContentGetEvent nodeEvent = (NodeContentGetEvent)message;
 			userTrackingService.handleContentGet(nodeEvent);
+		}
+		if(message instanceof TransactionCommittedEvent)
+		{
+			TransactionCommittedEvent nodeEvent = (TransactionCommittedEvent)message;
+
+			logger.debug("Committing txn " + nodeEvent.getTxnId());
+
+			entitiesService.txnCommitted(nodeEvent);
 		}
 		else
 		{

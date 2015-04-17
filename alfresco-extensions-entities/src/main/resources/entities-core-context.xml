@@ -83,6 +83,7 @@
 
    <bean id="entitiesService" class="org.alfresco.entities.EntitiesServiceImpl" init-method="init">
         <property name="entitiesDAO" ref="entitiesDAO"/>
+        <property name="similarityDAO" ref="similarityDAO"/>
         <property name="entityExtracter" ref="entityExtracter"/>
    </bean>
 

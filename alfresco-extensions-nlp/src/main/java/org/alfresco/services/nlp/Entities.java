@@ -11,6 +11,7 @@ import java.io.Serializable;
 import java.util.AbstractSet;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -361,6 +362,70 @@ public class Entities implements Serializable
 	{
 		final Collection<Entity<String>> names = getNames();
 		return getAsSet(names);
+	}
+
+	public Set<String> getEntitiesAsSet()
+	{
+		final Set<String> set = new EntitySet();
+		return set;
+	}
+
+	private class EntitySet extends AbstractSet<String>
+	{
+		private EntitySet()
+		{
+		}
+
+		@Override
+        public Iterator<String> iterator()
+        {
+			Iterator<String> it = new EntityIterator();
+	        return it;
+        }
+
+		@Override
+        public int size()
+        {
+	        return names.size() + locations.size() + orgs.size();
+        }
+	}
+
+	private class EntityIterator implements Iterator<String>
+	{
+		private LinkedList<Iterator<Entity<String>>> l = new LinkedList<>();
+		private Iterator<Entity<String>> entityIt = null;
+
+		private EntityIterator()
+		{
+			l.add(names.values().iterator());
+			l.add(locations.values().iterator());
+			l.add(orgs.values().iterator());
+		}
+
+		@Override
+        public boolean hasNext()
+        {
+			while(l.peek() != null && (entityIt == null || !entityIt.hasNext()))
+			{
+				entityIt = l.pop();
+			}
+
+            boolean hasNext = entityIt.hasNext();
+            return hasNext;
+        }
+
+		@Override
+        public String next()
+        {
+			Entity<String> entity = entityIt.next();
+            return entity.getEntity();
+        }
+
+		@Override
+        public void remove()
+        {
+			throw new UnsupportedOperationException();
+        }
 	}
 
 	public String toString()

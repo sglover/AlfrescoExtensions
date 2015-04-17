@@ -5,11 +5,12 @@
  * pursuant to a written agreement and any use of this program without such an 
  * agreement is prohibited. 
  */
-package org.alfresco.entities;
+package org.alfresco.entities.spark;
 
 import java.util.LinkedList;
 import java.util.List;
 
+import org.alfresco.entities.values.Node;
 import org.alfresco.services.nlp.Entities;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.bson.BSONObject;

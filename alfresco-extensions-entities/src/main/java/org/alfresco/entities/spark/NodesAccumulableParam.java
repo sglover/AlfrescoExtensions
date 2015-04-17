@@ -5,8 +5,10 @@
  * pursuant to a written agreement and any use of this program without such an 
  * agreement is prohibited. 
  */
-package org.alfresco.entities;
+package org.alfresco.entities.spark;
 
+import org.alfresco.entities.values.Node;
+import org.alfresco.entities.values.Nodes;
 import org.apache.spark.AccumulableParam;
 
 /**

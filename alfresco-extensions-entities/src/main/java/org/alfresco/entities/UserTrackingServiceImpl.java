@@ -7,6 +7,7 @@
  */
 package org.alfresco.entities;
 
+import org.alfresco.entities.dao.UserTrackingDAO;
 import org.alfresco.events.node.types.NodeContentGetEvent;
 
 /**
@@ -27,10 +28,6 @@ public class UserTrackingServiceImpl implements UserTrackingService
 	@Override
 	public void handleContentGet(NodeContentGetEvent event)
 	{
-		String username = event.getUsername();
-		long nodeInternalId = event.getNodeInternalId();
-		long nodeVersion = event.getNodeVersion();
-		long eventTimestamp = event.getTimestamp();
-		userTrackingDAO.addUserNodeView(nodeInternalId, nodeVersion, username, eventTimestamp);
+		userTrackingDAO.addUserNodeView(event);
 	}
 }

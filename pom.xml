@@ -26,6 +26,8 @@
         <module>alfresco-extensions-nlp</module>
         <module>alfresco-extensions-repo-client</module>
         <module>alfresco-extensions-cacheserver</module>
+        <module>alfresco-extensions-camel</module>
+        <module>alfresco-extensions-event-utils</module>
     </modules>
 
     <properties>

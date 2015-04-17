@@ -11,8 +11,14 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
+import org.alfresco.entities.dao.EntitiesDAO;
+import org.alfresco.entities.dao.SimilarityDAO;
+import org.alfresco.entities.values.Node;
 import org.alfresco.events.node.types.NodeEvent;
+import org.alfresco.events.node.types.TransactionCommittedEvent;
 import org.alfresco.httpclient.AuthenticationException;
 import org.alfresco.services.nlp.Entities;
 import org.alfresco.services.nlp.Entity;
@@ -20,7 +26,8 @@ import org.alfresco.services.nlp.EntityExtracter;
 import org.alfresco.services.nlp.EntityTaggerCallback;
 import org.alfresco.services.nlp.minhash.MinHash;
 import org.alfresco.services.nlp.minhash.MinHashImpl;
-import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.gytheio.util.EqualsHelper;
 import org.json.JSONException;
 
@@ -31,14 +38,25 @@ import org.json.JSONException;
  */
 public class EntitiesServiceImpl implements EntitiesService
 {
+	private static final Log logger = LogFactory.getLog(EntitiesServiceImpl.class);
+
 	private EntitiesDAO entitiesDAO;
+	private SimilarityDAO similarityDAO;
 	private EntityExtracter entityExtracter;
 
-    public EntitiesServiceImpl()
-    {
-    }
+	private ExecutorService executorService;
 
-    public void setEntitiesDAO(EntitiesDAO entitiesDAO)
+	public EntitiesServiceImpl()
+	{
+		this.executorService = Executors.newFixedThreadPool(10);
+	}
+
+    public void setSimilarityDAO(SimilarityDAO similarityDAO)
+	{
+		this.similarityDAO = similarityDAO;
+	}
+
+	public void setEntitiesDAO(EntitiesDAO entitiesDAO)
 	{
 		this.entitiesDAO = entitiesDAO;
 	}
@@ -56,6 +74,7 @@ public class EntitiesServiceImpl implements EntitiesService
     public void getEntitiesAsync(final NodeEvent nodeEvent) throws AuthenticationException, IOException
     {
     	final long nodeInternalId = nodeEvent.getNodeInternalId();
+    	final String txnId = nodeEvent.getTxnId();
     	final String nodeId = nodeEvent.getNodeId();
     	final String nodeVersion = nodeEvent.getVersionLabel();
     	final String nodeType = nodeEvent.getNodeType();
@@ -67,7 +86,7 @@ public class EntitiesServiceImpl implements EntitiesService
 			public void onSuccess(Entities entities)
 			{
 				Node node = new Node(nodeId, nodeVersion);
-				entitiesDAO.addEntities(node, entities);
+				entitiesDAO.addEntities(txnId, node, entities);
 
 				List<Entities> allEntities = entitiesDAO.getEntities();
 				for(Entities e : allEntities)
@@ -75,7 +94,7 @@ public class EntitiesServiceImpl implements EntitiesService
 					double similarity = similarity(entities, e);
 	
 					Node node2 = new Node(e.getNodeId(), e.getNodeVersion());
-					entitiesDAO.saveSimilarity(node, node2, similarity);
+					similarityDAO.saveSimilarity(node, node2, similarity);
 				}
 			}
 			
@@ -101,26 +120,61 @@ public class EntitiesServiceImpl implements EntitiesService
 		Entities entities = entityExtracter.getEntities(nodeInternalId/*, nodeType*/);
 		if(entities != null)
 		{
-			Node node = new Node(nodeId, nodeVersion);
-			entitiesDAO.addEntities(node, entities);
-	
-			List<Entities> allEntities = entitiesDAO.getEntities();
-			for(Entities e : allEntities)
-			{
-				boolean same = e.getNodeId().equals(nodeId);
-				if(same)
-				{
-					same = EqualsHelper.nullSafeEquals(e.getNodeVersion(), nodeVersion);
-				}
-				if(!same)
-				{
-					double similarity = similarity(entities, e);
-		
-					Node node2 = new Node(e.getNodeId(), e.getNodeVersion());
-					entitiesDAO.saveSimilarity(node, node2, similarity);
-				}
-			}
+			final String txnId = nodeEvent.getTxnId();
+			final Node node = new Node(nodeId, nodeVersion);
+			entitiesDAO.addEntities(txnId, node, entities);
 		}
+    }
+
+    private class CalculateSimilarities implements Runnable
+    {
+    	private String txnId;
+
+    	private CalculateSimilarities(String txnId)
+    	{
+    		this.txnId = txnId;
+    	}
+
+    	public void run()
+    	{
+    		List<Entities> allEntities = entitiesDAO.getEntities();
+
+        	List<Entities> txnEntities = entitiesDAO.getEntitiesForTxn(txnId);
+
+        	for(Entities e : txnEntities)
+        	{
+    			for(Entities e1 : allEntities)
+    			{
+    				logger.debug("Computing similarity for " + e.getNodeId() + "." + e.getNodeVersion() + " and " + e1.getNodeId() + "." + e1.getNodeVersion());
+
+    				boolean same = e.getNodeId().equals(e1.getNodeId());
+    				if(same)
+    				{
+    					same = EqualsHelper.nullSafeEquals(e.getNodeVersion(), e1.getNodeVersion());
+    				}
+    				if(!same)
+    				{
+    					double similarity = similarity(e, e1);
+
+    					logger.debug("Similarity for "
+    							+ e1.getNodeId()+ "." + e1.getNodeVersion()
+    							+ " and "
+    							+ e.getNodeId() + "." + e.getNodeVersion()
+    							+ " is " + similarity);
+    	
+    					Node node1 = new Node(e.getNodeId(), e.getNodeVersion());
+    					Node node2 = new Node(e1.getNodeId(), e1.getNodeVersion());
+    					similarityDAO.saveSimilarity(node1, node2, similarity);
+    				}
+    			}
+        	}
+    	}
+    }
+
+    private void calculateSimilarities(String txnId)
+    {
+    	CalculateSimilarities cs = new CalculateSimilarities(txnId);
+    	executorService.execute(cs);
     }
 
 	@Override
@@ -147,17 +201,30 @@ public class EntitiesServiceImpl implements EntitiesService
 
 	public double similarity(Entities entities1, Entities entities2)
 	{
-		Set<String> locations1 = entities1.getLocationsAsSet();
-		Set<String> locations2 = entities2.getLocationsAsSet();
+		double similarity = 0.0;
 
-		MinHash<String> minHash = new MinHashImpl<String>(locations1.size()+locations2.size());
-		double similarity = minHash.similarity(locations1, locations2);
+		Set<String> entitiesSet1 = entities1.getEntitiesAsSet();
+		Set<String> entitiesSet2 = entities2.getEntitiesAsSet();
+		if(entitiesSet1.size() > 0 && entitiesSet2.size() > 0)
+		{
+			MinHash<String> minHash = new MinHashImpl<String>(entitiesSet1.size()+entitiesSet2.size());
+			similarity = minHash.similarity(entitiesSet1, entitiesSet2);
+		}
+
 		return similarity;
 	}
 
 	@Override
-    public double getSimilarity(Node node1, Node node2)
-    {
-		return entitiesDAO.getSimilarity(node1, node2);
-    }
+	public double getSimilarity(Node node1, Node node2)
+	{
+		return similarityDAO.getSimilarity(node1, node2);
+	}
+
+	@Override
+	public void txnCommitted(TransactionCommittedEvent event)
+	{
+		entitiesDAO.txnCommitted(event);
+
+		calculateSimilarities(event.getTxnId());
+	}
 }

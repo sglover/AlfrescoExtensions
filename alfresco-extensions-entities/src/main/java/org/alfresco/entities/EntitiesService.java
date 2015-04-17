@@ -10,7 +10,9 @@ package org.alfresco.entities;
 import java.io.IOException;
 import java.util.Collection;
 
+import org.alfresco.entities.values.Node;
 import org.alfresco.events.node.types.NodeEvent;
+import org.alfresco.events.node.types.TransactionCommittedEvent;
 import org.alfresco.httpclient.AuthenticationException;
 import org.alfresco.services.nlp.Entity;
 
@@ -25,4 +27,5 @@ public interface EntitiesService
 	void getEntitiesAsync(NodeEvent nodeEvent) throws AuthenticationException, IOException;
 	void getEntities(NodeEvent nodeEvent) throws AuthenticationException, IOException;
 	double getSimilarity(Node node1, Node node2);
+	void txnCommitted(TransactionCommittedEvent event);
 }

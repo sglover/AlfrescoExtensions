@@ -7,7 +7,11 @@
  */
 package org.alfresco;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -111,14 +115,18 @@ public class MockContentGetter implements ContentGetter
 		return this;
 	}
 
-//	public MockContentGetter addTestContent(long nodeInternalId, String nodeId, String nodeVersion, InputStream nodeContent,
-//			String mimeType, long size)
-//	{
-//		String key = nodeId + "." + nodeVersion;
-//		Content content = new Content(nodeContent, mimeType, size);
-//		testContentByNodeInternalId.put(nodeInternalId, content);
-//		return this;
-//	}
+	public MockContentGetter addTestContent(long nodeInternalId, String nodeId, String nodeVersion, File nodeContent,
+			String mimeType) throws FileNotFoundException
+	{
+		long size = nodeContent.length();
+		InputStream in = new BufferedInputStream(new FileInputStream(nodeContent));
+
+		Content content = new Content(in, mimeType, size);
+		Node node = new Node(nodeId, nodeVersion);
+		testContentByNodeId.put(node, content);
+		testContentByNodeInternalId.put(nodeInternalId, content);
+		return this;
+	}
 
 	@Override
 	public Content getContent(String nodeId, String nodeVersion)

@@ -79,7 +79,7 @@ public class EntitiesEventsRouteBuilder extends SpringRouteBuilder
         .routeId(routeId)
         .transacted(txnManager)
         .unmarshal(dataFormat)
-        .beanRef("eventsListener", "onChange")
+        .beanRef("eventsListener", "onEvent")
         .end();
     }
 }

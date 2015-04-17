@@ -5,7 +5,7 @@
  * pursuant to a written agreement and any use of this program without such an 
  * agreement is prohibited. 
  */
-package org.alfresco.entities;
+package org.alfresco.entities.values;
 
 /**
  * 
@@ -15,14 +15,17 @@ package org.alfresco.entities;
 public class ViewedNode
 {
 	private String username;
+	private String nodeId;
 	private long nodeInternalId;
-	private long nodeVersion;
+	private String nodeVersion;
 	private long timestamp;
-	public ViewedNode(String username, long nodeInternalId, long nodeVersion,
+
+	public ViewedNode(String username, String nodeId, long nodeInternalId, String nodeVersion,
             long timestamp)
     {
 	    super();
 	    this.username = username;
+	    this.nodeId = nodeId;
 	    this.nodeInternalId = nodeInternalId;
 	    this.nodeVersion = nodeVersion;
 	    this.timestamp = timestamp;
@@ -31,11 +34,15 @@ public class ViewedNode
 	{
 		return username;
 	}
+	public String getNodeId()
+	{
+		return nodeId;
+	}
 	public long getNodeInternalId()
 	{
 		return nodeInternalId;
 	}
-	public long getNodeVersion()
+	public String getNodeVersion()
 	{
 		return nodeVersion;
 	}
@@ -43,6 +50,11 @@ public class ViewedNode
 	{
 		return timestamp;
 	}
-
-	
+	@Override
+    public String toString()
+    {
+	    return "ViewedNode [username=" + username + ", nodeId=" + nodeId
+	            + ", nodeInternalId=" + nodeInternalId + ", nodeVersion="
+	            + nodeVersion + ", timestamp=" + timestamp + "]";
+    }
 }

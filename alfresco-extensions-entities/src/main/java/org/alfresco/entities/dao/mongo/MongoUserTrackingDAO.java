@@ -5,12 +5,16 @@
  * pursuant to a written agreement and any use of this program without such an 
  * agreement is prohibited. 
  */
-package org.alfresco.entities;
+package org.alfresco.entities.dao.mongo;
 
 import java.util.LinkedList;
 import java.util.List;
 
+import org.alfresco.entities.dao.UserTrackingDAO;
+import org.alfresco.entities.values.ViewedNode;
 import org.alfresco.error.AlfrescoRuntimeException;
+import org.alfresco.events.node.types.NodeContentGetEvent;
+import org.alfresco.events.node.types.TransactionCommittedEvent;
 import org.alfresco.service.common.mongo.AbstractMongoDAO;
 
 import com.mongodb.BasicDBObjectBuilder;
@@ -57,19 +61,35 @@ public class MongoUserTrackingDAO extends AbstractMongoDAO implements UserTracki
 
 		this.data = getCollection(db, collectionName, WriteConcern.ACKNOWLEDGED);
 
-		// we want a record per (txnId, nodeId, changeType)
-//        DBObject keys = BasicDBObjectBuilder
-//                .start("n", 1)
-//                .add("nm", 1)
-//                .get();
-//        this.data.ensureIndex(keys, "name", false);
+		{
+	        DBObject keys = BasicDBObjectBuilder
+	        		.start("ic", 1)
+	                .add("u", 1)
+	                .add("t", 1)
+	                .get();
+	        this.data.ensureIndex(keys, "main", false);
+		}
+
+		{
+	        DBObject keys = BasicDBObjectBuilder
+	                .start("tx", 1)
+	                .get();
+	        this.data.ensureIndex(keys, "byTxn", false);
+		}
 	}
 
 	@Override
-	public void addUserNodeView(long nodeInternalId, long nodeVersion, String username, long timestamp)
+	public void addUserNodeView(NodeContentGetEvent event)
 	{
+		String txnId = event.getTxnId();
+		String nodeId = event.getNodeId();
+		String nodeVersion = event.getVersionLabel();
+		String username = event.getUsername();
+		long timestamp = event.getTimestamp();
+
 		DBObject dbObject = BasicDBObjectBuilder
-				.start("n", nodeInternalId)
+				.start("tx", txnId)
+				.add("n", nodeId)
 				.add("v", nodeVersion)
 				.add("u", username)
 				.add("t", timestamp)
@@ -86,19 +106,21 @@ public class MongoUserTrackingDAO extends AbstractMongoDAO implements UserTracki
 		long time = System.currentTimeMillis() - timeDelta;
 
 		DBObject query = QueryBuilder
-			.start("u").is(username)
-			.and("t").greaterThanEquals(time)
-			.get();
+				.start("ic").is(true)
+				.and("u").is(username)
+				.and("t").greaterThanEquals(time)
+				.get();
 		DBCursor cursor = data.find(query);
 
 		try
 		{
 			for(DBObject dbObject : cursor)
 			{
-				long nodeInternalId = (Long)dbObject.get("n");
-				long nodeVersion = (Long)dbObject.get("v");
+				String nodeId = (String)dbObject.get("n");
+				long nodeInternalId = (Long)dbObject.get("ni");
+				String nodeVersion = (String)dbObject.get("v");
 				long timestamp = (Long)dbObject.get("t");
-				ViewedNode viewedNode = new ViewedNode(username, nodeInternalId, nodeVersion, timestamp);
+				ViewedNode viewedNode = new ViewedNode(username, nodeId, nodeInternalId, nodeVersion, timestamp);
 				viewedNodes.add(viewedNode);
 			}
 		}
@@ -113,4 +135,21 @@ public class MongoUserTrackingDAO extends AbstractMongoDAO implements UserTracki
 		return viewedNodes;
 	}
 
+	@Override
+	public void txnCommitted(TransactionCommittedEvent event)
+	{
+		DBObject query = QueryBuilder
+				.start("tx").is(event.getTxnId())
+				.get();
+
+		DBObject update = BasicDBObjectBuilder
+				.start("$set",
+						BasicDBObjectBuilder
+							.start("ic", true)
+							.get())
+				.get();
+
+		WriteResult result = data.update(query, update, false, false);
+		checkResult(result);
+	}
 }

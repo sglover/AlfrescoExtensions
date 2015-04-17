@@ -5,9 +5,8 @@
  * pursuant to a written agreement and any use of this program without such an 
  * agreement is prohibited. 
  */
-package org.alfresco.entities;
+package org.alfresco.entities.dao.mongo;
 
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -16,7 +15,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.alfresco.entities.dao.EntitiesDAO;
+import org.alfresco.entities.values.EntityCounts;
+import org.alfresco.entities.values.Node;
 import org.alfresco.error.AlfrescoRuntimeException;
+import org.alfresco.events.node.types.TransactionCommittedEvent;
 import org.alfresco.service.common.mongo.AbstractMongoDAO;
 import org.alfresco.services.nlp.Entities;
 import org.alfresco.services.nlp.Entity;
@@ -32,21 +35,18 @@ import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.QueryBuilder;
 import com.mongodb.WriteConcern;
+import com.mongodb.WriteResult;
 
 /**
  * 
  * @author sglover
  *
  */
-public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO, Serializable
+public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO
 {
-	private static final long serialVersionUID = -5890516563565690912L;
-
 	private DB db;
 	private String entitiesCollectionName;
 	private DBCollection entitiesData;
-	private String similarityCollectionName;
-	private DBCollection similarityData;
 
 	private Set<String> allTypes = new HashSet<>();
 
@@ -55,11 +55,6 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO, S
 	public void setDb(DB db)
 	{
 		this.db = db;
-	}
-
-	public void setSimilarityCollectionName(String similarityCollectionName)
-	{
-		this.similarityCollectionName = similarityCollectionName;
 	}
 
 	public void setEntitiesCollectionName(String entitiesCollectionName)
@@ -106,17 +101,41 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO, S
         }
 
 		this.entitiesData = getCollection(db, entitiesCollectionName, WriteConcern.ACKNOWLEDGED);
-		this.similarityData = getCollection(db, similarityCollectionName, WriteConcern.ACKNOWLEDGED);
 
-		// we want a record per (txnId, nodeId, changeType)
-        DBObject keys = BasicDBObjectBuilder
-                .start("n", 1)
-                .add("nm", 1)
-                .get();
-        this.entitiesData.ensureIndex(keys, "name", false);
+		{
+	        DBObject keys = BasicDBObjectBuilder
+	                .start("ic", 1)
+	                .add("n", 1)
+	                .add("v", 1)
+	                .get();
+	        this.entitiesData.ensureIndex(keys, "main", false);
+		}
 	}
 
-	private void addEntities(Node node,
+	@SuppressWarnings("unchecked")
+    private Entity<String> getEntity(DBObject dbObject)
+	{
+		String type = (String)dbObject.get("t");
+		String key = map.get(type);
+		String name = (String)dbObject.get(key);
+		long count = (Long)dbObject.get("c");
+		List<DBObject> locs = (List<DBObject>)dbObject.get("locs");
+
+		Entity<String> entity = new Entity<>(type, name, count);
+		for(DBObject locDBObject : locs)
+		{
+			long beginOffset = (Long)locDBObject.get("s");
+			long endOffset = (Long)locDBObject.get("e");
+			double probability = (Double)locDBObject.get("p");
+			String context = (String)locDBObject.get("c");
+			EntityLocation location = new EntityLocation(beginOffset, endOffset, probability, context);
+			entity.addLocation(location);
+		}
+
+		return entity;
+	}
+
+	private void addEntities(String txnId, Node node,
 			String type, String key, Collection<Entity<String>> entities)
 	{
 		BulkWriteOperation bulk = entitiesData.initializeUnorderedBulkOperation();
@@ -149,7 +168,8 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO, S
 				}
 	
 				DBObject dbObject = BasicDBObjectBuilder
-						.start("n", nodeId)
+						.start("tx", txnId)
+						.add("n", nodeId)
 						.add("ni", nodeInternalId)
 						.add("v", nodeVersion)
 						.add("t", type)
@@ -171,22 +191,19 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO, S
 	}
 
 	@Override
-	public void addEntities(Node node, Entities entities)
+	public void addEntities(String txnId, Node node, Entities entities)
 	{
-		String nodeId = node.getNodeId();
-		String nodeVersion = node.getNodeVersion();
-
 		Collection<Entity<String>> nameEntities = entities.getNames();
 		String key = map.get("name");
-		addEntities(node, "name", key, nameEntities);
+		addEntities(txnId, node, "name", key, nameEntities);
 
 		Collection<Entity<String>> locationEntities = entities.getLocations();
 		key = map.get("location");
-		addEntities(node, "location", key, locationEntities);
+		addEntities(txnId, node, "location", key, locationEntities);
 
 		Collection<Entity<String>> orgEntities = entities.getOrgs();
 		key = map.get("org");
-		addEntities(node, "org", key, orgEntities);
+		addEntities(txnId, node, "org", key, orgEntities);
     }
 
 	@Override
@@ -198,7 +215,8 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO, S
 		Collection<Entity<String>> ret = new LinkedList<>();
 
 		QueryBuilder queryBuilder = QueryBuilder
-				.start("n").is(nodeId)
+				.start("ic").is(true)
+				.and("n").is(nodeId)
 				.and("v").is(nodeVersion);
 		DBObject query = queryBuilder.get();
 
@@ -228,29 +246,6 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO, S
 
 	    return ret;
     }
-	
-	@SuppressWarnings("unchecked")
-    private Entity<String> getEntity(DBObject dbObject)
-	{
-		String type = (String)dbObject.get("t");
-		String key = map.get(type);
-		String name = (String)dbObject.get(key);
-		long count = (Long)dbObject.get("c");
-		List<DBObject> locs = (List<DBObject>)dbObject.get("locs");
-
-		Entity<String> entity = new Entity<>(type, name, count);
-		for(DBObject locDBObject : locs)
-		{
-			long beginOffset = (Long)locDBObject.get("s");
-			long endOffset = (Long)locDBObject.get("e");
-			double probability = (Double)locDBObject.get("p");
-			String context = (String)locDBObject.get("c");
-			EntityLocation location = new EntityLocation(beginOffset, endOffset, probability, context);
-			entity.addLocation(location);
-		}
-
-		return entity;
-	}
 
 	@Override
 	public EntityCounts<String> getEntityCounts(Node node)
@@ -261,7 +256,9 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO, S
 		EntityCounts<String> ret = new EntityCounts<>();
 
 		QueryBuilder queryBuilder = QueryBuilder
-				.start("n").is(nodeId)
+				.start("ic").is(true)
+//				.and("c").is(true)
+				.and("n").is(nodeId)
 				.and("v").is(nodeVersion);
 		DBObject query = queryBuilder.get();
 
@@ -295,8 +292,9 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO, S
 		List<Node> nodes = new LinkedList<>();
 
 		QueryBuilder queryBuilder = QueryBuilder
-			.start("t").is(type)
-			.and("nm").is(name);
+				.start("ic").is(true)
+				.and("t").is(type)
+				.and("nm").is(name);
 		DBObject query = queryBuilder.get();
 
 		BasicDBObjectBuilder orderByBuilder = BasicDBObjectBuilder
@@ -325,6 +323,7 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO, S
 		return nodes;
 	}
 
+	@Override
 	public EntityCounts<String> getNodeMatches(Entities entities)
 	{
 		EntityCounts<String> entityCounts = new EntityCounts<>();
@@ -360,7 +359,7 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO, S
 		}
 
 		QueryBuilder queryBuilder = QueryBuilder
-				.start()
+				.start("ic").is(true)
 				.or(ors.toArray(new DBObject[0]));
 
 		DBObject query = queryBuilder.get();
@@ -398,8 +397,10 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO, S
 		Entities entities = Entities.empty(nodeId, nodeVersion);
 
 		QueryBuilder queryBuilder = QueryBuilder
-				.start("n").is(nodeId)
+				.start("ic").is(true)
+				.and("n").is(nodeId)
 				.and("v").is(nodeVersion);
+
 		if(types != null && types.size() > 0)
 		{
 			queryBuilder.and("t").in(types);
@@ -427,13 +428,31 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO, S
 		return entities;
 	}
 
+	private boolean different(String nodeId1, String nodeVersion1, String nodeId2, String nodeVersion2)
+	{
+		boolean different = false;
+		if(!nodeId1.equals(nodeId2))
+		{
+			different = true;
+		}
+		else
+		{
+			if(nodeVersion1 != nodeVersion2)
+			{
+				different = !EqualsHelper.nullSafeEquals(nodeVersion1, nodeVersion2);
+			}
+		}
+
+		return different;
+	}
+
 	@Override
     public List<Entities> getEntities()
     {
 		List<Entities> allEntities = new LinkedList<>();
 
 		QueryBuilder queryBuilder = QueryBuilder
-				.start();
+				.start("ic").is(true);
 
 		DBObject query = queryBuilder.get();
 
@@ -459,11 +478,10 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO, S
 				}
 				else
 				{
-					if(!nodeId.equals(entities.getNodeId()) &&
-							!EqualsHelper.nullSafeEquals(nodeVersion, entities.getNodeVersion()))
+					if(different(nodeId, nodeVersion, entities.getNodeId(), entities.getNodeVersion()))
 					{
-						allEntities.add(entities);
 						entities = Entities.empty(nodeId, nodeVersion);
+						allEntities.add(entities);
 					}
 				}
 				entities.addEntity(entity);
@@ -488,43 +506,70 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO, S
     }
 
 	@Override
-    public void saveSimilarity(Node node1, Node node2, double similarity)
-    {
-		DBObject dbObject = BasicDBObjectBuilder
-				.start("n1", node1.getNodeId())
-				.add("v1", node1.getNodeVersion())
-				.add("n2", node2.getNodeId())
-				.add("v2", node2.getNodeVersion())
-				.add("s", similarity)
+	public void txnCommitted(TransactionCommittedEvent event)
+	{
+		DBObject query = QueryBuilder
+				.start("tx").is(event.getTxnId())
 				.get();
-		similarityData.insert(dbObject);
-    }
+
+		DBObject update = BasicDBObjectBuilder
+				.start("$set",
+						BasicDBObjectBuilder
+							.start("ic", true)
+							.get())
+				.get();
+
+		WriteResult result = entitiesData.update(query, update, false, true);
+		checkResult(result);
+	}
 
 	@Override
-    public double getSimilarity(Node node1, Node node2)
-    {
-		List<DBObject> ors = new LinkedList<>();
-		ors.add(QueryBuilder
-			.start("n1").is(node1.getNodeId())
-			.and("v1").is(node1.getNodeVersion())
-			.and("n2").is(node2.getNodeId())
-			.and("v2").is(node2.getNodeVersion())
-			.get());
-		ors.add(QueryBuilder
-				.start("n1").is(node2.getNodeId())
-				.and("v1").is(node2.getNodeVersion())
-				.and("n2").is(node1.getNodeId())
-				.and("v2").is(node1.getNodeVersion())
-				.get());
+	public List<Entities> getEntitiesForTxn(String txnId)
+	{
+		List<Entities> ret = new LinkedList<>();
 
-		DBObject query = QueryBuilder
-				.start().or(ors.toArray(new DBObject[0]))
-				.get();
+		QueryBuilder queryBuilder = QueryBuilder
+				.start("tx").is(txnId);
 
-		DBObject dbObject = similarityData.findOne(query);
-		Double similarity = (dbObject != null ? (Double)dbObject.get("s") : null);
-		return (similarity != null ? similarity : -1.0);
-    }
+		DBObject query = queryBuilder.get();
+
+		DBCursor cursor = entitiesData.find(query);
+		try
+		{
+			Entities entities = null;
+
+			for(DBObject dbObject : cursor)
+			{
+				String nodeId = (String)dbObject.get("n");
+				String nodeVersion = (String)dbObject.get("v");
+				Entity<String> entity = getEntity(dbObject);
+				if(entities == null)
+				{
+					entities = Entities.empty(nodeId, nodeVersion);
+					ret.add(entities);
+				}
+				else
+				{
+					if(!nodeId.equals(entities.getNodeId()) &&
+							!EqualsHelper.nullSafeEquals(nodeVersion, entities.getNodeVersion()))
+					{
+						entities = Entities.empty(nodeId, nodeVersion);
+						ret.add(entities);
+					}
+				}
+				entities.addEntity(entity);
+			}
+		}
+		finally
+		{
+			if(cursor != null)
+			{
+				cursor.close();
+			}
+		}
+
+		return ret;
+	}
 
 //	@Override
 //	public EntityCounts<String> overlap(Node node)

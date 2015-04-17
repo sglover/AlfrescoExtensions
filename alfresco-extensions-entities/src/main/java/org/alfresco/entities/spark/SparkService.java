@@ -5,12 +5,15 @@
  * pursuant to a written agreement and any use of this program without such an 
  * agreement is prohibited. 
  */
-package org.alfresco.entities;
+package org.alfresco.entities.spark;
 
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
 
+import org.alfresco.entities.dao.EntitiesDAO;
+import org.alfresco.entities.values.Node;
+import org.alfresco.entities.values.Nodes;
 import org.alfresco.services.nlp.Entities;
 import org.alfresco.services.nlp.Entity;
 import org.apache.spark.Accumulable;

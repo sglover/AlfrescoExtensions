@@ -22,7 +22,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.alfresco.entities.EntitiesService;
-import org.alfresco.entities.Node;
+import org.alfresco.entities.values.Node;
 import org.alfresco.services.nlp.Entity;
 import org.apache.log4j.Logger;
 

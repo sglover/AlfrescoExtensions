@@ -9,6 +9,9 @@ package org.alfresco.entities;
 
 import java.util.List;
 
+import org.alfresco.entities.dao.EntitiesDAO;
+import org.alfresco.entities.dao.UserTrackingDAO;
+
 public class DiscoveryServiceImpl
 {
 	private UserTrackingDAO userTrackingDAO;
