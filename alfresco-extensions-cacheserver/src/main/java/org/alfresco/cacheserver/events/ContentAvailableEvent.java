@@ -20,6 +20,7 @@ public class ContentAvailableEvent implements Serializable
 
 	private String cacheServerId;
 	private String nodeId;
+	private Long nodeInternalId;
 	private String nodeVersion;
 	private String nodePath;
 	private String mimeType;
@@ -31,12 +32,13 @@ public class ContentAvailableEvent implements Serializable
 	{
 	}
 
-	public ContentAvailableEvent(String cacheServerId, String nodeId, String nodeVersion, String nodePath, String mimeType,
+	public ContentAvailableEvent(String cacheServerId, String nodeId, Long nodeInternalId, String nodeVersion, String nodePath, String mimeType,
 			long size, String hostname, int port)
     {
 	    super();
 	    this.cacheServerId = cacheServerId;
 	    this.nodeId = nodeId;
+	    this.nodeInternalId = nodeInternalId;
 	    this.nodeVersion = nodeVersion;
 	    this.nodePath = nodePath;
 	    this.mimeType = mimeType;
@@ -44,6 +46,16 @@ public class ContentAvailableEvent implements Serializable
 	    this.hostname = hostname;
 	    this.port = port;
     }
+
+	public Long getNodeInternalId()
+	{
+		return nodeInternalId;
+	}
+
+	public void setNodeInternalId(Long nodeInternalId)
+	{
+		this.nodeInternalId = nodeInternalId;
+	}
 
 	public String getCacheServerId()
 	{
@@ -133,10 +145,10 @@ public class ContentAvailableEvent implements Serializable
 	@Override
     public String toString()
     {
-	    return "ContentAvailableEvent [cacheServerId=" + cacheServerId + ", nodeId=" + nodeId
+	    return "ContentAvailableEvent [cacheServerId=" + cacheServerId
+	            + ", nodeId=" + nodeId + ", nodeInternalId=" + nodeInternalId
 	            + ", nodeVersion=" + nodeVersion + ", nodePath=" + nodePath
 	            + ", mimeType=" + mimeType + ", size=" + size + ", hostname="
 	            + hostname + ", port=" + port + "]";
     }
-
 }

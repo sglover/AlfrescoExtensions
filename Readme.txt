@@ -1,0 +1,1 @@
+mvn -DapplyAmps -P wars-from-maven -DskipTests clean install

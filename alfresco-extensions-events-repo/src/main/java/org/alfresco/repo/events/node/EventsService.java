@@ -10,6 +10,7 @@ package org.alfresco.repo.events.node;
 import java.util.Map;
 import java.util.Set;
 
+import org.alfresco.events.node.types.Property;
 import org.alfresco.service.cmr.repository.ChildAssociationRef;
 import org.alfresco.service.cmr.repository.ContentData;
 import org.alfresco.service.cmr.repository.NodeRef;
@@ -61,8 +62,8 @@ public interface EventsService
 	 * @param aspectsAdded
 	 * @param aspectsRemoved
 	 */
-	void nodeUpdated(NodeRef nodeRef, Map<String, Object> propertiesAdded,
-			final Set<String> propertiesRemoved, Map<String, Object> propertiesChanged,
+	void nodeUpdated(NodeRef nodeRef, Map<String, Property> propertiesAdded,
+			final Set<String> propertiesRemoved, Map<String, Property> propertiesChanged,
 			Set<String> aspectsAdded, Set<String> aspectsRemoved);
 	
 	/**

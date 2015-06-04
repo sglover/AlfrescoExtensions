@@ -27,7 +27,19 @@ public class GetTextContentResponse extends SOLRResponse
     private String transformStatusStr;
     private Long transformDuration;
 
-    public GetTextContentResponse(Response response) throws IOException
+    public GetTextContentResponse(InputStream content,
+            SolrApiContentStatus status, String transformException,
+            String transformStatusStr, Long transformDuration)
+    {
+	    super(null);
+	    this.content = content;
+	    this.status = status;
+	    this.transformException = transformException;
+	    this.transformStatusStr = transformStatusStr;
+	    this.transformDuration = transformDuration;
+    }
+
+	public GetTextContentResponse(Response response) throws IOException
     {
         super(response);
 
@@ -95,7 +107,10 @@ public class GetTextContentResponse extends SOLRResponse
     
     public void release()
     {
-        response.release();
+    	if(response != null)
+    	{
+    		response.release();
+    	}
     }
     
     public Long getTransformDuration()

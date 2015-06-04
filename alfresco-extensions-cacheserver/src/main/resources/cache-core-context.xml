@@ -4,8 +4,59 @@
        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
        http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
 
+<!-- 
+    <bean id="transformContentStore" class="org.alfresco.cacheserver.contentstore.ContentStore">
+        <constructor-arg value="${cache.transformcontent.rootFolder}"></constructor-arg>
+        <constructor-arg ref="checksumService"></constructor-arg>
+    </bean>
+ -->
+    <bean id="transformService" class="org.alfresco.cacheserver.transform.AkkaTransformServiceImpl">
+        <constructor-arg ref="textContentStore"/>
+    </bean>
+
+    <bean id="checksumService" class="org.alfresco.cacheserver.checksum.ChecksumServiceImpl">
+        <constructor-arg ref="cacheMessageProducer"/>
+        <constructor-arg ref="cacheServerIdentity"/>
+        <constructor-arg ref="checksumDAO"></constructor-arg>
+        <constructor-arg value="${cache.content.blockSize}"></constructor-arg>
+    </bean>
+
+    <bean id="modelLoader" class="org.alfresco.services.nlp.SpringClasspathModelLoader"/>
+
+    <bean id="entitiesService" class="org.alfresco.cacheserver.entities.EntitiesServiceImpl" init-method="init">
+        <constructor-arg value="CoreNLP"></constructor-arg>
+        <constructor-arg ref="modelLoader"/>
+        <constructor-arg ref="localContentGetter"/>
+        <constructor-arg ref="entitiesDAO"/>
+        <!-- 
+        <property name="repoUsername" value="admin"/>
+        <property name="repoPassword" value="admin"/>
+        <property name="repoHost" value="localhost"/>
+        <property name="repoPort" value="8080"/>
+        <property name="repoSSLPort" value="8443"/>
+        <property name="socketTimeout" value="60000"/>
+        <property name="maxHostConnections" value="10"/>
+        <property name="maxTotalConnections" value="10"/>
+        <property name="commsType" value="HTTPS"/>
+        <property name="sslKeyStoreLocation" value="classpath:ssl.repo.client.keystore"/>
+        <property name="sslTrustStoreLocation" value="classpath:ssl.repo.client.truststore"/>
+        <property name="sslKeyStoreType" value="JCEKS"/>
+        <property name="sslTrustStoreType" value="JCEKS"/>
+        <property name="sslKeyStoreProvider" value=""/>
+        <property name="sslTrustStoreProvider" value=""/>
+        <property name="sslKeyStorePasswordFileLocation" value="classpath:ssl-keystore-passwords.properties"/>
+        <property name="sslTrustStorePasswordFileLocation" value="classpath:ssl-truststore-passwords.properties"/>
+         -->
+    </bean>
+
     <bean id="contentStore" class="org.alfresco.cacheserver.contentstore.ContentStore">
         <constructor-arg value="${cache.content.rootFolder}"></constructor-arg>
+        <constructor-arg ref="checksumService"></constructor-arg>
+    </bean>
+
+    <bean id="textContentStore" class="org.alfresco.cacheserver.contentstore.ContentStore">
+        <constructor-arg value="${cache.textcontent.rootFolder}"></constructor-arg>
+        <constructor-arg ref="checksumService"></constructor-arg>
     </bean>
 
     <bean id="keyResourceLoader" class="org.alfresco.encryption.SpringKeyResourceLoader">
@@ -59,7 +110,23 @@
         <constructor-arg value="${repo.password}"></constructor-arg>
         <constructor-arg ref="repoClientBuilder"></constructor-arg>
     </bean>
+    
+    <bean id="localContentGetter" class="org.alfresco.cacheserver.LocalContentGetter">
+        <constructor-arg ref="contentStore"/>
+        <constructor-arg ref="textContentStore"/>
+        <constructor-arg ref="contentDAO"/>
+    </bean>
 
+<!-- 
+    <bean id="localContentGetter" class="org.alfresco.services.ContentGetterImpl">
+        <constructor-arg value="${repo.hostname}"></constructor-arg>
+        <constructor-arg value="${repo.port}"></constructor-arg>
+        <constructor-arg value="${repo.sslPort}"></constructor-arg>
+        <constructor-arg value="${repo.username}"></constructor-arg>
+        <constructor-arg value="${repo.password}"></constructor-arg>
+        <constructor-arg ref="repoClientBuilder"></constructor-arg>
+    </bean>
+ -->
     <bean id="cacheServerIdentity" class="org.alfresco.cacheserver.CacheServerIdentityImpl">
         <constructor-arg value="${cache.hostname}"></constructor-arg>
         <constructor-arg value="${server.connector.port}"></constructor-arg>
@@ -83,10 +150,13 @@
     <bean id="cacheServer" class="org.alfresco.cacheserver.CacheServer">
         <constructor-arg ref="contentDAO"></constructor-arg>
         <constructor-arg ref="contentStore"></constructor-arg>
-        <constructor-arg ref="contentGetter"></constructor-arg>
+        <constructor-arg ref="entitiesService"></constructor-arg>
         <constructor-arg ref="alfrescoApi"></constructor-arg>
         <constructor-arg ref="cacheServerIdentity"></constructor-arg>
         <constructor-arg ref="cacheMessageProducer"/>
+        <constructor-arg ref="contentGetter"/>
+        <constructor-arg ref="checksumService"/>
+        <constructor-arg ref="transformService"/>
     </bean>
 
 </beans>

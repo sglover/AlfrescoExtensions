@@ -18,7 +18,8 @@ import org.alfresco.cacheserver.entity.NodeUsage;
 public interface ContentDAO
 {
 	NodeInfo getByNodePath(String contentURL);
-	NodeInfo getByNodeId(String nodeId, String nodeVersion);
+	NodeInfo getByNodeId(String nodeId, String nodeVersion, boolean isPrimary);
+	NodeInfo getByNodeId(long nodeInternalId, String mimeType);
 	void updateNode(NodeInfo nodeInfo);
 
 	void addUsage(NodeUsage nodeUsage);

@@ -37,21 +37,6 @@ public class EntityExtracter
 
 	private Set<String> includeNodeTypes = new HashSet<>();
 
-	public static EntityExtracter coreNLPEntityExtracter(ContentGetter contentGetter, ExecutorService executorService)
-	{
-		ModelLoader tokenNameFinderLoader = new DefaultModelLoader();
-		EntityTagger entityTagger = new CoreNLPEntityTagger(tokenNameFinderLoader, 8);
-		EntityExtracter extracter = new EntityExtracter(contentGetter, entityTagger, executorService);
-		return extracter;
-	}
-
-	public static EntityExtracter stanfordNLPEntityExtracter(ContentGetter contentGetter, ExecutorService executorService)
-	{
-		EntityTagger entityTagger = new StanfordEntityTagger(2);
-		EntityExtracter extracter = new EntityExtracter(contentGetter, entityTagger, executorService);
-		return extracter;
-	}
-
 	public EntityExtracter(ContentGetter contentGetter, EntityTagger entityTagger, ExecutorService executorService)
 	{
 		this.contentGetter = contentGetter;
@@ -65,51 +50,22 @@ public class EntityExtracter
 		this(contentGetter, entityTagger, Executors.newFixedThreadPool(5));
 	}
 
-    public void getEntities(long nodeInternalId, String nodeType, EntityTaggerCallback callback)
+    public void getEntities(long nodeInternalId, EntityTaggerCallback callback)
     {
-        if(includeNodeTypes.contains(nodeType))
-        {
-        	logger.debug("Node " + nodeInternalId + ", node type " + nodeType + " extracting entities");
+    	logger.debug("Node " + nodeInternalId + " extracting entities");
 
-        	ExtractEntitiesRunnable extractEntities = new ExtractEntitiesRunnable(nodeInternalId, callback);
-        	executorService.execute(extractEntities);
-        }
-        else
-        {
-        	logger.debug("Node " + nodeInternalId + ", node type " + nodeType + " ignored");
-        }
+    	ExtractEntitiesRunnable extractEntities = new ExtractEntitiesRunnable(nodeInternalId, callback);
+    	executorService.execute(extractEntities);
     }
-
-//    public void getEntities(long nodeInternalId, String nodeType)
-//    {
-//        if(includeNodeTypes.contains(nodeType))
-//        {
-//        	logger.debug("Node " + nodeInternalId + ", node type " + nodeType + " extracting entities");
-//
-//        	ExtractEntitiesRunnable extractEntities = new ExtractEntitiesRunnable(nodeInternalId, callback);
-//        	executorService.execute(extractEntities);
-//        }
-//        else
-//        {
-//        	logger.debug("Node " + nodeInternalId + ", node type " + nodeType + " ignored");
-//        }
-//    }
 
     public Entities getEntities(long nodeInternalId) throws IOException, AuthenticationException
     {
     	Entities entities = null;
 
-//        if(includeNodeTypes.contains(nodeType))
-//        {
-        	logger.debug("Node " + nodeInternalId + " extracting entities");
+    	logger.debug("Node " + nodeInternalId + " extracting entities");
 
-        	ExtractEntities extractEntities = new ExtractEntities(nodeInternalId);
-        	entities = extractEntities.execute();
-//        }
-//        else
-//        {
-//        	logger.debug("Node " + nodeInternalId + " ignored");
-//        }
+    	ExtractEntities extractEntities = new ExtractEntities(nodeInternalId);
+    	entities = extractEntities.execute();
 
         return entities;
     }
@@ -144,40 +100,33 @@ public class EntityExtracter
 	    {
 	    	Entities entities = null;
 
-//	        try
-//	        {
-		        GetTextContentResponse response = contentGetter.getTextContent(nodeInternalId);
-	        	try
-	        	{
-			        InputStream in = (response != null ? response.getContent() : null);
-			        if(in != null)
-			        {
-		        		StringWriter writer = new StringWriter();
-						String encoding = "UTF-8";
-						IOUtils.copy(in, writer, encoding);
-						String content = writer.toString();
-		
-						logger.debug("OpenNlp node = " + nodeInternalId);
+	        GetTextContentResponse response = contentGetter.getTextContent(nodeInternalId);
+        	try
+        	{
+		        InputStream in = (response != null ? response.getContent() : null);
+		        if(in != null)
+		        {
+	        		StringWriter writer = new StringWriter();
+					String encoding = "UTF-8";
+					IOUtils.copy(in, writer, encoding);
+					String content = writer.toString();
+	
+					logger.debug("OpenNlp node = " + nodeInternalId);
 
-						entities = entityTagger.getEntities(content);
-			        }
-			        else
-			        {
-			        	logger.warn("Unable to get text content for node " + nodeInternalId);
-			        }
-	        	}
-	        	finally
-	        	{
-	        		if(response != null)
-	        		{
-	        			response.release();
-	        		}
-	        	}
-//	        }
-//	        catch (IOException | AuthenticationException e)
-//	        {
-//	        	logger.warn("", e);
-//	        }
+					entities = entityTagger.getEntities(content);
+		        }
+		        else
+		        {
+		        	logger.warn("Unable to get text content for node " + nodeInternalId);
+		        }
+        	}
+        	finally
+        	{
+        		if(response != null)
+        		{
+        			response.release();
+        		}
+        	}
 
 			return entities;
 	    }
@@ -198,7 +147,7 @@ public class EntityExtracter
 						String content = writer.toString();
 		
 						logger.debug("OpenNlp node = " + nodeInternalId);
-		
+
 						entityTagger.getEntities(content, callback);
 			        }
 			        else

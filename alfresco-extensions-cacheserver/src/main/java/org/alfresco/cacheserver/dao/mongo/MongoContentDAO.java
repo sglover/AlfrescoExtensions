@@ -130,6 +130,7 @@ public class MongoContentDAO implements ContentDAO
 	        		.start("e", 1)
 	                .add("n", 1)
 	                .add("v", 1)
+	                .add("pri", 1)
 	                .get();
 	        this.contentData.ensureIndex(keys, "byNodeId", false);
 		}
@@ -138,7 +139,7 @@ public class MongoContentDAO implements ContentDAO
 	        DBObject keys = BasicDBObjectBuilder
 	        		.start("e", 1)
 	                .add("n", 1)
-	                .add("v", 1)
+	                .add("p", 1)
 	                .get();
 	        this.contentData.ensureIndex(keys, "byNodePath", false);
 		}
@@ -147,9 +148,9 @@ public class MongoContentDAO implements ContentDAO
 	        DBObject keys = BasicDBObjectBuilder
 	        		.start("e", 1)
 	        		.add("n", 1)
-	                .add("v", 1)
+	                .add("m", 1)
 	                .get();
-	        this.contentUsageData.ensureIndex(keys, "main", false);
+	        this.contentUsageData.ensureIndex(keys, "byMimeType", false);
 		}
 	}
 
@@ -162,11 +163,12 @@ public class MongoContentDAO implements ContentDAO
 			String nodePath = (String)dbObject.get("p");
 			String contentPath = (String)dbObject.get("c");
 			String nodeId = (String)dbObject.get("n");
+			Long nodeInternalId = (Long)dbObject.get("ni");
 			String nodeVersion = (String)dbObject.get("v");
 			String mimeType = (String)dbObject.get("m");
 			Long size = (Long)dbObject.get("s");
 	
-			nodeInfo = new NodeInfo(nodeId, nodeVersion, nodePath, contentPath, mimeType, size);
+			nodeInfo = new NodeInfo(nodeId, nodeInternalId, nodeVersion, nodePath, contentPath, mimeType, size);
 		}
 
 		return nodeInfo;
@@ -179,6 +181,7 @@ public class MongoContentDAO implements ContentDAO
 				.add("p", nodeInfo.getNodePath())
 				.add("c", nodeInfo.getContentPath())
 				.add("n", nodeInfo.getNodeId())
+				.add("ni", nodeInfo.getNodeInternalId())
 				.add("v", nodeInfo.getNodeVersion())
 				.add("m", nodeInfo.getMimeType())
 				.add("s", nodeInfo.getSize());
@@ -227,12 +230,27 @@ public class MongoContentDAO implements ContentDAO
 	}
 
 	@Override
-	public NodeInfo getByNodeId(String nodeId, String nodeVersion)
+	public NodeInfo getByNodeId(String nodeId, String nodeVersion, boolean isPrimary)
 	{
 		QueryBuilder queryBuilder = QueryBuilder
 				.start("e").is(cacheServerIdentity.getId())
 				.and("n").is(nodeId)
-				.and("v").is(nodeVersion);
+				.and("v").is(nodeVersion)
+				.and("pri").is(isPrimary);
+		DBObject query = queryBuilder.get();
+
+		DBObject dbObject = contentData.findOne(query);
+		NodeInfo nodeInfo = toNodeInfo(dbObject);
+		return nodeInfo;
+	}
+
+	@Override
+	public NodeInfo getByNodeId(long nodeInternalId, String mimeType)
+	{
+		QueryBuilder queryBuilder = QueryBuilder
+				.start("e").is(cacheServerIdentity.getId())
+				.and("ni").is(nodeInternalId)
+				.and("m").is(mimeType);
 		DBObject query = queryBuilder.get();
 
 		DBObject dbObject = contentData.findOne(query);
@@ -250,6 +268,7 @@ public class MongoContentDAO implements ContentDAO
 		Long size = nodeInfo.getSize();
 		String nodePath = nodeInfo.getNodePath();
 		String contentPath = nodeInfo.getContentPath();
+		boolean isPrimary = nodeInfo.isPrimary();
 
 		QueryBuilder queryBuilder = QueryBuilder
 				.start("e").is(cacheServerId)
@@ -261,8 +280,10 @@ public class MongoContentDAO implements ContentDAO
 				.start("$set", BasicDBObjectBuilder
 						.start("m", mimeType)
 						.add("s", size)
+						.add("ni", nodeInfo.getNodeInternalId())
 						.add("c", contentPath)
 						.add("p", nodePath)
+						.add("pri", isPrimary)
 						.get());
 		DBObject update = builder.get();
 

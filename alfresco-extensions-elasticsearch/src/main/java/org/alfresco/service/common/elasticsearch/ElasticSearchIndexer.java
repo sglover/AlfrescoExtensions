@@ -12,7 +12,6 @@ import java.io.InputStream;
 import java.io.Serializable;
 import java.io.StringWriter;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -21,6 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.alfresco.events.node.types.NodeContentPutEvent;
 import org.alfresco.events.node.types.NodeEvent;
 import org.alfresco.events.node.types.NodeUpdatedEvent;
+import org.alfresco.events.node.types.Property;
 import org.alfresco.serializers.DefaultFilesImpl;
 import org.alfresco.serializers.Files;
 import org.alfresco.serializers.HierarchicalNodeMetadataSerializer;
@@ -30,7 +30,6 @@ import org.alfresco.serializers.PropertySerializer;
 import org.alfresco.serializers.types.SerializerRegistry;
 import org.alfresco.serializers.types.Serializers;
 import org.alfresco.service.cmr.dictionary.DictionaryService;
-import org.alfresco.service.common.elasticsearch.entities.ElasticSearchEntitiesGetter;
 import org.alfresco.service.common.elasticsearch.entities.EntityTaggerCallbackImpl;
 import org.alfresco.service.namespace.NamespaceService;
 import org.alfresco.services.AlfrescoApi;
@@ -38,10 +37,8 @@ import org.alfresco.services.AlfrescoDictionary;
 import org.alfresco.services.ContentGetter;
 import org.alfresco.services.nlp.Entities;
 import org.alfresco.services.nlp.EntityExtracter;
+import org.alfresco.services.nlp.EntityTagger;
 import org.alfresco.services.nlp.EntityTaggerCallback;
-import org.alfresco.services.nlp.EntityType;
-import org.alfresco.services.nlp.minhash.MinHash;
-import org.alfresco.services.nlp.minhash.MinHashImpl;
 import org.alfresco.services.solr.GetTextContentResponse;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
@@ -65,8 +62,8 @@ public class ElasticSearchIndexer
 
     private ElasticSearchClient elasticSearchClient;
 
+    private EntityTagger entityTagger;
     private EntityExtracter entityExtracter;
-//	private ElasticSearchEntitiesGetter entitiesService;
 
     private String indexName;
 
@@ -79,13 +76,14 @@ public class ElasticSearchIndexer
 
     private AtomicBoolean initialized = new AtomicBoolean(false);
 
-    public ElasticSearchIndexer(AlfrescoApi alfrescoApi, ContentGetter contentGetter, EntityExtracter entityExtracter,
-    		Client client, AlfrescoDictionary alfrescoDictionary, /*ElasticSearchEntitiesGetter entitiesService,*/
+    public ElasticSearchIndexer(AlfrescoApi alfrescoApi, ContentGetter contentGetter, EntityTagger entityTagger,
+    		EntityExtracter entityExtracter,
+    		Client client, AlfrescoDictionary alfrescoDictionary,
     		ElasticSearchClient elasticSearchClient, String indexName) throws Exception
 	{
     	this.contentGetter = contentGetter;
+    	this.entityTagger = entityTagger;
     	this.entityExtracter = entityExtracter;
-//    	this.entitiesService = entitiesService;
         this.files = new DefaultFilesImpl();
         this.serializerRegistry = new Serializers();
 		this.client = client;
@@ -423,20 +421,72 @@ public class ElasticSearchIndexer
 	// successfully. Need to address this.
 	public void indexEntities(NodeEvent nodeEvent)
 	{
+		if(nodeEvent instanceof NodeContentPutEvent)
+		{
+	    	long nodeInternalId = nodeEvent.getNodeInternalId();
+	    	long nodeVersion = nodeEvent.getNodeVersion();
+	    	String nodeType = nodeEvent.getNodeType();
+	    	String versionLabel = getVersionLabel(nodeEvent);
+	    	String indexId = buildIndexId(nodeEvent);
+	    	indexEntitiesForContent(nodeInternalId, nodeVersion, nodeType, versionLabel, indexId);
+		}
+		else if(nodeEvent instanceof NodeUpdatedEvent)
+		{
+			NodeUpdatedEvent nodeUpdatedEvent = (NodeUpdatedEvent)nodeEvent;
+	    	indexEntities(nodeUpdatedEvent);
+		}
+		else
+		{
+			// TODO
+		}
+	}
+
+	public void indexEntitiesForContent(long nodeInternalId, long nodeVersion, String nodeType, String versionLabel, String indexId)
+	{
+    	EntityTaggerCallback callback = new EntityTaggerCallbackImpl(client,
+    			nodeInternalId, nodeVersion, versionLabel, 
+    	        indexId);
+    	entityExtracter.getEntities(nodeInternalId, callback);
+	}
+
+	private void indexEntities(NodeUpdatedEvent nodeEvent)
+	{
     	long nodeInternalId = nodeEvent.getNodeInternalId();
     	long nodeVersion = nodeEvent.getNodeVersion();
     	String nodeType = nodeEvent.getNodeType();
     	String versionLabel = getVersionLabel(nodeEvent);
     	String indexId = buildIndexId(nodeEvent);
-    	indexEntities(nodeInternalId, nodeVersion, nodeType, versionLabel, indexId);
-	}
-
-	public void indexEntities(long nodeInternalId, long nodeVersion, String nodeType, String versionLabel, String indexId)
-	{
-    	EntityTaggerCallback callback = new EntityTaggerCallbackImpl(client, /*entitiesService,*/
-    			nodeInternalId, nodeVersion, versionLabel, 
-    	        indexId);
-    	entityExtracter.getEntities(nodeInternalId, nodeType, callback);
+		Map<String, Property> propertiesAdded = nodeEvent.getPropertiesAdded();
+//    	EntityTaggerCallback callback = new EntityTaggerCallbackImpl(client,
+//    			nodeInternalId, nodeVersion, versionLabel, 
+//    	        indexId);
+    	for(Map.Entry<String, Property> entry : propertiesAdded.entrySet())
+    	{
+    		Property property = entry.getValue();
+    		Serializable value = property.getValue();
+    		if(value instanceof String)
+    		{
+    			String content = (String)value;
+    			EntityTaggerCallback callback = new EntityTaggerCallback()
+				{
+					
+					@Override
+					public void onSuccess(Entities entities)
+					{
+						// TODO Auto-generated method stub
+						
+					}
+					
+					@Override
+					public void onFailure(Throwable ex)
+					{
+						// TODO Auto-generated method stub
+						
+					}
+				};
+    			entityTagger.getEntities(content, callback);
+    		}
+    	}
 	}
 
 //    public double similarity(long nodeInternalId1, long nodeInternalId2) throws Exception

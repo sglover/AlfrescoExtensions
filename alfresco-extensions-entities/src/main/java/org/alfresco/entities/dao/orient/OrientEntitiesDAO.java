@@ -16,7 +16,6 @@ import java.util.Set;
 import org.alfresco.entities.dao.EntitiesDAO;
 import org.alfresco.entities.values.EntityCounts;
 import org.alfresco.entities.values.Node;
-import org.alfresco.events.node.types.TransactionCommittedEvent;
 import org.alfresco.services.nlp.Entities;
 import org.alfresco.services.nlp.Entity;
 
@@ -216,13 +215,6 @@ public class OrientEntitiesDAO implements EntitiesDAO
     {
 	    // TODO Auto-generated method stub
 	    return null;
-    }
-
-	@Override
-    public void txnCommitted(TransactionCommittedEvent event)
-    {
-	    // TODO Auto-generated method stub
-	    
     }
 
 	@Override

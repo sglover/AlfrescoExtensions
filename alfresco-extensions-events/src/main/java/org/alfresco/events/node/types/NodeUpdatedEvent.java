@@ -26,9 +26,9 @@ public class NodeUpdatedEvent extends NodeEvent
 
 	public static final String EVENT_TYPE = "NODEUPDATED";
 
-	private Map<String, Object> propertiesAdded;
+	private Map<String, Property> propertiesAdded;
 	private Set<String> propertiesRemoved;
-	private Map<String, Object> propertiesChanged;
+	private Map<String, Property> propertiesChanged;
 	private Set<String> aspectsAdded;
 	private Set<String> aspectsRemoved;
 
@@ -40,8 +40,8 @@ public class NodeUpdatedEvent extends NodeEvent
 
 	public NodeUpdatedEvent(long seqNumber, String name, String txnId, long time, String networkId, String siteId,
 			String nodeId, String nodeType, List<String> paths, List<List<String>> pathNodeIds, String userId,
-			Long modificationTime, Map<String, Object> propertiesAdded,
-			Set<String> propertiesRemoved, Map<String, Object> propertiesChanged,
+			Long modificationTime, Map<String, Property> propertiesAdded,
+			Set<String> propertiesRemoved, Map<String, Property> propertiesChanged,
 			Set<String> aspectsAdded, Set<String> aspectsRemoved, Client client, Set<String> aspects,
 			Map<String, Serializable> properties)
 	{
@@ -74,12 +74,12 @@ public class NodeUpdatedEvent extends NodeEvent
 		this.aspectsRemoved = aspectsRemoved;
 	}
 
-	public Map<String, Object> getPropertiesAdded()
+	public Map<String, Property> getPropertiesAdded()
 	{
 		return propertiesAdded;
 	}
 
-	public void setPropertiesAdded(Map<String, Object> propertiesAdded)
+	public void setPropertiesAdded(Map<String, Property> propertiesAdded)
 	{
 		this.propertiesAdded = propertiesAdded;
 	}
@@ -94,12 +94,12 @@ public class NodeUpdatedEvent extends NodeEvent
 		this.propertiesRemoved = propertiesRemoved;
 	}
 
-	public Map<String, Object> getPropertiesChanged()
+	public Map<String, Property> getPropertiesChanged()
 	{
 		return propertiesChanged;
 	}
 
-	public void setPropertiesChanged(Map<String, Object> propertiesChanged)
+	public void setPropertiesChanged(Map<String, Property> propertiesChanged)
 	{
 		this.propertiesChanged = propertiesChanged;
 	}

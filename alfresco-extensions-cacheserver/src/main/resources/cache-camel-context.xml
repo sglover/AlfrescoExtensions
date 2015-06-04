@@ -17,9 +17,16 @@
         <constructor-arg ref="cacheServer"></constructor-arg>
         <constructor-arg ref="cacheHttpClient"></constructor-arg>
         <constructor-arg ref="cacheServerIdentity"></constructor-arg>
+        <constructor-arg ref="checksumDAO"></constructor-arg>
     </bean>
 
+    <bean id="camelRequiredTxn" class="org.apache.camel.spring.spi.SpringTransactionPolicy">
+      <property name="transactionManager" ref="messagingTransactionManager"/>
+      <property name="propagationBehaviorName" value="PROPAGATION_REQUIRED"/>
+    </bean>
+    
    <camelContext xmlns="http://camel.apache.org/schema/spring" id="alfrescoServiceCamelContext"> 
+      <contextScan/>
 
       <jmxAgent id="agent" disabled="true"/>
 

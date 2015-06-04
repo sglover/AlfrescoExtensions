@@ -19,6 +19,6 @@ import org.alfresco.services.solr.GetTextContentResponse;
  */
 public interface ContentGetter
 {
-	Content getContent(String nodeId, String nodeVersion);
+	Content getContent(String nodeId, String nodeVersion) throws IOException;
 	GetTextContentResponse getTextContent(long nodeId) throws AuthenticationException, IOException;
 }

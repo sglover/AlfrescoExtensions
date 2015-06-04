@@ -9,11 +9,9 @@ package org.alfresco.entities;
 
 import java.io.IOException;
 
-import org.alfresco.events.node.types.NodeAddedEvent;
+import org.alfresco.entities.dao.EventsDAO;
 import org.alfresco.events.node.types.NodeContentGetEvent;
-import org.alfresco.events.node.types.NodeContentPutEvent;
 import org.alfresco.events.node.types.NodeEvent;
-import org.alfresco.events.node.types.NodeUpdatedEvent;
 import org.alfresco.events.node.types.TransactionCommittedEvent;
 import org.alfresco.httpclient.AuthenticationException;
 import org.apache.commons.logging.Log;
@@ -28,12 +26,15 @@ public class EventsListener
 {
 	private static final Log logger = LogFactory.getLog(EventsListener.class);
 
+	private EventsDAO eventsDAO;
 	private EntitiesService entitiesService;
 	private UserTrackingService userTrackingService;
 
-    public EventsListener(EntitiesService entitiesService, UserTrackingService userTrackingService)
+    public EventsListener(EventsDAO eventsDAO, EntitiesService entitiesService,
+    		UserTrackingService userTrackingService)
     {
 	    super();
+	    this.eventsDAO = eventsDAO;
 	    this.entitiesService = entitiesService;
 	    this.userTrackingService = userTrackingService;
     }
@@ -45,23 +46,23 @@ public class EventsListener
     {
     	logger.debug("message = " + message);
 
-		if(message instanceof NodeContentPutEvent || message instanceof NodeAddedEvent ||
-				message instanceof NodeUpdatedEvent)
-		{
-			NodeEvent nodeEvent = (NodeEvent)message;
-			entitiesService.getEntities(nodeEvent);
-		}
-		if(message instanceof NodeContentGetEvent)
+    	if(message instanceof NodeEvent)
+    	{
+    		NodeEvent nodeEvent = (NodeEvent)message;
+    		eventsDAO.addEvent(nodeEvent);
+    	}
+    	else if(message instanceof NodeContentGetEvent)
 		{
 			NodeContentGetEvent nodeEvent = (NodeContentGetEvent)message;
 			userTrackingService.handleContentGet(nodeEvent);
 		}
-		if(message instanceof TransactionCommittedEvent)
+    	else if(message instanceof TransactionCommittedEvent)
 		{
 			TransactionCommittedEvent nodeEvent = (TransactionCommittedEvent)message;
 
 			logger.debug("Committing txn " + nodeEvent.getTxnId());
 
+			eventsDAO.txnCommitted(nodeEvent);
 			entitiesService.txnCommitted(nodeEvent);
 		}
 		else

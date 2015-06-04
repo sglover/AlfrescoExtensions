@@ -17,6 +17,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.alfresco.error.AlfrescoRuntimeException;
+import org.alfresco.events.node.types.DataType;
+import org.alfresco.events.node.types.Property;
 import org.alfresco.serializers.PropertyValue.ValueType;
 import org.alfresco.service.cmr.dictionary.DataTypeDefinition;
 import org.alfresco.service.cmr.dictionary.DictionaryException;
@@ -377,9 +379,27 @@ public class PropertySerializer
     	makeNodePropertyValue(propertyDef, val, builder);
     }
 
-    public Map<String, Object> serialize(Map<QName, Serializable> properties)
+	private DataType getPropertyType(QName propertyName)
 	{
-		Map<String, Object> ret = new HashMap<>();
+		DataType dataType = null;
+
+		PropertyDefinition def = dictionaryService.getProperty(propertyName);
+		if(def != null)
+		{
+			DataTypeDefinition dataTypeDef = def.getDataType();
+	
+			String dataTypeDefStr = dataTypeDef.getName().getPrefixString().substring(2);
+			StringBuilder dataTypeName = new StringBuilder(dataTypeDefStr.substring(0, 1).toUpperCase());
+			dataTypeName.append(dataTypeDefStr.substring(1));
+			dataType = DataType.valueOf(dataTypeName.toString());
+		}
+
+		return dataType;
+	}
+
+    public Map<String, Property> serialize(Map<QName, Serializable> properties)
+	{
+		Map<String, Property> ret = new HashMap<>();
 
     	for(Map.Entry<QName, Serializable> entry : properties.entrySet())
     	{
@@ -387,9 +407,13 @@ public class PropertySerializer
     	    String propName = propertyQName.toPrefixString(namespaceService);
     	    Serializable propValue = entry.getValue();
 
-    	    Object serializedPropValue = serialize(propertyQName, propValue);
+    	    Serializable serializedPropValue = serialize(propertyQName, propValue);
 
-    	    ret.put(propName, serializedPropValue);
+			DataType type = getPropertyType(propertyQName);
+
+    		Property property = new Property(propName, serializedPropValue, type);
+
+    	    ret.put(propName, property);
     	}
     	
     	return ret;

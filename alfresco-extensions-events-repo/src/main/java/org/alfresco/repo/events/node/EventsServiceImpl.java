@@ -31,6 +31,7 @@ import org.alfresco.events.node.types.NodeUnFavouritedEvent;
 import org.alfresco.events.node.types.NodeUnLikedEvent;
 import org.alfresco.events.node.types.NodeUnTaggedEvent;
 import org.alfresco.events.node.types.NodeUpdatedEvent;
+import org.alfresco.events.node.types.Property;
 import org.alfresco.model.ContentModel;
 import org.alfresco.repo.Client;
 import org.alfresco.repo.security.authentication.AuthenticationUtil;
@@ -279,8 +280,8 @@ public class EventsServiceImpl extends AbstractEventsService implements EventsSe
 	}
 
 	@Override
-	public void nodeUpdated(final NodeRef nodeRef, final Map<String, Object> propertiesAdded,
-			final Set<String> propertiesRemoved, final Map<String, Object> propertiesChanged,
+	public void nodeUpdated(final NodeRef nodeRef, final Map<String, Property> propertiesAdded,
+			final Set<String> propertiesRemoved, final Map<String, Property> propertiesChanged,
 			final Set<String> aspectsAdded, final Set<String> aspectsRemoved)
 	{
 		NodeInfo nodeInfo = getNodeInfo(nodeRef, NodeUpdatedEvent.EVENT_TYPE);

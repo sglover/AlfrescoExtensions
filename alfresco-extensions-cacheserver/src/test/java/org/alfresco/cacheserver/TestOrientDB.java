@@ -53,7 +53,7 @@ public class TestOrientDB
 //		contentDAO.addNode(nodeInfo);
 		contentDAO.updateNode(nodeInfo);
 
-		NodeInfo nodeInfo1 = contentDAO.getByNodeId(nodeId, nodeVersion);
+		NodeInfo nodeInfo1 = contentDAO.getByNodeId(nodeId, nodeVersion, true);
 		assertEquals(contentPath, nodeInfo1.getContentPath());
 		assertEquals(nodePath, nodeInfo1.getNodePath());
 		assertEquals(nodeId, nodeInfo1.getNodeId());

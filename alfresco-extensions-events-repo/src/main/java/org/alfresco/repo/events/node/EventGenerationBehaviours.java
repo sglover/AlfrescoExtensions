@@ -26,6 +26,7 @@ import org.alfresco.events.node.types.NodeContentPutEvent;
 import org.alfresco.events.node.types.NodeMovedEvent;
 import org.alfresco.events.node.types.NodeRemovedEvent;
 import org.alfresco.events.node.types.NodeUpdatedEvent;
+import org.alfresco.events.node.types.Property;
 import org.alfresco.model.ContentModel;
 import org.alfresco.repo.coci.CheckOutCheckInServicePolicies;
 import org.alfresco.repo.content.ContentServicePolicies;
@@ -259,9 +260,9 @@ public class EventGenerationBehaviours implements
 		return ret;
 	}
 
-	private Map<String, Object> getAdds(Map<QName, Serializable> before, Map<QName, Serializable> after)
+	private Map<String, Property> getAdds(Map<QName, Serializable> before, Map<QName, Serializable> after)
 	{
-		Map<String, Object> ret = new HashMap<>();
+		Map<String, Property> ret = new HashMap<>();
 
 		Set<QName> tmp = new HashSet<QName>(after.keySet());
 		tmp.removeAll(before.keySet());
@@ -274,12 +275,13 @@ public class EventGenerationBehaviours implements
 		}
 
 		ret = propertySerializer.serialize(properties);
+
 		return ret;
 	}
 
-	private Map<String, Object> getChanges(Map<QName, Serializable> before, Map<QName, Serializable> after)
+	private Map<String, Property> getChanges(Map<QName, Serializable> before, Map<QName, Serializable> after)
 	{
-		Map<String, Object> ret = new HashMap<>();
+		Map<String, Property> ret = new HashMap<>();
 
 		Set<QName> intersect = new HashSet<QName>(before.keySet());
 		intersect.retainAll(after.keySet());
@@ -359,9 +361,9 @@ public class EventGenerationBehaviours implements
 
 		if(includeEventType(NodeUpdatedEvent.EVENT_TYPE))
 		{
-			Map<String, Object> propertiesAdded = getAdds(before, after);
+			Map<String, Property> propertiesAdded = getAdds(before, after);
 			Set<String> propertiesRemoved = getRemoves(before, after);
-			Map<String, Object> propertiesChanged = getChanges(before, after);
+			Map<String, Property> propertiesChanged = getChanges(before, after);
 			eventsService.nodeUpdated(nodeRef, propertiesAdded, propertiesRemoved, propertiesChanged, null, null);
 		}
 	}

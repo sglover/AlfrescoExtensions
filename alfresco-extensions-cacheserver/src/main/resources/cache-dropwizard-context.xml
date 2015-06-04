@@ -5,6 +5,7 @@
 
     <bean id="cacheResource" class="org.alfresco.cacheserver.dropwizard.resources.CacheServerResource">
         <constructor-arg ref="cacheServer"/>
+        <constructor-arg ref="checksumService"/>
     </bean>
  
     <bean id="cacheHealth" class="org.alfresco.service.common.dropwizard.health.VersionHealthCheck">

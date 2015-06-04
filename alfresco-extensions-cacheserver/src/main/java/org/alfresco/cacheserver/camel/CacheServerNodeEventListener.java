@@ -11,7 +11,9 @@ import java.io.IOException;
 import java.util.List;
 
 import org.alfresco.cacheserver.CacheServer;
+import org.alfresco.cacheserver.entity.Node;
 import org.alfresco.events.node.types.NodeAddedEvent;
+import org.alfresco.events.node.types.NodeContentGetEvent;
 import org.alfresco.events.node.types.NodeContentPutEvent;
 import org.alfresco.events.node.types.NodeEvent;
 import org.alfresco.events.node.types.NodeRemovedEvent;
@@ -47,23 +49,37 @@ public class CacheServerNodeEventListener
 	private void nodeAdded(NodeAddedEvent event) throws IOException
 	{
 		String nodeId = event.getNodeId();
-		String nodeVersion = event.getVersionLabel();
+		String versionLabel = event.getVersionLabel();
+		if(versionLabel == null)
+		{
+			versionLabel = "1.0";
+		}
 		String nodePath = getNodePath(event);
+		long nodeInternalId = event.getNodeInternalId();
 
-		cacheServer.nodeAdded(nodeId, nodeVersion, nodePath);
+		cacheServer.nodeAdded(nodeId, nodeInternalId, versionLabel, nodePath);
 	}
 
 	private void nodeRemoved(NodeRemovedEvent event)
 	{
 		String nodeId = event.getNodeId();
-		String nodeVersion = event.getVersionLabel();
-		cacheServer.removeContent(nodeId, nodeVersion);
+		String versionLabel = event.getVersionLabel();
+		if(versionLabel == null)
+		{
+			versionLabel = "1.0";
+		}
+		cacheServer.removeContent(nodeId, versionLabel);
 	}
 
 	private void nodeContentUpdated(NodeContentPutEvent event) throws IOException
 	{
+		long nodeInternalId = event.getNodeInternalId();
 		String nodeId = event.getNodeId();
-		String nodeVersion = event.getVersionLabel();
+		String versionLabel = event.getVersionLabel();
+		if(versionLabel == null)
+		{
+			versionLabel = "1.0";
+		}
 		List<String> paths = event.getPaths();
 		String nodePath = null;
 		if(paths != null && paths.size() > 0)
@@ -73,7 +89,11 @@ public class CacheServerNodeEventListener
 		String mimeType = event.getMimeType();
 		long size = event.getSize();
 
-		cacheServer.contentUpdated(nodeId, nodeVersion, nodePath, mimeType, size);
+		Node node = Node.build()
+				.nodeId(nodeId)
+				.nodeInternalId(nodeInternalId)
+				.nodeVersion(versionLabel);
+		cacheServer.contentUpdated(node, nodePath, mimeType, size);
 	}
 
 	public void onChange(Object message) throws IOException
@@ -93,5 +113,10 @@ public class CacheServerNodeEventListener
 			NodeContentPutEvent nodeContentPutEvent = (NodeContentPutEvent)message;
 			nodeContentUpdated(nodeContentPutEvent);
 		}
+//		else if(message instanceof NodeContentGetEvent)
+//		{
+//			NodeContentGetEvent nodeContentGetEvent = (NodeContentGetEvent)message;
+//			nodeContentRead(nodeContentGetEvent);
+//		}
 	}
 }

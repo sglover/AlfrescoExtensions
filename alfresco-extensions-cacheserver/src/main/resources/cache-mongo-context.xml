@@ -20,4 +20,14 @@
        <constructor-arg ref="cacheServerIdentity" />
     </bean>
 
+    <bean id="checksumDAO" class="org.alfresco.cacheserver.dao.mongo.MongoChecksumDAO" init-method="init">
+       <constructor-arg ref="mongoDb" />
+       <constructor-arg value="${mongo.checksumsCollectionName}"/>
+    </bean>
+
+    <bean id="entitiesDAO" class="org.alfresco.cacheserver.dao.mongo.MongoEntitiesDAO" init-method="init">
+       <constructor-arg ref="mongoDb" />
+       <constructor-arg value="${mongo.entitiesCollectionName}"/>
+    </bean>
+
 </beans>

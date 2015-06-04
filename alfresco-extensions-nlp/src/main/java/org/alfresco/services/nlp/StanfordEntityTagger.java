@@ -37,6 +37,12 @@ public class StanfordEntityTagger extends AbstractEntityTagger
 
 	private StanfordCoreNLP pipeline;
 
+	public static EntityTagger build()
+	{
+		EntityTagger entityTagger = new StanfordEntityTagger(2);
+		return entityTagger;
+	}
+
 	public StanfordEntityTagger(int numThreads)
     {
 		super(numThreads);

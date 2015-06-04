@@ -122,11 +122,12 @@ public class OrientContentDAO implements ContentDAO
 		String nodePath = doc.field("p");
 		String contentPath = doc.field("c");
 		String nodeId = doc.field("n");
+		long nodeInternalId = doc.field("ni");
 		String nodeVersion = doc.field("v");
 		String mimeType = doc.field("m");
 		Long size = doc.field("s");
 
-		NodeInfo nodeInfo = new NodeInfo(nodeId, nodeVersion, nodePath, contentPath, mimeType, size);
+		NodeInfo nodeInfo = new NodeInfo(nodeId, nodeInternalId, nodeVersion, nodePath, contentPath, mimeType, size);
 		return nodeInfo;
 	}
 
@@ -219,7 +220,7 @@ public class OrientContentDAO implements ContentDAO
 
 
 	@Override
-    public NodeInfo getByNodeId(final String nodeId, final String nodeVersion)
+    public NodeInfo getByNodeId(final String nodeId, final String nodeVersion, final boolean isPrimary)
     {
 		NodeInfo nodeInfo = withDBTX(new Callback<NodeInfo>()
 		{
@@ -227,7 +228,7 @@ public class OrientContentDAO implements ContentDAO
             public NodeInfo execute(ODatabaseDocumentTx db)
             {
 				OSQLSynchQuery<ODocument> query = new OSQLSynchQuery<>("select * from Content where n = '" + nodeId
-						+ "' and v = " + nodeVersion);
+						+ "' and v = " + nodeVersion + " and ip = " + isPrimary);
 				List<ODocument> result = db.query(query);
 				if(result.size() != 1)
 				{
@@ -265,5 +266,12 @@ public class OrientContentDAO implements ContentDAO
     {
 	    // TODO Auto-generated method stub
 	    
+    }
+
+	@Override
+    public NodeInfo getByNodeId(long nodeInternalId, String mimeType)
+    {
+	    // TODO Auto-generated method stub
+	    return null;
     }
 }

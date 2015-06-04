@@ -17,12 +17,20 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.alfresco.cacheserver.CacheServer;
+import org.alfresco.cacheserver.UserContext;
+import org.alfresco.cacheserver.checksum.ChecksumService;
+import org.alfresco.cacheserver.checksum.DocumentChecksums;
+import org.alfresco.cacheserver.dao.ContentDAO;
+import org.alfresco.cacheserver.entity.NodeInfo;
 import org.alfresco.services.Content;
 import org.apache.log4j.Logger;
 import org.springframework.security.core.userdetails.UserDetails;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * JAX-RS / DropWizard Resource exposing the Synchronization service API over REST. 
@@ -33,10 +41,15 @@ public class CacheServerResource
 	private static final Logger LOGGER = Logger.getLogger(CacheServerResource.class.getName());
 
 	private CacheServer cacheServer;
+	private ContentDAO contentDAO;
+	private ChecksumService checksumService;
 
-	public CacheServerResource(CacheServer cacheServer)
+	private ObjectMapper mapper = new ObjectMapper();
+
+	public CacheServerResource(CacheServer cacheServer, ChecksumService checksumService)
     {
 		this.cacheServer = cacheServer;
+		this.checksumService = checksumService;
     }
 
     @Path("/contentByPath/{path:.*}")
@@ -56,19 +69,25 @@ public class CacheServerResource
             }
             else
             {
-            	String username = user.getUsername();
-
-            	Content content = cacheServer.getByNodePath(nodePath, username);
-            	if(content != null)
-            	{
-	            	InputStream in = content.getIn();
-	            	String mimeType = content.getMimeType();
-	                return Response.ok(in).type(mimeType).build();
-            	}
-            	else
-            	{
-	                return Response.noContent().build();
-            	}
+                UserContext.setUser(user);
+                try
+                {
+	            	Content content = cacheServer.getByNodePath(nodePath);
+	            	if(content != null)
+	            	{
+		            	InputStream in = content.getIn();
+		            	String mimeType = content.getMimeType();
+		                return Response.ok(in).type(mimeType).build();
+	            	}
+	            	else
+	            	{
+		                return Response.noContent().build();
+	            	}
+                }
+                finally
+                {
+                	UserContext.setUser(null);
+                }
             }
         }
         catch (Exception e)
@@ -96,19 +115,71 @@ public class CacheServerResource
             }
             else
             {
-            	String username = user.getUsername();
+                UserContext.setUser(user);
+                try
+                {
+	            	Content content = cacheServer.getByNodeId(nodeId, nodeVersion);
+	            	if(content != null)
+	            	{
+		            	InputStream in = content.getIn();
+		            	String mimeType = content.getMimeType();
+		                return Response.ok(in).type(mimeType).build();
+	            	}
+	            	else
+	            	{
+		                return Response.noContent().build();
+	            	}
+                }
+                finally
+                {
+                	UserContext.setUser(null);
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            LOGGER.error("caught",e);
+            return Response.serverError().build();
+        }
+    }
 
-            	Content content = cacheServer.getByNodeId(nodeId, nodeVersion, username);
-            	if(content != null)
-            	{
-	            	InputStream in = content.getIn();
-	            	String mimeType = content.getMimeType();
-	                return Response.ok(in).type(mimeType).build();
-            	}
-            	else
-            	{
-	                return Response.noContent().build();
-            	}
+    @Path("/checksums/{nodeId}/{nodeVersion}")
+    @GET
+    public Response checksums(
+    		@PathParam("nodeId") String nodeId,
+    		@PathParam("versionLabel") String versionLabel,
+            @Auth UserDetails user,
+    		@Context final HttpServletResponse httpResponse)
+    {
+        try
+        {
+            if (LOGGER.isDebugEnabled()) LOGGER.debug("nodeId = " + nodeId+ ", version label = " + versionLabel);
+
+            if(nodeId == null || versionLabel == null)
+            {
+                throw new WebApplicationException(Response.Status.BAD_REQUEST);
+            }
+            else
+            {
+                UserContext.setUser(user);
+                try
+                {
+	            	NodeInfo nodeInfo = contentDAO.getByNodeId(nodeId, versionLabel, true);
+	            	DocumentChecksums checksums = checksumService.getChecksums(nodeInfo.getContentPath());
+	            	if(checksums != null)
+	            	{
+	            		String json = mapper.writeValueAsString(checksums);
+		                return Response.ok(json).type(MediaType.APPLICATION_JSON).build();
+	            	}
+	            	else
+	            	{
+		                return Response.noContent().build();
+	            	}
+                }
+                finally
+                {
+                	UserContext.setUser(null);
+                }
             }
         }
         catch (Exception e)

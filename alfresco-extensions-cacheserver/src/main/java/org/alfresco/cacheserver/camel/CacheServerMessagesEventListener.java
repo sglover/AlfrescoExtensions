@@ -12,6 +12,9 @@ import java.io.InputStream;
 
 import org.alfresco.cacheserver.CacheServer;
 import org.alfresco.cacheserver.CacheServerIdentity;
+import org.alfresco.cacheserver.checksum.DocumentChecksums;
+import org.alfresco.cacheserver.dao.ChecksumDAO;
+import org.alfresco.cacheserver.events.ChecksumsAvailableEvent;
 import org.alfresco.cacheserver.events.ContentAvailableEvent;
 import org.alfresco.cacheserver.http.AuthenticationException;
 import org.alfresco.cacheserver.http.CacheHttpClient;
@@ -33,14 +36,16 @@ public class CacheServerMessagesEventListener
 	private CacheServer cacheServer;
 	private CacheHttpClient cacheHttpClient;
 	private CacheServerIdentity cacheServerIdentity;
+	private ChecksumDAO checksumsDAO;
 
 	public CacheServerMessagesEventListener(CacheServer cacheServer, CacheHttpClient cacheHttpClient,
-			CacheServerIdentity cacheServerIdentity)
+			CacheServerIdentity cacheServerIdentity, ChecksumDAO checksumsDAO)
 	{
 		super();
 		this.cacheServer = cacheServer;
 		this.cacheHttpClient = cacheHttpClient;
 		this.cacheServerIdentity = cacheServerIdentity;
+		this.checksumsDAO = checksumsDAO;
 	}
 
 	public void onMessage(Object message) throws IOException, AuthenticationException
@@ -57,6 +62,7 @@ public class CacheServerMessagesEventListener
 			}
 			final String nodeId = contentAvailableEvent.getNodeId();
 			final String nodeVersion = contentAvailableEvent.getNodeVersion();
+			final Long nodeInternalId = contentAvailableEvent.getNodeInternalId();
 			final String nodePath = contentAvailableEvent.getNodePath();
 			final String hostname = contentAvailableEvent.getHostname();
 			final int port = contentAvailableEvent.getPort();
@@ -78,7 +84,7 @@ public class CacheServerMessagesEventListener
 						String mimeType = contentAvailableEvent.getMimeType();
 						long size = contentAvailableEvent.getSize();
 						Content content = new Content(in, mimeType, size);
-						cacheServer.updateContent(nodeId, nodeVersion, nodePath, content);
+						cacheServer.updateContent(nodeId, nodeInternalId, nodeVersion, nodePath, content);
 					}
 					catch(IOException e)
 					{
@@ -87,6 +93,20 @@ public class CacheServerMessagesEventListener
 				}
 			};
 			cacheHttpClient.getNodeById(hostname, port, "admin", "admin", nodeId, nodeVersion, callback);
+		}
+		else if(message instanceof ChecksumsAvailableEvent)
+		{
+			final ChecksumsAvailableEvent checksumsAvailableEvent = (ChecksumsAvailableEvent)message;
+
+			String cacheServerId = checksumsAvailableEvent.getCacheServerId();
+			if(cacheServerIdentity.getId().equals(cacheServerId))
+			{
+				// ignore messages from this cache server
+				return;
+			}
+			final DocumentChecksums checksums = checksumsAvailableEvent.getChecksums();
+
+			checksumsDAO.saveChecksums(checksums);
 		}
 	}
 }

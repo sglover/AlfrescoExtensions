@@ -335,7 +335,7 @@ public class AlfrescoMapper extends AbstractFieldMapper<Object>
     	// successfully. Need to address this.
         String indexId = nodeInternalId + "." + nodeVersion;
         String versionLabel = "1.0";
-		elasticSearch.indexEntities(nodeInternalId, nodeVersion, nodeType, versionLabel, indexId);
+		elasticSearch.indexEntitiesForContent(nodeInternalId, nodeVersion, nodeType, versionLabel, indexId);
     }
 
     @Override

@@ -15,15 +15,44 @@ package org.alfresco.cacheserver.entity;
 public class NodeInfo
 {
 	private String nodeId;
+	private Long nodeInternalId;
 	private String nodeVersion;
 	private String nodePath;
 	private String contentPath;
 	private String mimeType;
 	private Long size;
+	private boolean isPrimary = true;
+	private long transformDuration;
+
+	public static NodeInfo start()
+	{
+		return new NodeInfo();
+	}
 
 	public NodeInfo()
 	{
 	}
+
+	public NodeInfo(String nodeId, Long nodeInternalId, String nodeVersion)
+	{
+	    super();
+	    this.nodeId = nodeId;
+	    this.nodeInternalId = nodeInternalId;
+	    this.nodeVersion = nodeVersion;
+	}
+
+	public NodeInfo(String nodeId, Long nodeInternalId, String nodeVersion, String nodePath, String contentPath, String mimeType,
+			Long size)
+	{
+	    super();
+	    this.nodeId = nodeId;
+	    this.nodeInternalId = nodeInternalId;
+	    this.nodeVersion = nodeVersion;
+	    this.nodePath = nodePath;
+	    this.contentPath = contentPath;
+	    this.mimeType = mimeType;
+	    this.size = size;
+    }
 
 	public NodeInfo(String nodeId, String nodeVersion, String nodePath, String contentPath, String mimeType,
 			Long size)
@@ -37,14 +66,48 @@ public class NodeInfo
 	    this.size = size;
     }
 
+	public Long getNodeInternalId()
+	{
+		return nodeInternalId;
+	}
+
+	public NodeInfo setNodeInternalId(Long nodeInternalId)
+	{
+		this.nodeInternalId = nodeInternalId;
+		return this;
+	}
+
+	public boolean isPrimary()
+	{
+		return isPrimary;
+	}
+
+	public NodeInfo setPrimary(boolean isPrimary)
+	{
+		this.isPrimary = isPrimary;
+		return this;
+	}
+
+	public long getTransformDuration()
+	{
+		return transformDuration;
+	}
+
+	public NodeInfo setTransformDuration(long transformDuration)
+	{
+		this.transformDuration = transformDuration;
+		return this;
+	}
+
 	public Long getSize()
 	{
 		return size;
 	}
 
-	public void setSize(Long size)
+	public NodeInfo setSize(Long size)
 	{
 		this.size = size;
+		return this;
 	}
 
 	public String getMimeType()
@@ -52,9 +115,10 @@ public class NodeInfo
 		return mimeType;
 	}
 
-	public void setMimeType(String mimeType)
+	public NodeInfo setMimeType(String mimeType)
 	{
 		this.mimeType = mimeType;
+		return this;
 	}
 
 	public String getNodeId()
@@ -62,9 +126,10 @@ public class NodeInfo
 		return nodeId;
 	}
 
-	public void setNodeId(String nodeId)
+	public NodeInfo setNodeId(String nodeId)
 	{
 		this.nodeId = nodeId;
+		return this;
 	}
 
 	public String getNodeVersion()
@@ -72,9 +137,10 @@ public class NodeInfo
 		return nodeVersion;
 	}
 
-	public void setNodeVersion(String nodeVersion)
+	public NodeInfo setNodeVersion(String nodeVersion)
 	{
 		this.nodeVersion = nodeVersion;
+		return this;
 	}
 
 	public String getNodePath()
@@ -82,9 +148,10 @@ public class NodeInfo
 		return nodePath;
 	}
 
-	public void setNodePath(String nodePath)
+	public NodeInfo setNodePath(String nodePath)
 	{
 		this.nodePath = nodePath;
+		return this;
 	}
 
 	public String getContentPath()
@@ -92,8 +159,19 @@ public class NodeInfo
 		return contentPath;
 	}
 
-	public void setContentPath(String contentPath)
+	public NodeInfo setContentPath(String contentPath)
 	{
 		this.contentPath = contentPath;
+		return this;
 	}
+
+	@Override
+    public String toString()
+    {
+	    return "NodeInfo [nodeId=" + nodeId + ", nodeInternalId="
+	            + nodeInternalId + ", nodeVersion=" + nodeVersion
+	            + ", nodePath=" + nodePath + ", contentPath=" + contentPath
+	            + ", mimeType=" + mimeType + ", size=" + size + ", isPrimary="
+	            + isPrimary + ", transformDuration=" + transformDuration + "]";
+    }
 }

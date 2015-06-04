@@ -14,67 +14,11 @@
   <packaging>jar</packaging>
 
   <dependencies>
-  <!-- 
-        <dependency>
-            <groupId>org.alfresco.extensions</groupId>
-            <artifactId>alfresco-extensions-serializers</artifactId>
-            <version>${project.version}</version>
-          <exclusions>
-            <exclusion>
-                <artifactId>spring-core</artifactId>
-                <groupId>org.springframework</groupId>
-            </exclusion>
-            <exclusion>
-                <artifactId>spring-context</artifactId>
-                <groupId>org.springframework</groupId>
-            </exclusion>
-            <exclusion>
-                <artifactId>spring-orm</artifactId>
-                <groupId>org.springframework</groupId>
-            </exclusion>
-            <exclusion>
-                <artifactId>neo4j-cypher-compiler-2.1</artifactId>
-                <groupId>org.neo4j</groupId>
-            </exclusion>
-          </exclusions>
-        </dependency>
-         -->
         <dependency>
             <groupId>org.alfresco.cmis.client</groupId>
             <artifactId>alfresco-opencmis-extension</artifactId>
             <version>1.0</version>
         </dependency>
-        <!--  
-        <dependency>
-          <groupId>org.alfresco</groupId>
-          <artifactId>alfresco-solrclient</artifactId>
-          <version>${alfresco.version}</version>
-          <exclusions>
-          	<exclusion>
-          		<artifactId>slf4j-log4j12</artifactId>
-          		<groupId>org.slf4j</groupId>
-          	</exclusion>
-          	<exclusion>
-          		<artifactId>xpp3</artifactId>
-          		<groupId>xpp3</groupId>
-          	</exclusion>
-          	<exclusion>
-          		<artifactId>junit</artifactId>
-          		<groupId>junit</groupId>
-          	</exclusion>
-          	<exclusion>
-          		<artifactId>
-          			chemistry-opencmis-server-bindings
-          		</artifactId>
-          		<groupId>org.apache.chemistry.opencmis</groupId>
-          	</exclusion>
-          	<exclusion>
-          		<artifactId>tika-parsers</artifactId>
-          		<groupId>org.apache.tika</groupId>
-          	</exclusion>
-          </exclusions>
-        </dependency>
-        -->
         <dependency>
           <groupId>org.alfresco</groupId>
           <artifactId>alfresco-core</artifactId>
@@ -145,23 +89,6 @@
             <version>3.1.4.RELEASE</version>
             <scope>test</scope>
         </dependency>
-        <!-- 
-        <dependency>
-        	<groupId>org.neo4j</groupId>
-        	<artifactId>neo4j-cypher-compiler-2.1</artifactId>
-        	<version>2.1.2</version>
-        	<exclusions>
-        		<exclusion>
-        			<artifactId>scala-library</artifactId>
-        			<groupId>org.scala-lang</groupId>
-        		</exclusion>
-        		<exclusion>
-        			<artifactId>parboiled-scala_2.10</artifactId>
-        			<groupId>org.parboiled</groupId>
-        		</exclusion>
-        	</exclusions>
-        </dependency>
-         -->
   </dependencies>
 
   <build>

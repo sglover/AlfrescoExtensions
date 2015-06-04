@@ -56,18 +56,20 @@ public class EventListener
 	            	NodeRemovedEvent event = (NodeRemovedEvent)nodeEvent;
 //	            	elasticSearch.unindexNode(event);
 //	            	elasticSearch.unindexContent(event);
+	            	// TODO
 	            }
 	            else if (nodeEvent instanceof NodeUpdatedEvent)
 	            {
 	            	NodeUpdatedEvent event = (NodeUpdatedEvent)nodeEvent;
 	            	elasticSearch.reindexNode(event);
+//					elasticSearch.indexEntities(nodeEvent);
 	            }
 	            else if (nodeEvent instanceof NodeContentPutEvent)
 	            {
 	            	NodeContentPutEvent event = (NodeContentPutEvent)nodeEvent;
 	            	elasticSearch.indexNode(event);
 	            	elasticSearch.indexContent(event);
-					elasticSearch.indexEntities(nodeEvent);
+//					elasticSearch.indexEntities(nodeEvent);
 	            }
 	
 	            if(nodeEvent instanceof NodeEvent)

@@ -13,7 +13,6 @@ import java.util.Set;
 
 import org.alfresco.entities.values.EntityCounts;
 import org.alfresco.entities.values.Node;
-import org.alfresco.events.node.types.TransactionCommittedEvent;
 import org.alfresco.services.nlp.Entities;
 import org.alfresco.services.nlp.Entity;
 
@@ -26,17 +25,16 @@ public interface EntitiesDAO
 {
 	List<Node> matchingNodes(String type, String name);
 	Entities getEntities(Node node, Set<String> types);
+	List<Entities> getEntities();
+	List<Entities> getEntitiesForTxn(String txnId);
 	Collection<Entity<String>> getNames(Node node);
-	void addEntities(String txnId, Node node, Entities entities);
 	EntityCounts<String> getEntityCounts(Node node);
-//	EntityCounts<String> overlap(String nodeId, String nodeVersion);
 
 	EntityCounts<String> getNodeMatches(Entities entities);
 
-	void txnCommitted(TransactionCommittedEvent event);
+	void addEntities(String txnId, Node node, Entities entities);
 
-	List<Entities> getEntities();
+//	void txnCommitted(TransactionCommittedEvent event);
+
 	List<Entities> unprocessedEntites();
-
-	List<Entities> getEntitiesForTxn(String txnId);
 }

@@ -19,7 +19,6 @@ import org.alfresco.entities.dao.EntitiesDAO;
 import org.alfresco.entities.values.EntityCounts;
 import org.alfresco.entities.values.Node;
 import org.alfresco.error.AlfrescoRuntimeException;
-import org.alfresco.events.node.types.TransactionCommittedEvent;
 import org.alfresco.service.common.mongo.AbstractMongoDAO;
 import org.alfresco.services.nlp.Entities;
 import org.alfresco.services.nlp.Entity;
@@ -35,7 +34,6 @@ import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.QueryBuilder;
 import com.mongodb.WriteConcern;
-import com.mongodb.WriteResult;
 
 /**
  * 
@@ -104,8 +102,7 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO
 
 		{
 	        DBObject keys = BasicDBObjectBuilder
-	                .start("ic", 1)
-	                .add("n", 1)
+	                .start("n", 1)
 	                .add("v", 1)
 	                .get();
 	        this.entitiesData.ensureIndex(keys, "main", false);
@@ -215,8 +212,7 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO
 		Collection<Entity<String>> ret = new LinkedList<>();
 
 		QueryBuilder queryBuilder = QueryBuilder
-				.start("ic").is(true)
-				.and("n").is(nodeId)
+				.start("n").is(nodeId)
 				.and("v").is(nodeVersion);
 		DBObject query = queryBuilder.get();
 
@@ -256,9 +252,8 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO
 		EntityCounts<String> ret = new EntityCounts<>();
 
 		QueryBuilder queryBuilder = QueryBuilder
-				.start("ic").is(true)
 //				.and("c").is(true)
-				.and("n").is(nodeId)
+				.start("n").is(nodeId)
 				.and("v").is(nodeVersion);
 		DBObject query = queryBuilder.get();
 
@@ -292,8 +287,7 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO
 		List<Node> nodes = new LinkedList<>();
 
 		QueryBuilder queryBuilder = QueryBuilder
-				.start("ic").is(true)
-				.and("t").is(type)
+				.start("t").is(type)
 				.and("nm").is(name);
 		DBObject query = queryBuilder.get();
 
@@ -359,7 +353,7 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO
 		}
 
 		QueryBuilder queryBuilder = QueryBuilder
-				.start("ic").is(true)
+				.start()
 				.or(ors.toArray(new DBObject[0]));
 
 		DBObject query = queryBuilder.get();
@@ -397,8 +391,7 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO
 		Entities entities = Entities.empty(nodeId, nodeVersion);
 
 		QueryBuilder queryBuilder = QueryBuilder
-				.start("ic").is(true)
-				.and("n").is(nodeId)
+				.start("n").is(nodeId)
 				.and("v").is(nodeVersion);
 
 		if(types != null && types.size() > 0)
@@ -452,7 +445,7 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO
 		List<Entities> allEntities = new LinkedList<>();
 
 		QueryBuilder queryBuilder = QueryBuilder
-				.start("ic").is(true);
+				.start();
 
 		DBObject query = queryBuilder.get();
 
@@ -504,24 +497,6 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO
 	    // TODO Auto-generated method stub
 	    return null;
     }
-
-	@Override
-	public void txnCommitted(TransactionCommittedEvent event)
-	{
-		DBObject query = QueryBuilder
-				.start("tx").is(event.getTxnId())
-				.get();
-
-		DBObject update = BasicDBObjectBuilder
-				.start("$set",
-						BasicDBObjectBuilder
-							.start("ic", true)
-							.get())
-				.get();
-
-		WriteResult result = entitiesData.update(query, update, false, true);
-		checkResult(result);
-	}
 
 	@Override
 	public List<Entities> getEntitiesForTxn(String txnId)

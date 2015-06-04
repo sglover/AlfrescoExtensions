@@ -55,6 +55,13 @@ public class CoreNLPEntityTagger extends AbstractEntityTagger
 
     private ModelLoader modelLoader;
 
+    public static EntityTagger defaultTagger()
+    {
+		ModelLoader tokenNameFinderLoader = new DefaultModelLoader();
+		EntityTagger entityTagger = new CoreNLPEntityTagger(tokenNameFinderLoader, 8);
+		return entityTagger;
+    }
+
     public CoreNLPEntityTagger(ModelLoader modelLoader, int numThreads)
     {
     	super(numThreads);
@@ -456,7 +463,7 @@ public class CoreNLPEntityTagger extends AbstractEntityTagger
 	        for (int i = 0; i < chunks.length; i++)
 	        {
         		String chunkString = chunkStrings[i];
-        		System.out.println("Chunk = " + chunkString + ", type = " + chunks[i].getType());
+        		logger.info("Chunk = " + chunkString + ", type = " + chunks[i].getType());
 	        	if (chunks[i].getType().equals("NP"))
 	        	{
 	        		npTokens.add(chunkString);

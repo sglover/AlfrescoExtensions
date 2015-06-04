@@ -13,11 +13,13 @@ import java.util.concurrent.ThreadPoolExecutor;
 import org.alfresco.httpclient.AlfrescoHttpClient;
 import org.alfresco.service.common.elasticsearch.ElasticSearchClient;
 import org.alfresco.service.common.elasticsearch.ElasticSearchIndexer;
-import org.alfresco.service.common.elasticsearch.entities.ElasticSearchEntitiesGetter;
 import org.alfresco.services.AlfrescoApi;
 import org.alfresco.services.AlfrescoDictionary;
 import org.alfresco.services.ContentGetter;
+import org.alfresco.services.nlp.CoreNLPEntityTagger;
 import org.alfresco.services.nlp.EntityExtracter;
+import org.alfresco.services.nlp.EntityTagger;
+import org.alfresco.services.nlp.StanfordEntityTagger;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.elasticsearch.ElasticsearchException;
@@ -50,33 +52,41 @@ public class ElasticSearchComponent
     	this.threadPool = EsExecutors.newFixed(4, -1, threadFactory);
 
 		ElasticSearchClient elasticSearchClient = new ElasticSearchClient(client, indexName);
-    	//ElasticSearchEntitiesGetter entitiesService = new ElasticSearchEntitiesGetter(elasticSearchClient);
-    	EntityExtracter entityExtracter = buildEntityExtracter(threadPool, extracterType, contentGetter);
+
+		EntityTagger entityTagger = buildEntityTagger(extracterType);
+    	EntityExtracter entityExtracter = buildEntityExtracter(threadPool, entityTagger, contentGetter);
 
     	AlfrescoDictionary alfrescoDictionary = new AlfrescoDictionary(alfrescoHttpClient);
 
-     	this.elasticSearch = new ElasticSearchIndexer(alfrescoApi, contentGetter, entityExtracter, client,
-     			alfrescoDictionary, /*entitiesService, */elasticSearchClient, indexName);
+     	this.elasticSearch = new ElasticSearchIndexer(alfrescoApi, contentGetter, entityTagger, entityExtracter, client,
+     			alfrescoDictionary, elasticSearchClient, indexName);
 	}
 
-	private EntityExtracter buildEntityExtracter(ThreadPoolExecutor threadPool, String extracterType, ContentGetter contentGetter)
+	private EntityTagger buildEntityTagger(String extracterType)
 	{
-		EntityExtracter entityExtracter = null;
+		EntityTagger entityTagger = null;
 
         logger.debug("extracterType = " + extracterType);
 
         switch(extracterType)
         {
         case "CoreNLP":
-        	entityExtracter = EntityExtracter.coreNLPEntityExtracter(contentGetter, threadPool);
+    		entityTagger = CoreNLPEntityTagger.defaultTagger();
         	break;
         case "StanfordNLP":
-        	entityExtracter = EntityExtracter.stanfordNLPEntityExtracter(contentGetter, threadPool);
+        	entityTagger = StanfordEntityTagger.build();
         	break;
         default:
         	throw new ElasticsearchException("Invalid entity.extracter.type");
         }
 
+        return entityTagger;
+	}
+
+	private EntityExtracter buildEntityExtracter(ThreadPoolExecutor threadPool, EntityTagger entityTagger,
+			ContentGetter contentGetter)
+	{
+		EntityExtracter entityExtracter = new EntityExtracter(contentGetter, entityTagger, threadPool);
         return entityExtracter;
 	}
 

@@ -12,20 +12,27 @@ import static org.junit.Assert.assertNotNull;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.util.Map;
 
 import org.alfresco.MockAlfrescoApi;
 import org.alfresco.MockContentGetter;
-import org.alfresco.cacheserver.contentstore.ContentStore;
-import org.alfresco.cacheserver.dao.ContentDAO;
-import org.alfresco.cacheserver.dao.mongo.MongoContentDAO;
+import org.alfresco.cacheserver.checksum.ChecksumService;
+import org.alfresco.cacheserver.checksum.ChecksumServiceImpl;
+import org.alfresco.cacheserver.checksum.DocumentChecksums;
+import org.alfresco.cacheserver.dao.ChecksumDAO;
 import org.alfresco.cacheserver.entity.GUID;
+import org.alfresco.cacheserver.entity.Node;
 import org.alfresco.services.AlfrescoApi;
 import org.alfresco.services.Content;
 import org.apache.commons.io.IOUtils;
+import org.gytheio.messaging.MessageProducer;
+import org.gytheio.messaging.MessagingException;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import com.mongodb.DB;
 import com.mongodb.Mongo;
@@ -45,8 +52,8 @@ public class TestEdgeServer
 	private static MongodForTestsFactory mongoFactory;
 
 	private CacheServer edgeServer;
-	private ContentDAO contentDAO;
-	private ContentStore contentStore;
+//	private ContentDAO contentDAO;
+//	private ContentStore contentStore;
 	private MockContentGetter contentGetter;
 
 	@BeforeClass
@@ -67,6 +74,69 @@ public class TestEdgeServer
         final Mongo mongo = mongoFactory.newMongo();
         DB db = mongoFactory.newDB(mongo);
 
+		MessageProducer messageProducer = new MessageProducer()
+		{
+			@Override
+			public void send(Object arg0, String arg1, Map<String, Object> arg2)
+			        throws MessagingException
+			{
+			}
+			
+			@Override
+			public void send(Object arg0, String arg1) throws MessagingException
+			{
+			}
+			
+			@Override
+			public void send(Object arg0, Map<String, Object> arg1)
+			        throws MessagingException
+			{
+			}
+			
+			@Override
+			public void send(Object arg0) throws MessagingException
+			{
+			}
+		};
+		CacheServerIdentity cacheServerIdentity = new CacheServerIdentity()
+		{
+			
+			@Override
+			public int getPort()
+			{
+				return 0;
+			}
+			
+			@Override
+			public String getId()
+			{
+				return GUID.generate();
+			}
+			
+			@Override
+			public String getHostname()
+			{
+				return "localhost";
+			}
+		};
+        ChecksumDAO checksumDAO = new ChecksumDAO()
+		{
+			@Override
+			public void saveChecksums(DocumentChecksums checksums)
+			{
+				// TODO Auto-generated method stub
+				
+			}
+			
+			@Override
+			public DocumentChecksums getChecksums(String contentUrl)
+			{
+				// TODO Auto-generated method stub
+				return null;
+			}
+		};
+        ChecksumService checksumService = new ChecksumServiceImpl(messageProducer, cacheServerIdentity,
+        		checksumDAO);
 		CacheServerIdentity edgeServerIdentity = new CacheServerIdentity()
 		{
 			
@@ -92,14 +162,14 @@ public class TestEdgeServer
         long time = System.currentTimeMillis();
         String contentCollectionName = "content" + time;
         String contentUsageCollectionName = "contentUsage" + time;
-		this.contentDAO = new MongoContentDAO(db, contentCollectionName, contentUsageCollectionName, edgeServerIdentity);
-		this.contentStore = new ContentStore();
+//		this.contentDAO = new MongoContentDAO(db, contentCollectionName, contentUsageCollectionName, edgeServerIdentity);
+//		this.contentStore = new ContentStore(ch);
 
 		this.contentGetter = new MockContentGetter();
 		AlfrescoApi alfrescoApi = new MockAlfrescoApi();
 
-		this.edgeServer = new CacheServer(contentDAO, contentStore, contentGetter, alfrescoApi,
-				edgeServerIdentity, null);
+//		this.edgeServer = new CacheServer(contentDAO, contentStore, contentGetter, alfrescoApi,
+//				edgeServerIdentity, null);
 	}
 
 	@Test
@@ -115,14 +185,16 @@ public class TestEdgeServer
 		InputStream nodeContent = new ByteArrayInputStream(bytes);
 		InputStream contentIn = null;
 		try
-		{
-	
+		{	
 			contentGetter.addTestContent(nodeInternalId, nodeId, nodeVersion, "test", expectedMimeType);
 
-//			edgeServer.nodeAdded(nodeId, nodeVersion, nodePath);
-			edgeServer.contentUpdated(nodeId, nodeVersion, nodePath, expectedMimeType, expectedSize);
+			edgeServer.contentUpdated(Node.build().nodeId(nodeId).nodeVersion(nodeVersion),
+					nodePath, expectedMimeType, expectedSize);
 	
-			Content content = edgeServer.getByNodePath(nodePath, "admin");
+			UserDetails userDetails = new User("admin", null, null);
+			UserContext.setUser(userDetails);
+
+			Content content = edgeServer.getByNodePath(nodePath);
 			contentIn = content.getIn();
 			assertNotNull(contentIn);
 			assertEquals(expectedMimeType, content.getMimeType());
@@ -140,6 +212,7 @@ public class TestEdgeServer
 			{
 				contentIn.close();
 			}
+			UserContext.setUser(null);
 		}
 	}
 }
