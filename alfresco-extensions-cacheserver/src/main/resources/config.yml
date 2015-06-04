@@ -6,11 +6,16 @@ mongo:
     mongoURI: mongodb://127.0.0.1:27017
     contentCollectionName: content
     contentUsageCollectionName: contentUsage
+    checksumsCollectionName: checksums
+    entitiesCollectionName: entities
 
 cache:
     hostname: localhost
     content:
         rootFolder: content
+        blockSize: 1024
+    textcontent:
+        rootFolder: textcontent
     authentication:
         basicAuthUrl: http://localhost:8080/alfresco/api/-default-/public/cmis/versions/1.1/browser
         cache:
@@ -40,7 +45,7 @@ camel:
     node:
         events:
             txnManager: camelRequiredTxn
-            sourceTopic: activemq:topic:alfresco.events.repo.nodes
+            sourceTopic: activemq:topic:alfresco.events.repo.ext.nodes
             clientId: alfresco.events.node.edgeserver
             durableSubscriptionName: alfresco.events.node.edgeserver
             dataFormat: defaultDataFormat
@@ -71,12 +76,14 @@ server:
     applicationContextPath: /
     connector:
         type: http
-        port: 9199
+        port: 9198
 
 logging:
   level: WARN
   loggers:
-    "org.alfresco.edgeserver": DEBUG
+    "org.alfresco.cacheserver": DEBUG
+    "org.alfresco.transformation": INFO
+    "org.alfresco.services": WARN
   appenders:
     - type: console
       threshold: ALL
