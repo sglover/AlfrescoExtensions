@@ -13,8 +13,8 @@ import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
+import java.util.UUID;
 
-import org.alfresco.util.GUID;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -126,7 +126,7 @@ public class ServerIdentityImpl implements ServerIdentity
 
 	private Data createData(File syncFile) throws IOException
 	{
-		String id = GUID.generate();
+		String id = UUID.randomUUID().toString();
 		Data data = new Data(id);
 		JSONObject dataObject = toJSON(data);
 
