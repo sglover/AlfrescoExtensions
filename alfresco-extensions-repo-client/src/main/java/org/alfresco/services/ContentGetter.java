@@ -9,6 +9,7 @@ package org.alfresco.services;
 
 import java.io.IOException;
 
+import org.alfresco.extensions.common.Content;
 import org.alfresco.httpclient.AuthenticationException;
 import org.alfresco.services.solr.GetTextContentResponse;
 
@@ -19,6 +20,7 @@ import org.alfresco.services.solr.GetTextContentResponse;
  */
 public interface ContentGetter
 {
-	Content getContent(String nodeId, String nodeVersion) throws IOException;
+	Content getContentByNodeId(String nodeId, String nodeVersion) throws IOException;
+//	Content getContentByNodePath(String path) throws IOException;
 	GetTextContentResponse getTextContent(long nodeId) throws AuthenticationException, IOException;
 }

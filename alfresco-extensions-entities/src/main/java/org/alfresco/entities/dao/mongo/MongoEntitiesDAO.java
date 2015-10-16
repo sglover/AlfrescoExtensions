@@ -17,8 +17,8 @@ import java.util.Set;
 
 import org.alfresco.entities.dao.EntitiesDAO;
 import org.alfresco.entities.values.EntityCounts;
-import org.alfresco.entities.values.Node;
 import org.alfresco.error.AlfrescoRuntimeException;
+import org.alfresco.extensions.common.Node;
 import org.alfresco.service.common.mongo.AbstractMongoDAO;
 import org.alfresco.services.nlp.Entities;
 import org.alfresco.services.nlp.Entity;
@@ -50,16 +50,13 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO
 
 	private Map<String, String> map = new HashMap<>();
 	
-	public void setDb(DB db)
+	public MongoEntitiesDAO(DB db, String entitiesCollectionName)
 	{
 		this.db = db;
+		this.entitiesCollectionName = entitiesCollectionName;
+		init();
 	}
 
-	public void setEntitiesCollectionName(String entitiesCollectionName)
-	{
-		this.entitiesCollectionName = entitiesCollectionName;
-	}
-	
 	public void dropEntities()
 	{
 		entitiesData.drop();
@@ -70,7 +67,7 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO
 		dropEntities();
 	}
 
-	public void init()
+	private void init()
 	{
 		map.put("name", "nm");
 		map.put("location", "l");
@@ -139,7 +136,7 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO
 
 		String nodeId = node.getNodeId();
 		long nodeInternalId = node.getNodeInternalId();
-		String nodeVersion = node.getNodeVersion();
+		String nodeVersion = node.getVersionLabel();
 
 		if(entities.size() > 0)
 		{
@@ -207,7 +204,7 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO
 	public Collection<Entity<String>> getNames(Node node)
 	{
 		String nodeId = node.getNodeId();
-		String nodeVersion = node.getNodeVersion();
+		String nodeVersion = node.getVersionLabel();
 
 		Collection<Entity<String>> ret = new LinkedList<>();
 
@@ -247,7 +244,7 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO
 	public EntityCounts<String> getEntityCounts(Node node)
 	{
 		String nodeId = node.getNodeId();
-		String nodeVersion = node.getNodeVersion();
+		String nodeVersion = node.getVersionLabel();
 
 		EntityCounts<String> ret = new EntityCounts<>();
 
@@ -301,8 +298,9 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO
 			for(DBObject dbObject : cursor)
 			{
 				String nodeId = (String)dbObject.get("n");
+				long nodeInternalId = (Long)dbObject.get("ni");
 				String nodeVersion = (String)dbObject.get("v");
-				Node node = new Node(nodeId, nodeVersion);
+				Node node = new Node(nodeInternalId, nodeId, nodeVersion);
 				nodes.add(node);
 			}
 		}
@@ -386,7 +384,7 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO
 	public Entities getEntities(Node node, Set<String> types)
 	{
 		String nodeId = node.getNodeId();
-		String nodeVersion = node.getNodeVersion();
+		String nodeVersion = node.getVersionLabel();
 
 		Entities entities = Entities.empty(nodeId, nodeVersion);
 

@@ -11,6 +11,8 @@ import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.alfresco.extensions.common.Node;
+
 public class Nodes implements Serializable
 {
 	private static final long serialVersionUID = 8255317966237159993L;

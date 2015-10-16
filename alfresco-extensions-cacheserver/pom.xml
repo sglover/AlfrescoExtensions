@@ -16,17 +16,60 @@
   <properties>
     <maven.compile.source>1.8</maven.compile.source>
     <maven.compile.target>1.8</maven.compile.target>
-    <!-- works with v4.1 and forward -->
-    <httpclient.version>4.3.4</httpclient.version>
     <dependency.mongodriver.version>2.12.2</dependency.mongodriver.version>
     <dependency.flapdoodle.version>1.36</dependency.flapdoodle.version>
   </properties>
 
   <dependencies>
     <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <scope>provided</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpmime</artifactId>
+        <version>4.5</version>
+    </dependency>
+	<dependency>
+	    <groupId>com.sun.jersey</groupId>
+	    <artifactId>jersey-client</artifactId>
+	    <version>1.19</version>
+	</dependency>
+	<dependency>
+	    <groupId>com.sun.jersey</groupId>
+	    <artifactId>jersey-json</artifactId>
+	    <version>1.19</version>
+	</dependency>
+	<dependency>
+	    <groupId>org.glassfish.jersey.core</groupId>
+	    <artifactId>jersey-common</artifactId>
+	    <version>2.17</version>
+	</dependency>
+	<dependency>
+	    <groupId>com.sun.jersey.contribs</groupId>
+	    <artifactId>jersey-multipart</artifactId>
+	    <version>1.19</version>
+	</dependency>
+	<dependency>
+	    <groupId>javax.mail</groupId>
+	    <artifactId>mail</artifactId>
+	    <version>1.4.7</version>
+	</dependency>
+    <dependency>
         <groupId>org.apache.httpcomponents</groupId>
         <artifactId>httpclient</artifactId>
         <version>4.4.1</version>
+    </dependency>
+    <dependency>
+        <groupId>org.alfresco.extensions</groupId>
+        <artifactId>alfresco-extensions-entities</artifactId>
+        <version>1.0-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+        <groupId>org.alfresco.extensions</groupId>
+        <artifactId>alfresco-extensions-checksum</artifactId>
+        <version>1.0-SNAPSHOT</version>
     </dependency>
     <dependency>
         <groupId>org.eclipse.jetty.orbit</groupId>
@@ -49,6 +92,12 @@
         </exclusions>
     </dependency>
     <dependency>
+        <groupId>org.alfresco.extensions</groupId>
+        <artifactId>alfresco-extensions-transformations</artifactId>
+        <version>${project.version}</version>
+    </dependency>
+    <!-- 
+    <dependency>
         <artifactId>transformation-data-service-client</artifactId>
         <groupId>com.alfresco.sparta</groupId>
         <version>1.0.6-SNAPSHOT</version>
@@ -59,6 +108,7 @@
         	</exclusion>
         </exclusions>
     </dependency>
+     -->
     <dependency>
         <groupId>com.googlecode.json-simple</groupId>
         <artifactId>json-simple</artifactId>
@@ -100,6 +150,14 @@
             		<artifactId>alfresco-core</artifactId>
             		<groupId>org.alfresco</groupId>
             	</exclusion>
+            	<exclusion>
+            		<artifactId>xml-apis</artifactId>
+            		<groupId>xml-apis</groupId>
+            	</exclusion>
+            	<exclusion>
+            		<artifactId>alfresco-xmlfactory</artifactId>
+            		<groupId>org.alfresco</groupId>
+            	</exclusion>
             </exclusions>
         </dependency>
 		<dependency>
@@ -107,11 +165,23 @@
 		    <artifactId>junit-addons</artifactId>
 		    <version>1.4</version>
 		    <scope>test</scope>
+		    <exclusions>
+		    	<exclusion>
+		    		<artifactId>xmlParserAPIs</artifactId>
+		    		<groupId>xerces</groupId>
+		    	</exclusion>
+		    </exclusions>
 		</dependency>
         <dependency>
           <groupId>org.alfresco.extensions</groupId>
           <artifactId>alfresco-extensions-nlp</artifactId>
           <version>1.0-SNAPSHOT</version>
+          <exclusions>
+          	<exclusion>
+          		<artifactId>xml-apis</artifactId>
+          		<groupId>xml-apis</groupId>
+          	</exclusion>
+          </exclusions>
         </dependency>
         <dependency>
             <groupId>org.alfresco.extensions</groupId>
@@ -119,6 +189,12 @@
             <version>${project.version}</version>
             <classifier>tests</classifier>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <artifactId>xml-apis</artifactId>
+                    <groupId>xml-apis</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.orientechnologies</groupId>
@@ -139,11 +215,6 @@
 		    <groupId>com.google.guava</groupId>
 		    <artifactId>guava</artifactId>
 		    <version>18.0</version>
-		</dependency>
-		<dependency>
-		    <groupId>xml-apis</groupId>
-		    <artifactId>xml-apis</artifactId>
-		    <version>1.4.01</version>
 		</dependency>
         <dependency>
         	<groupId>junit</groupId>
@@ -214,13 +285,11 @@
             <artifactId>alfresco-extensions-events</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
-        <!-- 
-		<dependency>
-		    <groupId>javax.servlet</groupId>
-		    <artifactId>javax.servlet-api</artifactId>
-		    <version>3.0.1</version>
-		</dependency>
-		 -->
+        <dependency>
+            <groupId>org.alfresco.extensions</groupId>
+            <artifactId>alfresco-extensions-contentstore</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 		 <dependency>
 		 	<groupId>org.testng</groupId>
 		 	<artifactId>testng</artifactId>
@@ -301,15 +370,13 @@
                 </execution>
             </executions>
         </plugin>
+        <!--  
       <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
           <version>2.3</version>
           <configuration>
               <createDependencyReducedPom>true</createDependencyReducedPom>
-              <!-- 
-              <shadedArtifactAttached>true</shadedArtifactAttached>
-               -->
               <shadedClassifierName>allinone</shadedClassifierName>
               <artifactSet>
                 <includes>
@@ -353,10 +420,10 @@
               </execution>
           </executions>
       </plugin>
+      -->
       <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
-          <version>2.3.2</version>
           <configuration>
               <archive>
                   <manifest>
@@ -457,14 +524,6 @@
                 <plugin>
                     <artifactId>maven-clean-plugin</artifactId>
                     <version>2.5</version>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.1</version>
-                    <configuration>
-                        <source>${maven.compile.source}</source>
-                        <target>${maven.compile.target}</target>
-                    </configuration>
                 </plugin>
                 <plugin>
                     <artifactId>maven-deploy-plugin</artifactId>

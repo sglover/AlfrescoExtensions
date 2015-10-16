@@ -44,7 +44,7 @@ public class AlfrescoPlugin extends AbstractPlugin
         return services;
     }
 
-    public Collection<Class<? extends Module>> indexModules()
+    public Collection<Class<? extends Module>> modules()
     {
         Collection<Class<? extends Module>> modules = newArrayList();
         modules.add(AlfrescoIndexModule.class);

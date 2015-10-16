@@ -9,6 +9,9 @@ package org.alfresco.cacheserver.events;
 
 import java.io.Serializable;
 
+import org.alfresco.checksum.NodeChecksums;
+import org.alfresco.extensions.common.Node;
+
 /**
  * 
  * @author sglover
@@ -19,42 +22,48 @@ public class ContentAvailableEvent implements Serializable
 	private static final long serialVersionUID = 1545601516434160821L;
 
 	private String cacheServerId;
-	private String nodeId;
-	private Long nodeInternalId;
-	private String nodeVersion;
-	private String nodePath;
+	private Node node;
 	private String mimeType;
 	private long size;
 	private String hostname;
 	private int port;
+	private NodeChecksums checksums;
 
 	public ContentAvailableEvent()
 	{
 	}
 
-	public ContentAvailableEvent(String cacheServerId, String nodeId, Long nodeInternalId, String nodeVersion, String nodePath, String mimeType,
-			long size, String hostname, int port)
+	public ContentAvailableEvent(String cacheServerId, Node node, String mimeType, long size, String hostname, int port,
+	        NodeChecksums checksums)
     {
 	    super();
 	    this.cacheServerId = cacheServerId;
-	    this.nodeId = nodeId;
-	    this.nodeInternalId = nodeInternalId;
-	    this.nodeVersion = nodeVersion;
-	    this.nodePath = nodePath;
+	    this.node = node;
 	    this.mimeType = mimeType;
 	    this.size = size;
 	    this.hostname = hostname;
 	    this.port = port;
+	    this.checksums = checksums;
     }
 
-	public Long getNodeInternalId()
+    public NodeChecksums getChecksums()
+    {
+        return checksums;
+    }
+
+    public void setChecksums(NodeChecksums checksums)
+    {
+        this.checksums = checksums;
+    }
+
+    public Node getNode()
 	{
-		return nodeInternalId;
+		return node;
 	}
 
-	public void setNodeInternalId(Long nodeInternalId)
+	public void setNode(Node node)
 	{
-		this.nodeInternalId = nodeInternalId;
+		this.node = node;
 	}
 
 	public String getCacheServerId()
@@ -65,36 +74,6 @@ public class ContentAvailableEvent implements Serializable
 	public void setCacheServerId(String cacheServerId)
 	{
 		this.cacheServerId = cacheServerId;
-	}
-
-	public String getNodePath()
-	{
-		return nodePath;
-	}
-
-	public void setNodePath(String nodePath)
-	{
-		this.nodePath = nodePath;
-	}
-
-	public String getNodeId()
-	{
-		return nodeId;
-	}
-
-	public void setNodeId(String nodeId)
-	{
-		this.nodeId = nodeId;
-	}
-
-	public String getNodeVersion()
-	{
-		return nodeVersion;
-	}
-
-	public void setNodeVersion(String nodeVersion)
-	{
-		this.nodeVersion = nodeVersion;
 	}
 
 	public String getHostname()
@@ -146,8 +125,7 @@ public class ContentAvailableEvent implements Serializable
     public String toString()
     {
 	    return "ContentAvailableEvent [cacheServerId=" + cacheServerId
-	            + ", nodeId=" + nodeId + ", nodeInternalId=" + nodeInternalId
-	            + ", nodeVersion=" + nodeVersion + ", nodePath=" + nodePath
+	            + ", node=" + node
 	            + ", mimeType=" + mimeType + ", size=" + size + ", hostname="
 	            + hostname + ", port=" + port + "]";
     }

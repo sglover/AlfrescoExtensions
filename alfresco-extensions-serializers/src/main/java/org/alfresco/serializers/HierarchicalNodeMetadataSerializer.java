@@ -272,6 +272,70 @@ public class HierarchicalNodeMetadataSerializer extends AbstractNodeMetadataSeri
     }
 
     @Override
+    public void buildNodeMetadata(BasicDBObjectBuilder builder,
+            String nodeId, String changeTxnId, String nodeType,
+            Map<String, Serializable> props, Set<String> aspects)
+    {
+        Map<String, BasicDBObjectBuilder> classBuilders = new HashMap<>();
+
+        Set<String> classesToAdd = new HashSet<>();
+        if(aspects != null)
+        {
+        	classesToAdd.addAll(aspects);
+        }
+        classesToAdd.add(nodeType);
+
+        for(Map.Entry<String, Serializable> entry : props.entrySet())
+        {
+        	String propertyName = entry.getKey();
+            QName propertyQName = serializerRegistry.deserialize(QName.class, propertyName);
+            PropertyDefinition propDef = dictionaryService.getProperty(propertyQName);
+            Serializable propertyValue = entry.getValue();
+
+            String className = "residual";
+            if(propDef != null)
+            {
+                ClassDefinition classDef = propDef.getContainerClass();
+                if(classDef != null)
+                {
+                    QName classQName = classDef.getName();
+                    classesToAdd.remove(classQName);
+                    className = serializerRegistry.serialize(classQName).toString();
+                }
+            }
+
+            BasicDBObjectBuilder classBuilder = classBuilders.get(className);
+            if(classBuilder == null)
+            {
+                classBuilder = BasicDBObjectBuilder.start();
+                classBuilders.put(className, classBuilder);
+            }
+
+            propertySerializer.serialize(propertyQName, propertyValue, classBuilder);
+        }
+
+        for(String className : classesToAdd)
+        {
+            BasicDBObjectBuilder classBuilder = classBuilders.get(className);
+            if(classBuilder == null)
+            {
+                classBuilder = BasicDBObjectBuilder.start();
+                classBuilders.put(className, classBuilder);
+            }
+        }
+
+        BasicDBObjectBuilder setterBuilder = BasicDBObjectBuilder
+                .start();
+        for(Map.Entry<String, BasicDBObjectBuilder> classBuilderEntry : classBuilders.entrySet())
+        {
+            setterBuilder.add(classBuilderEntry.getKey(), classBuilderEntry.getValue().get());
+        }
+
+        DBObject setter = setterBuilder.get();
+        builder.add(NODE_TYPE, nodeType).add(CLASSES, setter);
+    }
+
+    @Override
     public void buildNodeMetadata(XContentBuilder builder,
             NodeVersionKey nodeVersionKey, String changeTxnId, Long txnId, String nodeType,
             Map<String, Serializable> props, Set<String> aspects) throws IOException

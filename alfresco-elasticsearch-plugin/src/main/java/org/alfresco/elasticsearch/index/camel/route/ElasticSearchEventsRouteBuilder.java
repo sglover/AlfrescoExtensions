@@ -47,7 +47,7 @@ public class ElasticSearchEventsRouteBuilder extends RouteBuilder
     {
         StringBuilder sb = new StringBuilder(sourceTopic);
 
-        sb.append("?");
+        sb.append("?cacheLevelName=CACHE_CONSUMER&");
         sb.append("clientId=");
         sb.append(clientId);
         sb.append("&durableSubscriptionName=");

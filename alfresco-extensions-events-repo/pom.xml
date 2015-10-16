@@ -22,6 +22,11 @@
     <dependencies>
         <dependency>
             <groupId>org.alfresco.extensions</groupId>
+            <artifactId>alfresco-extensions-nodedao-override</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.alfresco.extensions</groupId>
             <artifactId>alfresco-extensions-serializers</artifactId>
             <version>${project.version}</version>
           <exclusions>

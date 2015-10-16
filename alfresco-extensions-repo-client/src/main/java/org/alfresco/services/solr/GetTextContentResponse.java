@@ -9,6 +9,8 @@ package org.alfresco.services.solr;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 
 import org.alfresco.httpclient.Response;
 import org.apache.commons.httpclient.HttpStatus;
@@ -21,18 +23,18 @@ import org.apache.commons.httpclient.HttpStatus;
  */
 public class GetTextContentResponse extends SOLRResponse
 {
-    private InputStream content;
+    private ReadableByteChannel channel;
     private SolrApiContentStatus status;
     private String transformException;
     private String transformStatusStr;
     private Long transformDuration;
 
-    public GetTextContentResponse(InputStream content,
+    public GetTextContentResponse(ReadableByteChannel channel,
             SolrApiContentStatus status, String transformException,
             String transformStatusStr, Long transformDuration)
     {
 	    super(null);
-	    this.content = content;
+	    this.channel = channel;
 	    this.status = status;
 	    this.transformException = transformException;
 	    this.transformStatusStr = transformStatusStr;
@@ -43,7 +45,8 @@ public class GetTextContentResponse extends SOLRResponse
     {
         super(response);
 
-        this.content = response.getContentAsStream();
+        InputStream in = response.getContentAsStream();
+        this.channel = Channels.newChannel(in);
         this.transformStatusStr = response.getHeader("X-Alfresco-transformStatus");
         this.transformException = response.getHeader("X-Alfresco-transformException");
         String tmp = response.getHeader("X-Alfresco-transformDuration");
@@ -51,9 +54,9 @@ public class GetTextContentResponse extends SOLRResponse
         setStatus();
     }
 
-    public InputStream getContent()
+    public ReadableByteChannel getContent()
     {
-        return content;
+        return channel;
     }
 
     public SolrApiContentStatus getStatus()

@@ -39,19 +39,12 @@ public class MongoEventsDAO extends AbstractMongoDAO implements EventsDAO
 
 	private EventsSerializer eventsSerializer;
 
-	public void setEventsSerializer(EventsSerializer eventsSerializer)
-	{
-		this.eventsSerializer = eventsSerializer;
-	}
-
-	public void setDb(DB db)
-	{
-		this.db = db;
-	}
-
-	public void setEventsCollectionName(String eventsCollectionName)
+	public MongoEventsDAO(DB db, String eventsCollectionName, EventsSerializer eventsSerializer)
 	{
 		this.eventsCollectionName = eventsCollectionName;
+		this.db = db;
+		this.eventsSerializer = eventsSerializer;
+		init();
 	}
 	
 	public void dropEvents()
@@ -64,7 +57,7 @@ public class MongoEventsDAO extends AbstractMongoDAO implements EventsDAO
 		dropEvents();
 	}
 
-	public void init()
+	private void init()
 	{
         if (db == null)
         {

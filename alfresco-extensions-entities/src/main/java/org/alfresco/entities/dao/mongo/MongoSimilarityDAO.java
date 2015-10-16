@@ -11,9 +11,9 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.alfresco.entities.dao.SimilarityDAO;
-import org.alfresco.entities.values.Node;
 import org.alfresco.entities.values.Similarity;
 import org.alfresco.error.AlfrescoRuntimeException;
+import org.alfresco.extensions.common.Node;
 import org.alfresco.service.common.mongo.AbstractMongoDAO;
 
 import com.mongodb.BasicDBObjectBuilder;
@@ -35,21 +35,18 @@ public class MongoSimilarityDAO extends AbstractMongoDAO implements SimilarityDA
 	private String similarityCollectionName;
 	private DBCollection similarityData;
 
-	public void setDb(DB db)
+	public MongoSimilarityDAO(DB db, String similarityCollectionName)
 	{
 		this.db = db;
-	}
-
-	public void setSimilarityCollectionName(String similarityCollectionName)
-	{
 		this.similarityCollectionName = similarityCollectionName;
+		init();
 	}
 
 	public void drop()
 	{
 	}
 
-	public void init()
+	private void init()
 	{
         if (db == null)
         {
@@ -143,7 +140,7 @@ public class MongoSimilarityDAO extends AbstractMongoDAO implements SimilarityDA
 				{
 					if(!node2Id.equals(node.getNodeId()))
 					{
-						Node n = Node.build().nodeId(node2Id).nodeVersion(node2Version);
+						Node n = Node.build().nodeId(node2Id).versionLabel(node2Version);
 						Similarity s = new Similarity(n, similarity);
 						nodes.add(s);
 					}
@@ -152,7 +149,7 @@ public class MongoSimilarityDAO extends AbstractMongoDAO implements SimilarityDA
 				{
 					if(node2Id.equals(node.getNodeId()))
 					{
-						Node n = Node.build().nodeId(node1Id).nodeVersion(node1Version);
+						Node n = Node.build().nodeId(node1Id).versionLabel(node1Version);
 						Similarity s = new Similarity(n, similarity);
 						nodes.add(s);
 					}

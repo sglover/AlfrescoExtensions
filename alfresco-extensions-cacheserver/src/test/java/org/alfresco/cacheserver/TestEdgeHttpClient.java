@@ -11,7 +11,9 @@ import java.io.InputStream;
 
 import org.alfresco.cacheserver.http.CacheHttpClient;
 import org.alfresco.cacheserver.http.HttpCallback;
+import org.alfresco.contentstore.patch.PatchService;
 import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * 
@@ -20,10 +22,13 @@ import org.junit.Test;
  */
 public class TestEdgeHttpClient
 {
+    @Autowired
+    private PatchService patchService;
+
 	@Test
 	public void test1() throws Exception
 	{
-		CacheHttpClient client = new CacheHttpClient();
+		CacheHttpClient client = new CacheHttpClient(patchService);
 		HttpCallback callback = new HttpCallback()
 		{
 			

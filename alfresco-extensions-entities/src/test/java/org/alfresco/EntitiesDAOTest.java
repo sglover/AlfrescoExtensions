@@ -9,7 +9,7 @@ package org.alfresco;
 
 import org.alfresco.entities.dao.EntitiesDAO;
 import org.alfresco.entities.dao.mongo.MongoEntitiesDAO;
-import org.alfresco.entities.values.Node;
+import org.alfresco.extensions.common.Node;
 import org.alfresco.service.common.mongo.MongoDbFactory;
 import org.alfresco.services.nlp.Entities;
 import org.alfresco.util.GUID;
@@ -64,11 +64,7 @@ public class EntitiesDAOTest
         }
         final DB db = factory.createInstance();
 
-        MongoEntitiesDAO dao = new MongoEntitiesDAO();
-        dao.setDb(db);
-        dao.setEntitiesCollectionName("entities" + System.currentTimeMillis());
-        dao.init();
-        this.entitiesDAO = dao;
+        this.entitiesDAO = new MongoEntitiesDAO(db, "entities" + System.currentTimeMillis());
 	}
 
 	@Test
@@ -95,9 +91,9 @@ public class EntitiesDAOTest
 		String node3Id = "3";
 		String node3Version = "3";
 
-		entitiesDAO.addEntities(txnId, Node.build().nodeId(node1Id).nodeVersion(node1Version), entities1);
-		entitiesDAO.addEntities(txnId, Node.build().nodeId(node2Id).nodeVersion(node2Version), entities2);
-		entitiesDAO.addEntities(txnId, Node.build().nodeId(node3Id).nodeVersion(node3Version), entities3);
+		entitiesDAO.addEntities(txnId, Node.build().nodeId(node1Id).versionLabel(node1Version), entities1);
+		entitiesDAO.addEntities(txnId, Node.build().nodeId(node2Id).versionLabel(node2Version), entities2);
+		entitiesDAO.addEntities(txnId, Node.build().nodeId(node3Id).versionLabel(node3Version), entities3);
 
 //		EntityCounts<String> counts = entitiesDAO.overlap(node1InternalId, node1Version);
 //		System.out.println(counts);

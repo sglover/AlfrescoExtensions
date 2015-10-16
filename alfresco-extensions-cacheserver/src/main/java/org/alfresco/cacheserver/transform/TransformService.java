@@ -8,10 +8,9 @@
 package org.alfresco.cacheserver.transform;
 
 import java.io.IOException;
-import java.io.InputStream;
 
-import org.alfresco.transformation.api.MimeType;
-import org.alfresco.transformation.client.TransformationCallback;
+import org.alfresco.extensions.content.MimeType;
+import org.alfresco.extensions.transformations.client.TransformationCallback;
 
 /**
  * 
@@ -20,6 +19,7 @@ import org.alfresco.transformation.client.TransformationCallback;
  */
 public interface TransformService
 {
-	String transform(String path, MimeType mimeType, TransformationCallback callback) throws IOException;
-	InputStream getContent(String contentPath) throws IOException;
+	void transformToText(String path, MimeType mimeType, TransformationCallback callback) throws IOException;
+	void transformToTextAsync(String path, MimeType mimeType, TransformationCallback callback) throws IOException;
+//	InputStream getContent(String contentPath) throws IOException;
 }

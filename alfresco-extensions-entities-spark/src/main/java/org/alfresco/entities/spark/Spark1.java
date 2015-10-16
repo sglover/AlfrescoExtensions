@@ -9,8 +9,8 @@ package org.alfresco.entities.spark;
 
 import java.io.Serializable;
 
-import org.alfresco.entities.values.Node;
 import org.alfresco.entities.values.Nodes;
+import org.alfresco.extensions.common.Node;
 import org.alfresco.services.nlp.Entities;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.Accumulable;

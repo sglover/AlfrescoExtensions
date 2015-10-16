@@ -12,6 +12,7 @@ import org.apache.activemq.camel.component.ActiveMQComponent;
 import org.apache.activemq.jms.pool.PooledConnectionFactory;
 import org.apache.camel.CamelContext;
 import org.apache.camel.RoutesBuilder;
+import org.apache.camel.component.amqp.AMQPComponent;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.impl.SimpleRegistry;
 import org.apache.camel.spring.spi.SpringTransactionPolicy;
@@ -67,18 +68,18 @@ public class CamelComponent
 
 		this.camelContext = new DefaultCamelContext(registry);
 
-		ActiveMQComponent component = new ActiveMQComponent();
-//		AMQPComponent component = new AMQPComponent();
-		component.setConnectionFactory(mqConnPool);
-//		component.setTransactionManager(txnManager);
-//		component.setTransactionTimeout(10000);
+		ActiveMQComponent activeMQComponent = new ActiveMQComponent();
+		AMQPComponent amqpComponent = new AMQPComponent();
+		activeMQComponent.setConnectionFactory(mqConnPool);
+		activeMQComponent.setTransactionManager(txnManager);
+		activeMQComponent.setTransactionTimeout(10000);
+		amqpComponent.setConnectionFactory(mqConnPool);
+		amqpComponent.setTransactionManager(txnManager);
+		amqpComponent.setTransactionTimeout(10000);
 
-//		camelContext.addComponent("amqp", component);
-		camelContext.addComponent("activemq", component);
+		camelContext.addComponent("amqp", amqpComponent);
+		camelContext.addComponent("activemq", activeMQComponent);
 
-//		RoutesBuilder routesBuilder = new ElasticSearchEventsRouteBuilder(eventListener, sourceTopic,
-//				clientId, durableSubscriptionName, "PROPAGATION_REQUIRED");
-		
 		return this;
 	}
 

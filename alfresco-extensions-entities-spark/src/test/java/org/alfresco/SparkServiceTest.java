@@ -66,15 +66,7 @@ public class SparkServiceTest
         }
         final DB db = factory.createInstance();
 
-        MongoEntitiesDAO dao = new MongoEntitiesDAO();
-        dao.setDb(db);
-        dao.setEntitiesCollectionName("entities" + System.currentTimeMillis());
-        dao.init();
-        this.entitiesDAO = dao;
-
-//        this.sparkService = new SparkService();
-//        this.sparkService.setEntitiesDAO(entitiesDAO);
-//        this.sparkService.init();
+        this.entitiesDAO = new MongoEntitiesDAO(db, "entities" + System.currentTimeMillis());
 
         this.spark1 = new Spark1();
         this.spark1.init();

@@ -24,7 +24,11 @@ public class AlfrescoIndexModule extends AbstractModule
     @Override
     protected void configure()
     {
-        bind(RegisterAlfrescoType.class).asEagerSingleton();
+//        bind(new TypeLiteral<RegisterAlfrescoType>(){}).asEagerSingleton();
+//    	bind(new TypeLiteral<AlfrescoApi>(){}).toProvider(AlfrescoApiProvider.class).asEagerSingleton();//in(Singleton.class)
+//    	bind(new TypeLiteral<AlfrescoHttpClient>(){}).toProvider(AlfrescoHttpClientProvider.class).asEagerSingleton();//in(Singleton.class)
+//    	bind(new TypeLiteral<ContentGetter>(){}).toProvider(ContentGetterProvider.class).asEagerSingleton();//in(Singleton.class)
+//        bind(RegisterAlfrescoType.class).asEagerSingleton();
     	bind(AlfrescoApi.class).toProvider(AlfrescoApiProvider.class).asEagerSingleton();//in(Singleton.class)
     	bind(AlfrescoHttpClient.class).toProvider(AlfrescoHttpClientProvider.class).asEagerSingleton();//in(Singleton.class)
     	bind(ContentGetter.class).toProvider(ContentGetterProvider.class).asEagerSingleton();//in(Singleton.class)

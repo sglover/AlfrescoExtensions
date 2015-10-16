@@ -12,8 +12,8 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import org.alfresco.entities.dao.EntitiesDAO;
-import org.alfresco.entities.values.Node;
 import org.alfresco.entities.values.Nodes;
+import org.alfresco.extensions.common.Node;
 import org.alfresco.services.nlp.Entities;
 import org.alfresco.services.nlp.Entity;
 import org.apache.spark.Accumulable;

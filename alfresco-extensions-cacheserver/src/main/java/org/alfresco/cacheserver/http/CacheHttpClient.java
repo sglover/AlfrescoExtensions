@@ -12,8 +12,13 @@ import java.io.InterruptedIOException;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 
+import javax.mail.MessagingException;
+//import javax.mail.MessagingException;
+//import javax.mail.internet.MimeMultipart;
 import javax.net.ssl.SSLException;
 
+import org.alfresco.checksum.PatchDocument;
+import org.alfresco.contentstore.patch.PatchService;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.http.HeaderElement;
@@ -44,6 +49,13 @@ import org.apache.http.message.BasicHeaderElementIterator;
 import org.apache.http.protocol.HTTP;
 import org.apache.http.protocol.HttpContext;
 
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.WebResource;
+import com.sun.jersey.api.client.config.ClientConfig;
+import com.sun.jersey.api.client.config.DefaultClientConfig;
+import com.sun.jersey.api.json.JSONConfiguration;
+import com.sun.jersey.multipart.MultiPart;
+
 /**
  * 
  * @author sglover
@@ -52,6 +64,14 @@ import org.apache.http.protocol.HttpContext;
 public class CacheHttpClient
 {
     private static final Log logger = LogFactory.getLog(CacheHttpClient.class);
+
+    private PatchService patchService;
+
+    public CacheHttpClient(PatchService patchService)
+    {
+        super();
+        this.patchService = patchService;
+    }
 
     private CloseableHttpClient getHttpClient(HttpHost target, HttpClientContext localContext, String username, String password)
     {
@@ -196,4 +216,121 @@ public class CacheHttpClient
             httpClient.close();
         }
     }
+
+/*    public List<Patch> getPatches(String hostname, int port, String username, String password,
+    		String nodeId, long nodeVersion, HttpCallback callback) throws IOException, MessagingException
+    {
+		final ClientConfig config = new DefaultClientConfig();
+		config.getFeatures().put(JSONConfiguration.FEATURE_POJO_MAPPING,
+				Boolean.TRUE);
+		final Client client = Client.create(config);
+		client.addFilter(new HTTPBasicAuthFilter(username, password));
+
+		String uri = "http://"
+				+ hostname
+				+ ":"
+				+ port
+				+ "/alfresco/api/-default-/private/alfresco/versions/1/patch/"
+				+ nodeId
+				+ "/"
+				+ nodeVersion;
+
+		List<Patch> patches = new LinkedList<>();
+
+		final WebResource resource = client.resource(uri);
+
+//		final HttpEntity response = resource.get(HttpEntity.class);
+
+//		EntityUtils.
+		final MimeMultipart response = resource.get(MimeMultipart.class);
+		// This will iterate the individual parts of the multipart response
+		for (int i = 0; i < response.getCount(); i++)
+		{
+		    final BodyPart part = response.getBodyPart(i);
+
+			int lastMatchIndex = (Integer)part.getContent();
+			int size = (Integer)part.getContent();
+			InputStream is = part.getInputStream();
+			Patch patch = new Patch(lastMatchIndex, size, is);
+			patches.add(patch);
+
+//		    System.out.printf(
+//		            "Embedded Body Part [Mime Type: %s, Length: %s]\n",
+//		            part.getContentType(), part.getSize());
+		}
+
+		return patches;
+
+//    	HttpHost target = new HttpHost(hostname, port, "http");
+//
+//    	// Create AuthCache instance
+//        AuthCache authCache = new BasicAuthCache();
+//        // Generate BASIC scheme object and add it to the local
+//        // auth cache
+//        BasicScheme basicAuth = new BasicScheme();
+//        authCache.put(target, basicAuth);
+//        // Add AuthCache to the execution context
+//        HttpClientContext localContext = HttpClientContext.create();
+//        localContext.setAuthCache(authCache);
+//
+//    	CloseableHttpClient httpClient = getHttpClient(target, localContext, username, password);
+//        try
+//        {
+//            RequestConfig requestConfig = RequestConfig.custom()
+//                    .setSocketTimeout(1000)
+//                    .setConnectTimeout(1000)
+//                    .build();
+//
+//    		String uri = "http://"
+//    				+ hostname
+//    				+ ":"
+//    				+ port
+//    				+ "/alfresco/api/-default-/private/alfresco/versions/1/patch/"
+//    				+ nodeId
+//    				+ "/"
+//    				+ nodeVersion;
+//            HttpGet httpGet = new HttpGet(uri);
+//            httpGet.setHeader("Content-Type", "text/plain");
+//            httpGet.setConfig(requestConfig);
+//
+//            System.out.println("Executing request " + httpGet.getRequestLine());
+//            CloseableHttpResponse response = httpClient.execute(target, httpGet, localContext);
+//            try
+//            {
+//            	callback.execute(response.getEntity().getContent());
+////                EntityUtils.consume(response.getEntity());
+//            } 
+//            finally
+//            {
+//                response.close();
+//            }
+//        }
+//        finally 
+//        {
+//            httpClient.close();
+//        }
+    }*/
+
+	public PatchDocument getPatches(String hostname, int port, String username, String password,
+			String nodeId, long nodeVersion) throws MessagingException, IOException
+	{
+		StringBuilder sb = new StringBuilder("http://");
+		sb.append(hostname);
+		sb.append(":");
+		sb.append(port);
+		sb.append("/alfresco/api/-default-/private/alfresco/versions/1/patch/");
+		sb.append(nodeId);
+		sb.append("/");
+		sb.append(nodeVersion);
+		String url = sb.toString();
+
+		final ClientConfig config = new DefaultClientConfig();
+		config.getFeatures().put(JSONConfiguration.FEATURE_POJO_MAPPING,
+				Boolean.TRUE);
+		final Client client = Client.create(config);
+
+		final WebResource resource = client.resource(url);
+		final MultiPart response = resource.get(MultiPart.class);
+		return patchService.getPatch(response);
+	}
 }

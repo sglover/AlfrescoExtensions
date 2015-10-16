@@ -8,36 +8,30 @@
 package org.alfresco.entities;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.alfresco.entities.dao.EntitiesDAO;
-import org.alfresco.entities.dao.EventsDAO;
 import org.alfresco.entities.dao.SimilarityDAO;
-import org.alfresco.entities.values.Node;
-import org.alfresco.events.node.types.Event;
-import org.alfresco.events.node.types.NodeAddedEvent;
-import org.alfresco.events.node.types.NodeContentPutEvent;
-import org.alfresco.events.node.types.NodeUpdatedEvent;
-import org.alfresco.events.node.types.Property;
-import org.alfresco.events.node.types.TransactionCommittedEvent;
+import org.alfresco.extensions.common.Node;
 import org.alfresco.httpclient.AuthenticationException;
+import org.alfresco.services.ContentGetter;
+import org.alfresco.services.minhash.MinHash;
+import org.alfresco.services.minhash.MinHashImpl;
+import org.alfresco.services.nlp.CoreNLPEntityTagger;
 import org.alfresco.services.nlp.Entities;
 import org.alfresco.services.nlp.Entity;
 import org.alfresco.services.nlp.EntityExtracter;
 import org.alfresco.services.nlp.EntityTagger;
 import org.alfresco.services.nlp.EntityTaggerCallback;
-import org.alfresco.services.nlp.minhash.MinHash;
-import org.alfresco.services.nlp.minhash.MinHashImpl;
+import org.alfresco.services.nlp.ModelLoader;
+import org.alfresco.services.nlp.StanfordEntityTagger;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.gytheio.util.EqualsHelper;
-import org.json.JSONException;
 
 /**
  * 
@@ -48,180 +42,61 @@ public class EntitiesServiceImpl implements EntitiesService
 {
 	private static final Log logger = LogFactory.getLog(EntitiesServiceImpl.class);
 
-	private EventsDAO eventsDAO;
 	private EntitiesDAO entitiesDAO;
 	private SimilarityDAO similarityDAO;
 	private EntityTagger entityTagger;
 	private EntityExtracter entityExtracter;
-
+	private ModelLoader modelLoader;
 	private ExecutorService executorService;
 
-	public EntitiesServiceImpl()
+	public EntitiesServiceImpl(String extracterTypeStr, ModelLoader modelLoader,
+			EntitiesDAO entitiesDAO, SimilarityDAO similarityDAO, ContentGetter contentGetter)
 	{
-		this.executorService = Executors.newFixedThreadPool(10);
-	}
-
-	public void setEntityTagger(EntityTagger entityTagger)
-    {
-		this.entityTagger = entityTagger;
-	}
-
-	public void setSimilarityDAO(SimilarityDAO similarityDAO)
-	{
-		this.similarityDAO = similarityDAO;
-	}
-
-	public void setEventsDAO(EventsDAO eventsDAO)
-	{
-		this.eventsDAO = eventsDAO;
-	}
-
-	public void setEntitiesDAO(EntitiesDAO entitiesDAO)
-	{
+		this.modelLoader = modelLoader;
+		ExtracterType extracterType = ExtracterType.valueOf(extracterTypeStr);
+		this.entityTagger = buildEntityTagger(extracterType);
 		this.entitiesDAO = entitiesDAO;
+		this.similarityDAO = similarityDAO;
+		this.executorService = Executors.newFixedThreadPool(10);
+		this.entityExtracter = buildEntityExtracter(executorService, entityTagger, contentGetter);
 	}
 
-    public void setEntityExtracter(EntityExtracter entityExtracter)
+	public static enum ExtracterType
 	{
-		this.entityExtracter = entityExtracter;
+		CoreNLP, StanfordNLP;
+	};
+
+	private EntityTagger buildEntityTagger(ExtracterType extracterType)
+	{
+		EntityTagger entityTagger = null;
+
+        logger.debug("extracterType = " + extracterType);
+
+        switch(extracterType)
+        {
+        case CoreNLP:
+        {
+    		entityTagger = new CoreNLPEntityTagger(modelLoader, 8);
+        	break;
+        }
+        case StanfordNLP:
+        {
+        	entityTagger = StanfordEntityTagger.build();
+        	break;
+        }
+        default:
+        	throw new IllegalArgumentException("Invalid entity.extracter.type");
+        }
+
+        return entityTagger;
 	}
 
-	public void init() throws AuthenticationException, IOException, JSONException
-    {
-    }
-
-	private void getEntitiesForEventAsync(final NodeContentPutEvent nodeEvent) throws AuthenticationException, IOException
-    {
-    	final long nodeInternalId = nodeEvent.getNodeInternalId();
-    	final String txnId = nodeEvent.getTxnId();
-    	final String nodeId = nodeEvent.getNodeId();
-    	final String nodeVersion = nodeEvent.getVersionLabel();
-
-    	EntityTaggerCallback callback = new EntityTaggerCallback()
-		{
-			
-			@Override
-			public void onSuccess(Entities entities)
-			{
-				Node node = new Node(nodeId, nodeVersion);
-				entitiesDAO.addEntities(txnId, node, entities);
-
-				List<Entities> allEntities = entitiesDAO.getEntities();
-				for(Entities e : allEntities)
-				{
-					double similarity = similarity(entities, e);
-	
-					Node node2 = new Node(e.getNodeId(), e.getNodeVersion());
-					similarityDAO.saveSimilarity(node, node2, similarity);
-				}
-			}
-			
-			@Override
-			public void onFailure(Throwable ex)
-			{
-				// TODO Auto-generated method stub
-				
-			}
-		};
-
-		entityExtracter.getEntities(nodeInternalId, callback);
-    }
-
-    private void getEntitiesForEvent(final NodeContentPutEvent nodeEvent) throws AuthenticationException, IOException
-    {
-    	final long nodeInternalId = nodeEvent.getNodeInternalId();
-    	final String nodeId = nodeEvent.getNodeId();
-    	final String nodeVersion = nodeEvent.getVersionLabel();
-
-		Entities entities = entityExtracter.getEntities(nodeInternalId);
-		if(entities != null)
-		{
-			final String txnId = nodeEvent.getTxnId();
-			final Node node = new Node(nodeId, nodeVersion);
-			entitiesDAO.addEntities(txnId, node, entities);
-
-			List<Entities> allEntities = entitiesDAO.getEntities();
-			for(Entities e : allEntities)
-			{
-				double similarity = similarity(entities, e);
-
-				Node node2 = new Node(e.getNodeId(), e.getNodeVersion());
-				similarityDAO.saveSimilarity(node, node2, similarity);
-			}
-		}
-    }
-
-    private void getEntitiesForEvent(final NodeUpdatedEvent nodeEvent) throws IOException
-    {
-    	final String nodeId = nodeEvent.getNodeId();
-    	final String nodeVersion = nodeEvent.getVersionLabel();
-
-		Map<String, Property> propertiesAdded = nodeEvent.getPropertiesAdded();
-    	for(Map.Entry<String, Property> entry : propertiesAdded.entrySet())
-    	{
-    		Property property = entry.getValue();
-    		Serializable value = property.getValue();
-    		if(value instanceof String)
-    		{
-    			String content = (String)value;
-    			Entities entities = entityTagger.getEntities(content);
-    			if(entities != null)
-    			{
-    				final String txnId = nodeEvent.getTxnId();
-    				final Node node = new Node(nodeId, nodeVersion);
-    				entitiesDAO.addEntities(txnId, node, entities);
-    			}
-    		}
-    	}
-    }
-
-    @Override
-    public void getEntitiesForEvent(Event event) throws IOException, AuthenticationException
-    {
-    	String eventType = event.getType();
-    	switch(eventType)
-    	{
-    	case NodeAddedEvent.EVENT_TYPE:
-    	{
-    		getEntitiesForEvent((NodeAddedEvent)event);
-    		break;
-    	}
-    	case NodeContentPutEvent.EVENT_TYPE:
-    	{
-    		getEntitiesForEvent((NodeContentPutEvent)event);
-    		break;
-    	}
-    	case NodeUpdatedEvent.EVENT_TYPE:
-    	{
-    		getEntitiesForEvent((NodeUpdatedEvent)event);
-    		break;
-    	}
-    	default:
-    	}
-    }
-
-    private void getEntitiesForEvent(final NodeAddedEvent nodeEvent) throws IOException
-    {
-    	final String nodeId = nodeEvent.getNodeId();
-    	final String nodeVersion = nodeEvent.getVersionLabel();
-
-		Map<String, Serializable> propertiesAdded = nodeEvent.getNodeProperties();
-    	for(Map.Entry<String, Serializable> entry : propertiesAdded.entrySet())
-    	{
-    		Serializable value = entry.getValue();
-    		if(value instanceof String)
-    		{
-    			String content = (String)value;
-    			Entities entities = entityTagger.getEntities(content);
-    			if(entities != null)
-    			{
-    				final String txnId = nodeEvent.getTxnId();
-    				final Node node = new Node(nodeId, nodeVersion);
-    				entitiesDAO.addEntities(txnId, node, entities);
-    			}
-    		}
-    	}
-    }
+	private EntityExtracter buildEntityExtracter(ExecutorService executorService, EntityTagger entityTagger,
+			ContentGetter contentGetter)
+	{
+		EntityExtracter entityExtracter = new EntityExtracter(contentGetter, entityTagger, executorService);
+        return entityExtracter;
+	}
 
     private class CalculateSimilarities implements Runnable
     {
@@ -268,11 +143,13 @@ public class EntitiesServiceImpl implements EntitiesService
     	}
     }
 
-    private void calculateSimilarities(String txnId)
+    @Override
+    public void calculateSimilarities(String txnId)
     {
     	CalculateSimilarities cs = new CalculateSimilarities(txnId);
     	executorService.execute(cs);
     }
+
 
 	@Override
 	public Collection<Entity<String>> getNames(Node node)
@@ -316,29 +193,112 @@ public class EntitiesServiceImpl implements EntitiesService
 	}
 
 	@Override
-	public void txnCommitted(TransactionCommittedEvent txnCommittedEvent)
+	public void getEntities(final Node node) throws AuthenticationException, IOException
 	{
-		try
+		EntityTaggerCallback callback = new EntityTaggerCallback()
 		{
-			List<Event> events = eventsDAO.getEventsForTxn(txnCommittedEvent.getTxnId());
-			for(Event event : events)
+			@Override
+			public void onSuccess(Entities entities)
 			{
-				getEntitiesForEvent(event);
+				logger.debug("Got entities for node " + node + ", " + entities);
+				entitiesDAO.addEntities(null, node, entities);
+			}
+
+			@Override
+			public void onFailure(Throwable ex)
+			{
+				logger.error(ex);
+			}
+		};
+		entityExtracter.getEntities(node.getNodeInternalId(), callback);
+	}
+
+	@Override
+	public void getEntitiesAsync(final Node node)
+	{
+		executorService.submit(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				try
+				{
+					getEntities(node);
+				}
+				catch(AuthenticationException e)
+				{
+					// TODO
+				}
+				catch(IOException e)
+				{
+					// TODO
+				}
+			}
+		});
+	}
+
+//	@Override
+//	public void getEntities(String txnId, String nodeId, String nodeVersion, String content) throws IOException
+//	{
+//		Entities entities = entityTagger.getEntities(content);
+//		if(entities != null)
+//		{
+//			final Node node = new Node(nodeId, nodeVersion);
+//			entitiesDAO.addEntities(txnId, node, entities);
+//		}
+//	}
+
+//	@Override
+//	public void getEntities(String txnId, long nodeInternalId, String nodeId, String nodeVersion)
+//			throws IOException, AuthenticationException
+//	{
+//		Entities entities = entityExtracter.getEntities(nodeId, nodeVersion);
+//		if(entities != null)
+//		{
+//			final Node node = new Node(nodeId, nodeVersion);
+//			entitiesDAO.addEntities(txnId, node, entities);
+//
+//			List<Entities> allEntities = entitiesDAO.getEntities();
+//			for(Entities e : allEntities)
+//			{
+//				double similarity = similarity(entities, e);
+//
+//				Node node2 = new Node(e.getNodeId(), e.getNodeVersion());
+//				similarityDAO.saveSimilarity(node, node2, similarity);
+//			}
+//		}
+//	}
+
+	private void getEntitiesForEventAsync(final String txnId, final long nodeInternalId, final String nodeId,
+			final String nodeVersion) throws AuthenticationException, IOException
+    {
+    	EntityTaggerCallback callback = new EntityTaggerCallback()
+		{
+			
+			@Override
+			public void onSuccess(Entities entities)
+			{
+				Node node = new Node(nodeId, nodeVersion);
+				entitiesDAO.addEntities(txnId, node, entities);
+
+				List<Entities> allEntities = entitiesDAO.getEntities();
+				for(Entities e : allEntities)
+				{
+					double similarity = similarity(entities, e);
+	
+					Node node2 = new Node(e.getNodeId(), e.getNodeVersion());
+					similarityDAO.saveSimilarity(node, node2, similarity);
+				}
 			}
 			
-		}
-		catch(IOException e)
-		{
-			// TOOD
-			logger.error(e);
-		}
-		catch(AuthenticationException e)
-		{
-			// TOOD
-			logger.error(e);
-		}
-//		entitiesDAO.txnCommitted(event);
-//
-		calculateSimilarities(txnCommittedEvent.getTxnId());
-	}
+			@Override
+			public void onFailure(Throwable ex)
+			{
+				// TODO Auto-generated method stub
+				
+			}
+		};
+
+		entityExtracter.getEntities(nodeInternalId, callback);
+    }
 }

@@ -12,19 +12,21 @@ import static org.junit.Assert.assertNotNull;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
+import java.util.Arrays;
 import java.util.Map;
 
 import org.alfresco.MockAlfrescoApi;
 import org.alfresco.MockContentGetter;
-import org.alfresco.cacheserver.checksum.ChecksumService;
-import org.alfresco.cacheserver.checksum.ChecksumServiceImpl;
-import org.alfresco.cacheserver.checksum.DocumentChecksums;
-import org.alfresco.cacheserver.dao.ChecksumDAO;
-import org.alfresco.cacheserver.entity.GUID;
-import org.alfresco.cacheserver.entity.Node;
+import org.alfresco.checksum.ChecksumService;
+import org.alfresco.checksum.ChecksumServiceImpl;
+import org.alfresco.checksum.NodeChecksums;
+import org.alfresco.checksum.dao.ChecksumDAO;
+import org.alfresco.extensions.common.Content;
+import org.alfresco.extensions.common.GUID;
+import org.alfresco.extensions.common.Node;
 import org.alfresco.services.AlfrescoApi;
-import org.alfresco.services.Content;
-import org.apache.commons.io.IOUtils;
 import org.gytheio.messaging.MessageProducer;
 import org.gytheio.messaging.MessagingException;
 import org.junit.AfterClass;
@@ -45,174 +47,188 @@ import de.flapdoodle.embed.mongo.tests.MongodForTestsFactory;
  * @author sglover
  *
  */
-//@RunWith(SpringJUnit4ClassRunner.class)
-//@ContextConfiguration(locations = { "spring.xml" })
+// @RunWith(SpringJUnit4ClassRunner.class)
+// @ContextConfiguration(locations = { "spring.xml" })
 public class TestEdgeServer
 {
-	private static MongodForTestsFactory mongoFactory;
+    private static MongodForTestsFactory mongoFactory;
 
-	private CacheServer edgeServer;
-//	private ContentDAO contentDAO;
-//	private ContentStore contentStore;
-	private MockContentGetter contentGetter;
+    private CacheServer edgeServer;
+    // private ContentDAO contentDAO;
+    // private ContentStore contentStore;
+    private MockContentGetter contentGetter;
 
-	@BeforeClass
-	public static void beforeClass() throws Exception
-	{
+    @BeforeClass
+    public static void beforeClass() throws Exception
+    {
         mongoFactory = MongodForTestsFactory.with(Version.Main.PRODUCTION);
     }
-    
-	@AfterClass
-	public static void afterClass()
-	{
-        mongoFactory.shutdown();
-	}
 
-	@Before
-	public void before() throws Exception
-	{
+    @AfterClass
+    public static void afterClass()
+    {
+        mongoFactory.shutdown();
+    }
+
+    @Before
+    public void before() throws Exception
+    {
         final Mongo mongo = mongoFactory.newMongo();
         DB db = mongoFactory.newDB(mongo);
 
-		MessageProducer messageProducer = new MessageProducer()
-		{
-			@Override
-			public void send(Object arg0, String arg1, Map<String, Object> arg2)
-			        throws MessagingException
-			{
-			}
-			
-			@Override
-			public void send(Object arg0, String arg1) throws MessagingException
-			{
-			}
-			
-			@Override
-			public void send(Object arg0, Map<String, Object> arg1)
-			        throws MessagingException
-			{
-			}
-			
-			@Override
-			public void send(Object arg0) throws MessagingException
-			{
-			}
-		};
-		CacheServerIdentity cacheServerIdentity = new CacheServerIdentity()
-		{
-			
-			@Override
-			public int getPort()
-			{
-				return 0;
-			}
-			
-			@Override
-			public String getId()
-			{
-				return GUID.generate();
-			}
-			
-			@Override
-			public String getHostname()
-			{
-				return "localhost";
-			}
-		};
+        MessageProducer messageProducer = new MessageProducer()
+        {
+            @Override
+            public void send(Object arg0, String arg1, Map<String, Object> arg2)
+                    throws MessagingException
+            {
+            }
+
+            @Override
+            public void send(Object arg0, String arg1)
+                    throws MessagingException
+            {
+            }
+
+            @Override
+            public void send(Object arg0, Map<String, Object> arg1)
+                    throws MessagingException
+            {
+            }
+
+            @Override
+            public void send(Object arg0) throws MessagingException
+            {
+            }
+        };
+        CacheServerIdentity cacheServerIdentity = new CacheServerIdentity()
+        {
+
+            @Override
+            public int getPort()
+            {
+                return 0;
+            }
+
+            @Override
+            public String getId()
+            {
+                return GUID.generate();
+            }
+
+            @Override
+            public String getHostname()
+            {
+                return "localhost";
+            }
+        };
         ChecksumDAO checksumDAO = new ChecksumDAO()
-		{
-			@Override
-			public void saveChecksums(DocumentChecksums checksums)
-			{
-				// TODO Auto-generated method stub
-				
-			}
-			
-			@Override
-			public DocumentChecksums getChecksums(String contentUrl)
-			{
-				// TODO Auto-generated method stub
-				return null;
-			}
-		};
-        ChecksumService checksumService = new ChecksumServiceImpl(messageProducer, cacheServerIdentity,
-        		checksumDAO);
-		CacheServerIdentity edgeServerIdentity = new CacheServerIdentity()
-		{
-			
-			@Override
-			public int getPort()
-			{
-				return 8080;
-			}
-			
-			@Override
-			public String getId()
-			{
-				return "";
-			}
-			
-			@Override
-			public String getHostname()
-			{
-				return "localhost";
-			}
-		};
+        {
+            @Override
+            public void saveChecksums(NodeChecksums checksums)
+            {
+                // TODO Auto-generated method stub
+
+            }
+
+            @Override
+            public NodeChecksums getChecksums(String nodeId, long nodeVersion)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+        };
+        ChecksumService checksumService = new ChecksumServiceImpl(checksumDAO);
+        CacheServerIdentity edgeServerIdentity = new CacheServerIdentity()
+        {
+
+            @Override
+            public int getPort()
+            {
+                return 8080;
+            }
+
+            @Override
+            public String getId()
+            {
+                return "";
+            }
+
+            @Override
+            public String getHostname()
+            {
+                return "localhost";
+            }
+        };
 
         long time = System.currentTimeMillis();
         String contentCollectionName = "content" + time;
         String contentUsageCollectionName = "contentUsage" + time;
-//		this.contentDAO = new MongoContentDAO(db, contentCollectionName, contentUsageCollectionName, edgeServerIdentity);
-//		this.contentStore = new ContentStore(ch);
+        // this.contentDAO = new MongoContentDAO(db, contentCollectionName,
+        // contentUsageCollectionName, edgeServerIdentity);
+        // this.contentStore = new ContentStore(ch);
 
-		this.contentGetter = new MockContentGetter();
-		AlfrescoApi alfrescoApi = new MockAlfrescoApi();
+        this.contentGetter = new MockContentGetter();
+        AlfrescoApi alfrescoApi = new MockAlfrescoApi();
 
-//		this.edgeServer = new CacheServer(contentDAO, contentStore, contentGetter, alfrescoApi,
-//				edgeServerIdentity, null);
-	}
+        // this.edgeServer = new CacheServer(contentDAO, contentStore,
+        // contentGetter, alfrescoApi,
+        // edgeServerIdentity, null);
+    }
 
-	@Test
-	public void test1() throws Exception
-	{
-		long nodeInternalId = 1l;
-		String nodeId = GUID.generate();
-		String nodeVersion = "1";
-		String nodePath = "/1/2/3";
-		byte[] bytes = "test".getBytes("UTF-8");
-		String expectedMimeType = "text/plain";
-		Long expectedSize = new Long(bytes.length);
-		InputStream nodeContent = new ByteArrayInputStream(bytes);
-		InputStream contentIn = null;
-		try
-		{	
-			contentGetter.addTestContent(nodeInternalId, nodeId, nodeVersion, "test", expectedMimeType);
+    private void compare(ByteBuffer expected, ByteBuffer actual)
+    {
+        Arrays.equals(expected.array(), actual.array());
+    }
 
-			edgeServer.contentUpdated(Node.build().nodeId(nodeId).nodeVersion(nodeVersion),
-					nodePath, expectedMimeType, expectedSize);
-	
-			UserDetails userDetails = new User("admin", null, null);
-			UserContext.setUser(userDetails);
+    @Test
+    public void test1() throws Exception
+    {
+        long nodeInternalId = 1l;
+        String nodeId = GUID.generate();
+        String nodeVersion = "1";
+        String nodePath = "/1/2/3";
+        byte[] bytes = "test".getBytes("UTF-8");
+        String expectedMimeType = "text/plain";
+        Long expectedSize = new Long(bytes.length);
+        InputStream nodeContent = new ByteArrayInputStream(bytes);
+        ReadableByteChannel channel = null;
+        try
+        {
+            contentGetter.addTestContent(nodeInternalId, nodeId, nodeVersion,
+                    nodePath, "test", expectedMimeType);
 
-			Content content = edgeServer.getByNodePath(nodePath);
-			contentIn = content.getIn();
-			assertNotNull(contentIn);
-			assertEquals(expectedMimeType, content.getMimeType());
-			assertEquals(expectedSize, content.getSize());
-			InputStream expectedNodeContent = new ByteArrayInputStream(bytes);
-			IOUtils.contentEquals(expectedNodeContent, contentIn);
-		}
-		finally
-		{
-			if(nodeContent != null)
-			{
-				nodeContent.close();
-			}
-			if(contentIn != null)
-			{
-				contentIn.close();
-			}
-			UserContext.setUser(null);
-		}
-	}
+            edgeServer.repoContentUpdated(Node.build().nodeId(nodeId)
+                    .versionLabel(nodeVersion).nodePath(nodePath),
+                    expectedMimeType, expectedSize, true);
+
+            UserDetails userDetails = new User("admin", null, null);
+            UserContext.setUser(userDetails);
+
+            Content content = edgeServer.getByNodeId(nodeId, nodeVersion, true);
+            channel = content.getChannel();
+            ByteBuffer bb = ByteBuffer.allocate(2048);
+            channel.read(bb);
+            assertNotNull(channel);
+            assertEquals(expectedMimeType, content.getMimeType());
+            assertEquals(expectedSize, content.getSize());
+
+            ByteBuffer expectedNodeContent = ByteBuffer.wrap("test"
+                    .getBytes("UTF-8"));
+
+            compare(expectedNodeContent, bb);
+        }
+        finally
+        {
+            if (nodeContent != null)
+            {
+                nodeContent.close();
+            }
+            if (channel != null)
+            {
+                channel.close();
+            }
+            UserContext.setUser(null);
+        }
+    }
 }

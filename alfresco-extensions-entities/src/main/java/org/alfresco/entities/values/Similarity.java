@@ -7,6 +7,8 @@
  */
 package org.alfresco.entities.values;
 
+import org.alfresco.extensions.common.Node;
+
 /**
  * 
  * @author sglover

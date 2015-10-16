@@ -13,6 +13,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import org.alfresco.httpclient.AlfrescoHttpClient;
 import org.alfresco.service.common.elasticsearch.ElasticSearchClient;
 import org.alfresco.service.common.elasticsearch.ElasticSearchIndexer;
+import org.alfresco.service.common.elasticsearch.ElasticSearchMonitoringIndexer;
 import org.alfresco.services.AlfrescoApi;
 import org.alfresco.services.AlfrescoDictionary;
 import org.alfresco.services.ContentGetter;
@@ -39,7 +40,8 @@ public class ElasticSearchComponent
 {
 	private static final Log logger = LogFactory.getLog(ElasticSearchComponent.class);
 
-	private ElasticSearchIndexer elasticSearch;
+	private ElasticSearchIndexer elasticSearchIndexer;
+	private ElasticSearchMonitoringIndexer elasticSearchMonitoringIndexer;
 	private ThreadPoolExecutor threadPool;
 
 	@Inject public ElasticSearchComponent(Settings settings, Client client, AlfrescoApi alfrescoApi, ContentGetter contentGetter,
@@ -58,8 +60,9 @@ public class ElasticSearchComponent
 
     	AlfrescoDictionary alfrescoDictionary = new AlfrescoDictionary(alfrescoHttpClient);
 
-     	this.elasticSearch = new ElasticSearchIndexer(alfrescoApi, contentGetter, entityTagger, entityExtracter, client,
+     	this.elasticSearchIndexer = new ElasticSearchIndexer(alfrescoApi, contentGetter, entityTagger, entityExtracter, client,
      			alfrescoDictionary, elasticSearchClient, indexName);
+     	this.elasticSearchMonitoringIndexer = new ElasticSearchMonitoringIndexer(elasticSearchClient, indexName);
 	}
 
 	private EntityTagger buildEntityTagger(String extracterType)
@@ -97,15 +100,20 @@ public class ElasticSearchComponent
     		threadPool.shutdown();
     	}
 
-    	if(elasticSearch != null)
+    	if(elasticSearchIndexer != null)
     	{
-    		elasticSearch.shutdown();
+    		elasticSearchIndexer.shutdown();
     	}
 	}
 
-	public ElasticSearchIndexer getElasticSearch()
+	public ElasticSearchIndexer getElasticSearchIndexer()
 	{
-		return elasticSearch;
+		return elasticSearchIndexer;
+	}
+
+	public ElasticSearchMonitoringIndexer getElasticSearchMonitoringIndexer()
+	{
+		return elasticSearchMonitoringIndexer;
 	}
 
 //	public void start() throws Exception

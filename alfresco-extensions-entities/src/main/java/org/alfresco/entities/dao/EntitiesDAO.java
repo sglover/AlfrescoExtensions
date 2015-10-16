@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.alfresco.entities.values.EntityCounts;
-import org.alfresco.entities.values.Node;
+import org.alfresco.extensions.common.Node;
 import org.alfresco.services.nlp.Entities;
 import org.alfresco.services.nlp.Entity;
 

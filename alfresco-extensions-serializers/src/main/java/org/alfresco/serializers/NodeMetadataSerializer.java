@@ -23,6 +23,9 @@ import com.mongodb.BasicDBObjectBuilder;
  */
 public interface NodeMetadataSerializer
 {
+	void buildNodeMetadata(BasicDBObjectBuilder builder,
+            String nodeId, String changeTxnId, String nodeType,
+            Map<String, Serializable> props, Set<String> aspects);
     void buildNodeMetadata(BasicDBObjectBuilder builder, NodeVersionKey nodeVersionKey, String changeTxnId,
             Long txnId, String nodeType, Map<String, Serializable> props, Set<String> aspectQNames);
     void buildNodeMetadata(XContentBuilder builder,

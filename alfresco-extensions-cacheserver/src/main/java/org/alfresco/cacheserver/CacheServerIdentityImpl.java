@@ -36,12 +36,12 @@ public class CacheServerIdentityImpl implements CacheServerIdentity
 	private int port;
 
 	private String dataFilename = "cacheserver.json";
-	
 
-	public CacheServerIdentityImpl(String hostname, int port)
+	public CacheServerIdentityImpl(String hostname, int port, String dataFilename)
 	{
 		this.hostname = hostname;
 		this.port = port;
+		this.dataFilename = dataFilename;
 
 		File dataFile = dataFile();
 

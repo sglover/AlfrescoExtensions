@@ -9,8 +9,8 @@ package org.alfresco.entities.dao;
 
 import java.util.List;
 
-import org.alfresco.entities.values.Node;
 import org.alfresco.entities.values.Similarity;
+import org.alfresco.extensions.common.Node;
 
 /**
  * 

@@ -14,14 +14,16 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.alfresco.extensions.common.Content;
 import org.alfresco.httpclient.AuthenticationException;
-import org.alfresco.httpclient.Response;
-import org.alfresco.services.Content;
 import org.alfresco.services.ContentGetter;
 import org.alfresco.services.solr.GetTextContentResponse;
+import org.alfresco.services.solr.SolrApiContentStatus;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -35,6 +37,7 @@ public class MockContentGetter implements ContentGetter
     private static final Log logger = LogFactory.getLog(MockContentGetter.class);
 
     private Map<Node, Content> testContentByNodeId = new HashMap<>();
+    private Map<String, Content> testContentByNodePath = new HashMap<>();
     private Map<Long, Content> testContentByNodeInternalId = new HashMap<>();
 
     public static MockContentGetter start()
@@ -103,33 +106,36 @@ public class MockContentGetter implements ContentGetter
         }
 	}
 
-	public MockContentGetter addTestContent(long nodeInternalId, String nodeId, String nodeVersion, String nodeContent,
-			String mimeType)
+	public MockContentGetter addTestContent(long nodeInternalId, String nodeId, String nodeVersion, 
+	        String nodePath, String nodeContent, String mimeType)
 	{
 		long size = nodeContent.getBytes().length;
 		ByteArrayInputStream in = new ByteArrayInputStream(nodeContent.getBytes());
-		Content content = new Content(in, mimeType, size);
+		ReadableByteChannel channel = Channels.newChannel(in);
+		Content content = new Content(channel, mimeType, size);
 		Node node = new Node(nodeId, nodeVersion);
 		testContentByNodeId.put(node, content);
 		testContentByNodeInternalId.put(nodeInternalId, content);
+		testContentByNodePath.put(nodePath, content);
 		return this;
 	}
 
-	public MockContentGetter addTestContent(long nodeInternalId, String nodeId, String nodeVersion, File nodeContent,
-			String mimeType) throws FileNotFoundException
+	public MockContentGetter addTestContent(long nodeInternalId, String nodeId, String nodeVersion,
+	        String nodePath, File nodeContent, String mimeType) throws FileNotFoundException
 	{
 		long size = nodeContent.length();
 		InputStream in = new BufferedInputStream(new FileInputStream(nodeContent));
-
-		Content content = new Content(in, mimeType, size);
+		ReadableByteChannel channel = Channels.newChannel(in);
+		Content content = new Content(channel, mimeType, size);
 		Node node = new Node(nodeId, nodeVersion);
 		testContentByNodeId.put(node, content);
 		testContentByNodeInternalId.put(nodeInternalId, content);
+		testContentByNodePath.put(nodePath, content);
 		return this;
 	}
 
 	@Override
-	public Content getContent(String nodeId, String nodeVersion)
+	public Content getContentByNodeId(String nodeId, String nodeVersion)
 	{
 		Node node = new Node(nodeId, nodeVersion);
 		Content content = testContentByNodeId.get(node);
@@ -141,40 +147,16 @@ public class MockContentGetter implements ContentGetter
             throws AuthenticationException, IOException
     {
 		Content content = testContentByNodeInternalId.get(nodeInternalId);
-		final InputStream is = content.getIn();
-		Response response = new Response()
-		{
-
-			@Override
-            public InputStream getContentAsStream() throws IOException
-            {
-	            return is;
-            }
-
-			@Override
-            public String getHeader(String name)
-            {
-	            return "";
-            }
-
-			@Override
-            public String getContentType()
-            {
-	            return "text/plain";
-            }
-
-			@Override
-            public int getStatus()
-            {
-	            return 0;
-            }
-
-			@Override
-            public void release()
-            {
-            }
-		};
-		GetTextContentResponse textResponse = new GetTextContentResponse(response);
+		final ReadableByteChannel channel = content.getChannel();
+		GetTextContentResponse textResponse = new GetTextContentResponse(channel, SolrApiContentStatus.OK,
+		        null, null, 0l);
     	return textResponse;
     }
+
+//    @Override
+//    public Content getContentByNodePath(String path) throws IOException
+//    {
+//        Content content = testContentByNodePath.get(path);
+//        return content;
+//    }
 }

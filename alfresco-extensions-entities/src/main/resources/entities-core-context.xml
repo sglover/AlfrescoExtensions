@@ -76,9 +76,6 @@
    <bean id="entityExtracter" class="org.alfresco.services.nlp.EntityExtracter">
         <constructor-arg ref="contentGetter"/>
         <constructor-arg ref="entityTagger"/>
-        <!-- 
-        <constructor-arg ref="executorService"/>
-         -->
    </bean>
 
    <bean id="entitiesService" class="org.alfresco.entities.EntitiesServiceImpl" init-method="init">

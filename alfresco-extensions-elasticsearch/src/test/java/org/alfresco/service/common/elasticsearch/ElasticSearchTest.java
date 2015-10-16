@@ -45,7 +45,7 @@ public class ElasticSearchTest
     @Before
     public void before() throws Exception
     {
-    	this.client = new ElasticSearchClient("localhost", 9300, "alfresco");
+    	this.client = new ElasticSearchClient("ec2-54-170-138-219.eu-west-1.compute.amazonaws.com", 9300, "alfresco");
     }
 
     @After

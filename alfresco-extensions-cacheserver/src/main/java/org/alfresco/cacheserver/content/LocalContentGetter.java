@@ -5,16 +5,15 @@
  * pursuant to a written agreement and any use of this program without such an 
  * agreement is prohibited. 
  */
-package org.alfresco.cacheserver;
+package org.alfresco.cacheserver.content;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.nio.channels.ReadableByteChannel;
 
-import org.alfresco.cacheserver.contentstore.ContentStore;
-import org.alfresco.cacheserver.dao.ContentDAO;
-import org.alfresco.cacheserver.entity.NodeInfo;
+import org.alfresco.contentstore.AbstractContentStore;
+import org.alfresco.contentstore.dao.ContentDAO;
+import org.alfresco.extensions.common.Content;
 import org.alfresco.httpclient.AuthenticationException;
-import org.alfresco.services.Content;
 import org.alfresco.services.ContentGetter;
 import org.alfresco.services.solr.GetTextContentResponse;
 import org.apache.commons.logging.Log;
@@ -30,35 +29,70 @@ public class LocalContentGetter implements ContentGetter
 	private static Log logger = LogFactory.getLog(LocalContentGetter.class);
 
 	private final ContentDAO contentDAO;
-	private final ContentStore contentStore;
-	private final ContentStore textContentStore;
+	private final AbstractContentStore contentStore;
+	private final AbstractContentStore textContentStore;
 
-	public LocalContentGetter(ContentStore contentStore, ContentStore textContentStore, ContentDAO contentDAO)
+	public LocalContentGetter(AbstractContentStore contentStore, AbstractContentStore textContentStore, ContentDAO contentDAO)
     {
 		this.contentStore = contentStore;
 		this.textContentStore = textContentStore;
 		this.contentDAO = contentDAO;
     }
 
+//	private Content getContent(NodeInfo nodeInfo) throws IOException
+//	{
+//        NodeInfo nodeInfo = contentStore.getByNodeId(nodeId, nodeVersion, true);
+//        if(nodeInfo != null)
+//        {
+//            content = getContent(nodeInfo);
+//        }
+//
+//	    String nodeId = nodeInfo.getNode().getNodeId();
+//	    String nodeVersion = nodeInfo.getNode().getVersionLabel();
+//	    String contentPath = nodeInfo.getContentPath();
+//
+//	    SeekableByteChannel channel = contentStore.getContent(contentPath);
+//        UserDetails userDetails = UserContext.getUser();
+//        String username = userDetails.getUsername();
+//        NodeUsage nodeUsage = new NodeUsage(nodeId, nodeVersion, System.currentTimeMillis(), username);
+//        contentDAO.addUsage(nodeUsage);
+//
+//	    String mimeType = nodeInfo.getMimeType();
+//	    Long size = nodeInfo.getSize();
+//
+//	    Content content = new Content(channel, mimeType, size);
+//	    return content;
+//	}
+
 	@Override
-    public Content getContent(String nodeId, String nodeVersion) throws IOException
+    public Content getContentByNodeId(String nodeId, String nodeVersion) throws IOException
     {
-        NodeInfo nodeInfo = contentDAO.getByNodeId(nodeId, nodeVersion, true);
-        String contentPath = nodeInfo.getContentPath();
-        InputStream in = contentStore.getContent(contentPath);
-        Content content = new Content(in, nodeInfo.getMimeType(), nodeInfo.getSize());
+        Content content = contentStore.getByNodeId(nodeId, nodeVersion, true);
 	    return content;
     }
+
+//	@Override
+//	public Content getContentByNodePath(String nodePath) throws IOException
+//	{
+//	    Content content = null;
+//
+//	    NodeInfo nodeInfo = contentDAO.getByNodePath(nodePath);
+//	    if(nodeInfo != null)
+//	    {
+//	        content = getContent(nodeInfo);
+//	    }
+//
+//	    return content;
+//	}
 
 	@Override
     public GetTextContentResponse getTextContent(long nodeId) throws AuthenticationException, IOException
     {
-        NodeInfo nodeInfo = contentDAO.getByNodeId(nodeId, "text/plain");
-        if(nodeInfo != null)
+        Content content = textContentStore.getTextContent(nodeId);
+        if(content != null)
         {
-	        String contentPath = nodeInfo.getContentPath();
-	        InputStream in = textContentStore.getContent(contentPath);
-	        GetTextContentResponse getTextResponse = new GetTextContentResponse(in, null, 
+	        ReadableByteChannel channel = content.getChannel();
+	        GetTextContentResponse getTextResponse = new GetTextContentResponse(channel, null, 
 	        		null, null, null);
 	        return getTextResponse;
         }

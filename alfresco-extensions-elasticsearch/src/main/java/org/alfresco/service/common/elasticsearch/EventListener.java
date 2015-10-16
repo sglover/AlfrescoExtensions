@@ -15,6 +15,7 @@ import org.alfresco.events.node.types.NodeContentPutEvent;
 import org.alfresco.events.node.types.NodeEvent;
 import org.alfresco.events.node.types.NodeRemovedEvent;
 import org.alfresco.events.node.types.NodeUpdatedEvent;
+import org.alfresco.service.synchronization.api.SyncEvent;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -27,13 +28,15 @@ public class EventListener
 {
     private static final Log logger = LogFactory.getLog(EventListener.class);
 
-	protected ElasticSearchIndexer elasticSearch;
+	protected ElasticSearchMonitoringIndexer elasticSearchMonitoringIndexer;
+	protected ElasticSearchIndexer elasticSearchIndexer;
 	protected ExecutorService executorService;
 
-    public EventListener(ElasticSearchIndexer elasticSearch)
+    public EventListener(ElasticSearchIndexer elasticSearchIndexer, ElasticSearchMonitoringIndexer elasticSearchMonitoringIndexer)
     {
 	    super();
-	    this.elasticSearch = elasticSearch;
+	    this.elasticSearchIndexer = elasticSearchIndexer;
+	    this.elasticSearchMonitoringIndexer = elasticSearchMonitoringIndexer;
     }
 
     public void onChange(Object message)
@@ -42,14 +45,19 @@ public class EventListener
         {
         	logger.debug("message: " + message);
 
-            if (message instanceof NodeEvent)
+            if (message instanceof SyncEvent)
+            {
+            	SyncEvent event = (SyncEvent)message;
+            	elasticSearchMonitoringIndexer.indexSync(event);
+            }
+            else if (message instanceof NodeEvent)
             {
             	NodeEvent nodeEvent = (NodeEvent)message;
 
 	            if (nodeEvent instanceof NodeAddedEvent)
 	            {
 	                NodeAddedEvent event = (NodeAddedEvent)nodeEvent;
-	                elasticSearch.indexNode(event);
+	                elasticSearchIndexer.indexNode(event);
 	            }
 	            else if (nodeEvent instanceof NodeRemovedEvent)
 	            {
@@ -61,22 +69,50 @@ public class EventListener
 	            else if (nodeEvent instanceof NodeUpdatedEvent)
 	            {
 	            	NodeUpdatedEvent event = (NodeUpdatedEvent)nodeEvent;
-	            	elasticSearch.reindexNode(event);
+	            	elasticSearchIndexer.reindexNode(event);
 //					elasticSearch.indexEntities(nodeEvent);
 	            }
 	            else if (nodeEvent instanceof NodeContentPutEvent)
 	            {
 	            	NodeContentPutEvent event = (NodeContentPutEvent)nodeEvent;
-	            	elasticSearch.indexNode(event);
-	            	elasticSearch.indexContent(event);
+	            	elasticSearchIndexer.indexNode(event);
+	            	elasticSearchIndexer.indexContent(event);
 //					elasticSearch.indexEntities(nodeEvent);
 	            }
 	
-	            if(nodeEvent instanceof NodeEvent)
+	            elasticSearchIndexer.indexEvent(nodeEvent);
+            }
+            else if (message instanceof org.alfresco.events.types.NodeEvent)
+            {
+            	org.alfresco.events.types.NodeEvent nodeEvent = (org.alfresco.events.types.NodeEvent)message;
+
+	            if (nodeEvent instanceof org.alfresco.events.types.NodeAddedEvent)
 	            {
-	            	NodeEvent event = (NodeEvent)message;
-	            	elasticSearch.indexEvent(event);
+	            	org.alfresco.events.types.NodeAddedEvent event = (org.alfresco.events.types.NodeAddedEvent)nodeEvent;
+	            	elasticSearchIndexer.indexNode(event);
 	            }
+	            else if (nodeEvent instanceof org.alfresco.events.types.NodeRemovedEvent)
+	            {
+	            	org.alfresco.events.types.NodeRemovedEvent event = (org.alfresco.events.types.NodeRemovedEvent)nodeEvent;
+//	            	elasticSearch.unindexNode(event);
+//	            	elasticSearch.unindexContent(event);
+	            	// TODO
+	            }
+	            else if (nodeEvent instanceof org.alfresco.events.types.NodeUpdatedEvent)
+	            {
+	            	org.alfresco.events.types.NodeUpdatedEvent event = (org.alfresco.events.types.NodeUpdatedEvent)nodeEvent;
+	            	elasticSearchIndexer.reindexNode(event);
+//					elasticSearch.indexEntities(nodeEvent);
+	            }
+	            else if (nodeEvent instanceof org.alfresco.events.types.NodeContentPutEvent)
+	            {
+	            	org.alfresco.events.types.NodeContentPutEvent event = (org.alfresco.events.types.NodeContentPutEvent)nodeEvent;
+	            	elasticSearchIndexer.indexNode(event);
+	            	elasticSearchIndexer.indexContent(event);
+//					elasticSearch.indexEntities(nodeEvent);
+	            }
+	
+	            elasticSearchIndexer.indexEvent(nodeEvent);
             }
             else
             {

@@ -10,6 +10,8 @@ package org.alfresco.services;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,6 +19,7 @@ import java.util.Map;
 import javax.servlet.http.HttpServletResponse;
 
 import org.alfresco.error.AlfrescoRuntimeException;
+import org.alfresco.extensions.common.Content;
 import org.alfresco.httpclient.AlfrescoHttpClient;
 import org.alfresco.httpclient.AuthenticationException;
 import org.alfresco.httpclient.GetRequest;
@@ -106,7 +109,7 @@ public class ContentGetterImpl implements ContentGetter
     }
 
     @Override
-	public Content getContent(String nodeId, String nodeVersion)
+	public Content getContentByNodeId(String nodeId, String nodeVersion)
 	{
     	Content content = null;
 
@@ -128,11 +131,12 @@ public class ContentGetterImpl implements ContentGetter
 				{
 			    	String mimeType = (String)document.getProperty(PropertyIds.CONTENT_STREAM_MIME_TYPE).getFirstValue();
 			    	BigInteger size = (BigInteger)document.getProperty(PropertyIds.CONTENT_STREAM_LENGTH).getFirstValue();
-			    	ContentStream stream = session.getContentStream(objectId);
+			    	ContentStream stream = document.getContentStream();
 			    	if(stream != null)
 			    	{
 			    		InputStream is = stream.getStream();
-			        	content = new Content(is, mimeType, size.longValue());
+			    		ReadableByteChannel channel = Channels.newChannel(is);
+			        	content = new Content(channel, mimeType, size.longValue());
 			    	}
 				}
 				else
@@ -152,6 +156,46 @@ public class ContentGetterImpl implements ContentGetter
 
     	return content;
 	}
+
+//    @Override
+//    public Content getContentByNodePath(String nodePath)
+//    {
+//        Content content = null;
+//
+//        Session session = getCMISSession();
+//        try
+//        {
+//            Document document = (Document)session.getObjectByPath(nodePath);
+//            if(document != null)
+//            {
+//                if(document.isLatestVersion())
+//                {
+//                    String mimeType = (String)document.getProperty(PropertyIds.CONTENT_STREAM_MIME_TYPE).getFirstValue();
+//                    BigInteger size = (BigInteger)document.getProperty(PropertyIds.CONTENT_STREAM_LENGTH).getFirstValue();
+//                    ContentStream stream = document.getContentStream();
+//                    if(stream != null)
+//                    {
+//                        InputStream is = stream.getStream();
+//                        content = new Content(is, mimeType, size.longValue());
+//                    }
+//                }
+//                else
+//                {
+//                    logger.warn("Node at path " + nodePath + " not latest version");
+//                }
+//            }
+//            else
+//            {
+//                logger.warn("Node at path " + nodePath + " not found");
+//            }
+//        }
+//        catch(CmisObjectNotFoundException e)
+//        {
+//            logger.warn("Node at path " + nodePath + " not found");
+//        }
+//
+//        return content;
+//    }
 
 	public GetTextContentResponse getTextContent(Long nodeId, QName propertyQName, Long modifiedSince) throws AuthenticationException, IOException
     {

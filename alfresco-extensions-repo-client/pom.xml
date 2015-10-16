@@ -14,10 +14,20 @@
   <packaging>jar</packaging>
 
   <dependencies>
+    <dependency>
+        <groupId>org.alfresco.extensions</groupId>
+        <artifactId>alfresco-extensions-common</artifactId>
+        <version>${project.version}</version>
+    </dependency>
         <dependency>
             <groupId>org.alfresco.cmis.client</groupId>
             <artifactId>alfresco-opencmis-extension</artifactId>
             <version>1.0</version>
+        </dependency>
+        <dependency>
+            <artifactId>javax.servlet-api</artifactId>
+            <groupId>javax.servlet</groupId>
+            <version>3.0.1</version>
         </dependency>
         <dependency>
           <groupId>org.alfresco</groupId>

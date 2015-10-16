@@ -7,8 +7,8 @@
  */
 package org.alfresco.entities.spark;
 
-import org.alfresco.entities.values.Node;
 import org.alfresco.entities.values.Nodes;
+import org.alfresco.extensions.common.Node;
 import org.apache.spark.AccumulableParam;
 
 /**

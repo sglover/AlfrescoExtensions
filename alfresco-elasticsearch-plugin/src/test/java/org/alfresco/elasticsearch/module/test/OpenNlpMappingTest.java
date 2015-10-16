@@ -49,82 +49,82 @@ import org.junit.Test;
 
 public class OpenNlpMappingTest {
 
-    private DocumentMapperParser mapperParser;
-
-    @Before
-    public void setupMapperParser() throws AuthenticationException, IOException, JSONException {
-        Index index = new Index("test");
-
-        Map<String, AnalyzerProviderFactory> analyzerFactoryFactories = Maps.newHashMap();
-        analyzerFactoryFactories.put("keyword", new PreBuiltAnalyzerProviderFactory("keyword", AnalyzerScope.INDEX, new KeywordAnalyzer()));
-        AnalysisService analysisService = new AnalysisService(index, ImmutableSettings.Builder.EMPTY_SETTINGS, null, analyzerFactoryFactories, null, null, null);
-        ThreadPool threadPool = new ThreadPool("");
-        NodeSettingsService nodeSettingsService = new NodeSettingsService(ImmutableSettings.Builder.EMPTY_SETTINGS);
-        ResourceWatcherService resourceWatcherService = new ResourceWatcherService(ImmutableSettings.Builder.EMPTY_SETTINGS,
-        		threadPool);
-        Environment env = new Environment();
-        Set<ScriptEngineService> scriptEngines = new HashSet<ScriptEngineService>();
-
-        mapperParser = new DocumentMapperParser(index, ImmutableSettings.Builder.EMPTY_SETTINGS,
-        		analysisService, new PostingsFormatService(index),
-        		new DocValuesFormatService(index),
-        		new SimilarityLookupService(index, ImmutableSettings.Builder.EMPTY_SETTINGS),
-        		new ScriptService(ImmutableSettings.Builder.EMPTY_SETTINGS, env,
-        				scriptEngines, resourceWatcherService, nodeSettingsService));
-        Settings settings = settingsBuilder()
-                .put("opennlp.models.name.file", "src/test/resources/models/en-ner-person.bin")
-                .put("opennlp.models.date.file", "src/test/resources/models/en-ner-date.bin")
-                .put("opennlp.models.location.file", "src/test/resources/models/en-ner-location.bin")
-                .build();
-
-        LogConfigurator.configure(settings);
-
-//        ElasticSearch elasticSearch = new ElasticSearch();
-//        alfrescoService.start();
-
-//        ContentGetter contentGetter = new MockContentGetter();
-
-        // TODO
-//        mapperParser.putTypeParser(AlfrescoMapper.CONTENT_TYPE,
-//        		new AlfrescoMapper.TypeParser(elasticSearch));
-    }
-
-    @Test
-    public void testSimpleMappings() throws Exception {
-        String mapping = copyToStringFromClasspath("/test-mapping.json");
-        DocumentMapper docMapper = mapperParser.parse(mapping);
-
-        String sampleText = copyToStringFromClasspath("/sample-text.txt");
-        BytesReference json = jsonBuilder().startObject().field("_id", 1).field("someField", sampleText).endObject().bytes();
-        Document doc = docMapper.parse(json).rootDoc();
-
-        assertThat(doc.get(docMapper.mappers().smartName("someField").mapper().names().indexName()), is(sampleText));
-        assertThat(doc.getFields("someField.name").length, is(2));
-        assertThat(doc.getFields("someField.name")[0].stringValue(), is("Jack Nicholson"));
-        assertThat(doc.getFields("someField.name")[1].stringValue(), is("Kobe Bryant"));
-        assertThat(doc.get(docMapper.mappers().smartName("someField.date").mapper().names().indexName()), is("tomorrow"));
-        assertThat(doc.get(docMapper.mappers().smartName("someField.location").mapper().names().indexName()), is("Munich"));
-
-        // re-parse it
-        String builtMapping = docMapper.mappingSource().string();
-        docMapper = mapperParser.parse(builtMapping);
-
-        json = jsonBuilder().startObject().field("_id", 1).field("someField", sampleText).endObject().bytes();
-        doc = docMapper.parse(json).rootDoc();
-
-        assertThat(doc.get(docMapper.mappers().smartName("someField").mapper().names().indexName()), is(sampleText));
-        assertThat(doc.getFields("someField.name").length, is(2));
-        assertThat(doc.getFields("someField.name")[0].stringValue(), is("Jack Nicholson"));
-        assertThat(doc.getFields("someField.name")[1].stringValue(), is("Kobe Bryant"));
-        assertThat(doc.get(docMapper.mappers().smartName("someField.date").mapper().names().indexName()), is("tomorrow"));
-        assertThat(doc.get(docMapper.mappers().smartName("someField.location").mapper().names().indexName()), is("Munich"));
-    }
-
-    @Test
-    public void testAnalyzedOpenNlpFieldMappings() throws IOException {
-        String mapping = copyToStringFromClasspath("/test-mapping-keywordanalyzer.json");
-        DocumentMapper docMapper = mapperParser.parse(mapping);
-        String message = String.format("\"name\":{\"type\":\"string\",\"analyzer\":\"keyword\"}");
-        assertThat(docMapper.mappingSource().string(), containsString(message));
-    }
+//    private DocumentMapperParser mapperParser;
+//
+//    @Before
+//    public void setupMapperParser() throws AuthenticationException, IOException, JSONException {
+//        Index index = new Index("test");
+//
+//        Map<String, AnalyzerProviderFactory> analyzerFactoryFactories = Maps.newHashMap();
+//        analyzerFactoryFactories.put("keyword", new PreBuiltAnalyzerProviderFactory("keyword", AnalyzerScope.INDEX, new KeywordAnalyzer()));
+//        AnalysisService analysisService = new AnalysisService(index, ImmutableSettings.Builder.EMPTY_SETTINGS, null, analyzerFactoryFactories, null, null, null);
+//        ThreadPool threadPool = new ThreadPool("");
+//        NodeSettingsService nodeSettingsService = new NodeSettingsService(ImmutableSettings.Builder.EMPTY_SETTINGS);
+//        ResourceWatcherService resourceWatcherService = new ResourceWatcherService(ImmutableSettings.Builder.EMPTY_SETTINGS,
+//        		threadPool);
+//        Environment env = new Environment();
+//        Set<ScriptEngineService> scriptEngines = new HashSet<ScriptEngineService>();
+//
+//        mapperParser = new DocumentMapperParser(index, ImmutableSettings.Builder.EMPTY_SETTINGS,
+//        		analysisService, new PostingsFormatService(index),
+//        		new DocValuesFormatService(index),
+//        		new SimilarityLookupService(index, ImmutableSettings.Builder.EMPTY_SETTINGS),
+//        		new ScriptService(ImmutableSettings.Builder.EMPTY_SETTINGS, env,
+//        				scriptEngines, resourceWatcherService, nodeSettingsService));
+//        Settings settings = settingsBuilder()
+//                .put("opennlp.models.name.file", "src/test/resources/models/en-ner-person.bin")
+//                .put("opennlp.models.date.file", "src/test/resources/models/en-ner-date.bin")
+//                .put("opennlp.models.location.file", "src/test/resources/models/en-ner-location.bin")
+//                .build();
+//
+//        LogConfigurator.configure(settings);
+//
+////        ElasticSearch elasticSearch = new ElasticSearch();
+////        alfrescoService.start();
+//
+////        ContentGetter contentGetter = new MockContentGetter();
+//
+//        // TODO
+////        mapperParser.putTypeParser(AlfrescoMapper.CONTENT_TYPE,
+////        		new AlfrescoMapper.TypeParser(elasticSearch));
+//    }
+//
+//    @Test
+//    public void testSimpleMappings() throws Exception {
+//        String mapping = copyToStringFromClasspath("/test-mapping.json");
+//        DocumentMapper docMapper = mapperParser.parse(mapping);
+//
+//        String sampleText = copyToStringFromClasspath("/sample-text.txt");
+//        BytesReference json = jsonBuilder().startObject().field("_id", 1).field("someField", sampleText).endObject().bytes();
+//        Document doc = docMapper.parse(json).rootDoc();
+//
+//        assertThat(doc.get(docMapper.mappers().smartName("someField").mapper().names().indexName()), is(sampleText));
+//        assertThat(doc.getFields("someField.name").length, is(2));
+//        assertThat(doc.getFields("someField.name")[0].stringValue(), is("Jack Nicholson"));
+//        assertThat(doc.getFields("someField.name")[1].stringValue(), is("Kobe Bryant"));
+//        assertThat(doc.get(docMapper.mappers().smartName("someField.date").mapper().names().indexName()), is("tomorrow"));
+//        assertThat(doc.get(docMapper.mappers().smartName("someField.location").mapper().names().indexName()), is("Munich"));
+//
+//        // re-parse it
+//        String builtMapping = docMapper.mappingSource().string();
+//        docMapper = mapperParser.parse(builtMapping);
+//
+//        json = jsonBuilder().startObject().field("_id", 1).field("someField", sampleText).endObject().bytes();
+//        doc = docMapper.parse(json).rootDoc();
+//
+//        assertThat(doc.get(docMapper.mappers().smartName("someField").mapper().names().indexName()), is(sampleText));
+//        assertThat(doc.getFields("someField.name").length, is(2));
+//        assertThat(doc.getFields("someField.name")[0].stringValue(), is("Jack Nicholson"));
+//        assertThat(doc.getFields("someField.name")[1].stringValue(), is("Kobe Bryant"));
+//        assertThat(doc.get(docMapper.mappers().smartName("someField.date").mapper().names().indexName()), is("tomorrow"));
+//        assertThat(doc.get(docMapper.mappers().smartName("someField.location").mapper().names().indexName()), is("Munich"));
+//    }
+//
+//    @Test
+//    public void testAnalyzedOpenNlpFieldMappings() throws IOException {
+//        String mapping = copyToStringFromClasspath("/test-mapping-keywordanalyzer.json");
+//        DocumentMapper docMapper = mapperParser.parse(mapping);
+//        String message = String.format("\"name\":{\"type\":\"string\",\"analyzer\":\"keyword\"}");
+//        assertThat(docMapper.mappingSource().string(), containsString(message));
+//    }
 }

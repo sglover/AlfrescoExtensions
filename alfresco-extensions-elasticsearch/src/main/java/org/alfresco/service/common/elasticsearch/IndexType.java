@@ -14,6 +14,22 @@ package org.alfresco.service.common.elasticsearch;
  */
 public enum IndexType
 {
+	monitoring
+    {
+    	public String getName()
+    	{
+    		return "monitoring";
+    	}
+    },
+
+	sync
+    {
+    	public String getName()
+    	{
+    		return "sync";
+    	}
+    },
+
     doc
     {
     	public String getName()

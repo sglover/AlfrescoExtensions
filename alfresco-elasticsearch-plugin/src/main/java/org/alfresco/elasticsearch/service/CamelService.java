@@ -10,6 +10,7 @@ package org.alfresco.elasticsearch.service;
 import org.alfresco.camel.CamelComponent;
 import org.alfresco.elasticsearch.index.ElasticSearchEventListener;
 import org.alfresco.elasticsearch.index.camel.route.ElasticSearchEventsRouteBuilder;
+import org.alfresco.elasticsearch.index.camel.route.ElasticSearchMonitoringRouteBuilder;
 import org.apache.camel.RoutesBuilder;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.common.component.AbstractLifecycleComponent;
@@ -26,9 +27,12 @@ public class CamelService extends AbstractLifecycleComponent<CamelService>
 {
 	private CamelComponent camel;
 	private String brokerUrl;
-	private String sourceTopic;
-	private String clientId;
-	private String durableSubscriptionName;
+	private String nodesTopic;
+	private String nodesClientId;
+	private String nodesDurableSubscriptionName;
+	private String monitoringTopic;
+	private String monitoringClientId;
+	private String monitoringDurableSubscriptionName;
 
 	private ElasticSearchEventListener eventListener;
 
@@ -39,21 +43,28 @@ public class CamelService extends AbstractLifecycleComponent<CamelService>
         this.brokerUrl = settings.get("broker.url", "tcp://localhost:61616");
         this.camel = new CamelComponent(brokerUrl);
 
-        this.sourceTopic = settings.get("broker.sourceTopic", "activemq:topic:alfresco.events.repo.nodes");
-    	this.clientId = settings.get("broker.clientId", "alfresco.elasticsearch.plugin");
-    	this.durableSubscriptionName = settings.get("brokerUrl.durableSubscriptionName", "alfresco.elasticsearch.plugin");
+        this.nodesTopic = settings.get("broker.nodes.sourceTopic", "activemq:topic:alfresco.events.repo.nodes");
+    	this.nodesClientId = settings.get("broker.nodes.clientId", "alfresco.elasticsearch.plugin");
+    	this.nodesDurableSubscriptionName = settings.get("broker.nodes.durableSubscriptionName", "alfresco.elasticsearch.plugin");
+        this.monitoringTopic = settings.get("broker.alfresco.monitoring.sourceTopic", "activemq:topic:alfresco.monitoring?jmsMessageType=Text");
+    	this.monitoringClientId = settings.get("broker.alfresco.monitoring.clientId", "alfresco.elasticsearch.plugin.monitoring");
+    	this.monitoringDurableSubscriptionName = settings.get("broker.alfresco.monitoring.durableSubscriptionName", "alfresco.elasticsearch.plugin.monitoring");
 
         this.eventListener = eventListener;
     }
 
 	private void buildCamelContext() throws Exception
 	{
-		RoutesBuilder routesBuilder = new ElasticSearchEventsRouteBuilder(eventListener, sourceTopic,
-				clientId, durableSubscriptionName, "PROPAGATION_REQUIRED");
+		RoutesBuilder nodesBuilder = new ElasticSearchEventsRouteBuilder(eventListener, nodesTopic,
+				nodesClientId, nodesDurableSubscriptionName, "PROPAGATION_REQUIRED");
+
+		RoutesBuilder monitoringBuilder = new ElasticSearchMonitoringRouteBuilder(eventListener, monitoringTopic,
+				monitoringClientId, monitoringDurableSubscriptionName, "PROPAGATION_REQUIRED");
 
 		camel
 			.buildCamelContext()
-			.addRoutes(routesBuilder)
+			.addRoutes(nodesBuilder)
+			.addRoutes(monitoringBuilder)
 			.start();
 	}
 

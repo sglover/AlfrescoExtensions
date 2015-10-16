@@ -10,9 +10,7 @@ package org.alfresco.entities;
 import java.io.IOException;
 import java.util.Collection;
 
-import org.alfresco.entities.values.Node;
-import org.alfresco.events.node.types.Event;
-import org.alfresco.events.node.types.TransactionCommittedEvent;
+import org.alfresco.extensions.common.Node;
 import org.alfresco.httpclient.AuthenticationException;
 import org.alfresco.services.nlp.Entity;
 
@@ -23,12 +21,11 @@ import org.alfresco.services.nlp.Entity;
  */
 public interface EntitiesService
 {
+	void getEntitiesAsync(final Node node);
+	void getEntities(final Node node) throws AuthenticationException, IOException;
+//	void getEntities(String txnId, String nodeId, String nodeVersion, String content) throws IOException;
+//	void getEntities(String txnId, long nodeInternalId, String nodeId, String nodeVersion) throws IOException, AuthenticationException;
 	Collection<Entity<String>> getNames(Node node);
-	void getEntitiesForEvent(Event event) throws IOException, AuthenticationException;
-//	void getEntitiesForEventAsync(NodeContentPutEvent nodeEvent) throws AuthenticationException, IOException;
-//	void getEntitiesForEvent(NodeContentPutEvent nodeEvent) throws AuthenticationException, IOException;
-//	void getEntitiesForEvent(NodeUpdatedEvent nodeEvent) throws IOException;
-//	void getEntitiesForEvent(NodeAddedEvent nodeEvent) throws IOException;
+	void calculateSimilarities(String txnId);
 	double getSimilarity(Node node1, Node node2);
-	void txnCommitted(TransactionCommittedEvent event);
 }

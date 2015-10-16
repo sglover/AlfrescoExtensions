@@ -19,62 +19,62 @@ import org.elasticsearch.common.settings.Settings;
  * @author sglover
  *
  */
-public class AlfrescoService extends AbstractLifecycleComponent<AlfrescoService>
+public class AlfrescoService //extends AbstractLifecycleComponent<AlfrescoService>
 {
-	private AlfrescoHttpClient repoClient;
-	private ElasticSearchComponent elasticSearchComponent;
-
-	@Inject public AlfrescoService(Settings settings, AlfrescoHttpClient repoClient,
-			ElasticSearchComponent elasticSearchComponent)
-    {
-        super(settings);
-
-        this.repoClient = repoClient;
-        this.elasticSearchComponent = elasticSearchComponent;
-    }
-
-	@Override
-    protected void doStart() throws ElasticsearchException
-    {
-//        addLifecycleListener(new LifecycleListener()
+//	private AlfrescoHttpClient repoClient;
+//	private ElasticSearchComponent elasticSearchComponent;
+//
+//	@Inject public AlfrescoService(Settings settings, AlfrescoHttpClient repoClient,
+//			ElasticSearchComponent elasticSearchComponent)
+//    {
+//        super(settings);
+//
+//        this.repoClient = repoClient;
+//        this.elasticSearchComponent = elasticSearchComponent;
+//    }
+//
+//	@Override
+//    protected void doStart() throws ElasticsearchException
+//    {
+////        addLifecycleListener(new LifecycleListener()
+////		{
+////        	public void afterStart()
+////        	{
+////        		try
+////        		{
+////        			AlfrescoService.this.elasticSearchComponent.start();
+////        		}
+////        		catch(Exception e)
+////        		{
+////        			throw new ElasticsearchException("", e);
+////        		}
+////        	}
+////		});
+//    }
+//
+//	@Override
+//    protected void doStop() throws ElasticsearchException
+//    {
+//		if(elasticSearchComponent != null)
 //		{
-//        	public void afterStart()
-//        	{
-//        		try
-//        		{
-//        			AlfrescoService.this.elasticSearchComponent.start();
-//        		}
-//        		catch(Exception e)
-//        		{
-//        			throw new ElasticsearchException("", e);
-//        		}
-//        	}
-//		});
-    }
-
-	@Override
-    protected void doStop() throws ElasticsearchException
-    {
-		if(elasticSearchComponent != null)
-		{
-			elasticSearchComponent.close();
-		}
-    	if(repoClient != null)
-    	{
-    		repoClient.close();
-    	}
-    }
-
-	@Override
-    protected void doClose() throws ElasticsearchException
-    {
-		if(elasticSearchComponent != null)
-		{
-			elasticSearchComponent.close();
-		}
-    	if(repoClient != null)
-    	{
-    		repoClient.close();
-    	}
-    }
+//			elasticSearchComponent.close();
+//		}
+//    	if(repoClient != null)
+//    	{
+//    		repoClient.close();
+//    	}
+//    }
+//
+//	@Override
+//    protected void doClose() throws ElasticsearchException
+//    {
+//		if(elasticSearchComponent != null)
+//		{
+//			elasticSearchComponent.close();
+//		}
+//    	if(repoClient != null)
+//    	{
+//    		repoClient.close();
+//    	}
+//    }
 }

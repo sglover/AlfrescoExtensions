@@ -9,160 +9,85 @@ package org.alfresco.cacheserver.transform;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 
-import org.alfresco.cacheserver.contentstore.ContentStore;
-import org.alfresco.transformation.api.ContentReference;
-import org.alfresco.transformation.api.MimeType;
-import org.alfresco.transformation.api.TransformRequest;
-import org.alfresco.transformation.api.options.TransformationOptions;
-import org.alfresco.transformation.client.TransformationCallback;
-import org.alfresco.transformation.client.TransformationClient;
-import org.alfresco.transformation.config.ClientConfig;
+import org.alfresco.contentstore.AbstractContentStore;
+import org.alfresco.extensions.content.ContentReference;
+import org.alfresco.extensions.content.MimeType;
+import org.alfresco.extensions.transformations.api.TransformRequest;
+import org.alfresco.extensions.transformations.api.options.TransformationOptions;
+import org.alfresco.extensions.transformations.client.LocalTransformClient;
+import org.alfresco.extensions.transformations.client.TransformationCallback;
+import org.alfresco.extensions.transformations.client.TransformationClient;
+
 
 /**
  * 
  * @author sglover
  *
  */
-public class AkkaTransformServiceImpl implements TransformService
+public class TransformServiceImpl implements TransformService
 {
-	private ContentStore contentStore;
+	private AbstractContentStore contentStore;
 	private TransformationClient client;
+	private ExecutorService executor;
 
-	public AkkaTransformServiceImpl(ContentStore contentStore)
+	public TransformServiceImpl(AbstractContentStore contentStore, ExecutorService executor)
     {
 	    super();
 	    this.contentStore = contentStore;
+	    this.executor = executor;
 
 		List<String> routers = new ArrayList<String>();
 		routers.add("localhost:2551");
 
-		ClientConfig config = new ClientConfig("localhost", null, routers);
-		this.client = new TransformationClient(config);
-
-        // construct transform module
-//        List<TransformerConfig> tc = resolvedAppConfig.getTransformers();
-//        if (tc != null)
-//        {
-//            transformModule = new AkkaTransformModule(system, tc, store);
-//            transformModule.startup();
-//        }
-//        
-//        // construct router module
-//        List<MappedRouteConfig> rc = resolvedAppConfig.getRoutes();
-//        if (rc != null)
-//        {
-//            RoutingStrategy router = RoutingStrategy.ROUNDROBIN;
-//            if (serverConfig != null && serverConfig.getRouter() != null)
-//            {
-//                router = serverConfig.getRouter();
-//            }
-//            routerModule = new AkkaRouterModul(client, rc, router);
-//            routerModule.startup();
-//        }
+//		ClientConfig config = new ClientConfig("localhost", null, routers);
+//		this.client = new LocalTransformaClient(config);
+		this.client = new LocalTransformClient();
     }
 
-//  private static final String DEFAULT_ROUTERS = "localhost:2551";
-  /**
-   * @return  construct client config
-   */
-//  public ClientConfig createClientConfig()
-//  {
-//      ClientConfig client = new ClientConfig("localhost", 2020, null);
-//      return client;
-//  }
-//  public ContentConfig createContentConfig()
-//  {
-//      File temp = TempFiles.getTempDir();
-//      ContentConfig config = new ContentConfig("file", temp.getAbsolutePath(), null, null, null, null);
-//      return config;
-//  }
-//  public ClusterConfig createClusterConfig()
-//  {
-//      // construct cluster config
-//      List<String> serversList = null;
-//      if (servers != null)
-//      {
-//          String[] separatedSeeds = servers.split(",");
-//          serversList = Arrays.asList(separatedSeeds);
-//      }
-//      List<String> portsList = null;
-//      if (ports != null)
-//      {
-//          String[] separatedPorts = ports.split(",");
-//          portsList = Arrays.asList(separatedPorts);
-//      }
-//      List<String> groupsList = null;
-//      if (groups != null)
-//      {
-//          String[] separatedGroups = groups.split(",");
-//          groupsList = Arrays.asList(separatedGroups);
-//      }
-//      List<String> tagsList = null;
-//      if (tags != null)
-//      {
-//          String[] separatedTags = tags.split(",");
-//          tagsList = Arrays.asList(separatedTags);
-//      }
-//      List<String> zonesList = null;
-//      if (zones != null)
-//      {
-//          String[] separatedZones = zones.split(",");
-//          zonesList = Arrays.asList(separatedZones);
-//      }
-//      ClusterConfig cluster = new ClusterConfig(discovery, serversList, portsList, groupsList, tagsList, zonesList, ec2access, ec2secret);
-//      return cluster;
-//  }
-//  private static final String THUMBNAIL_NAME = "thumbnail";
-//  private static final String THUMBNAIL_OPTIONS = "png page_end=1 size_toThumbnail=true size_width=120 size_height=170 size_maintainAspectRatio=true image_resolution=72 image_device=png48";
-//  private static final String PREVIEW_NAME = "preview";
-//  private static final String PREVIEW_OPTIONS = "png page_split=10 image_resolution=216 image_device=png48 image_depth=8";
 
 	@Override
-	public String transform(String path, MimeType mimeType, TransformationCallback callback) throws IOException
+	public void transformToText(String path, MimeType mimeType, TransformationCallback callback) throws IOException
 	{
-//		ClusterConfig clusterConfig = createClusterConfig();
-//      NodeDiscovery discovery = NodeDiscoveryFactory.createNodeDiscovery(clusterConfig);
-//      List<String> routers = new ArrayList<>();
-//      List<String> nodes = discovery.getNodes();
-//      if (nodes != null && nodes.size() > 0)
-//      {
-//          routers.addAll(nodes);
-//      }
-//      else
-//      {
-//          routers.add(DEFAULT_ROUTERS);
-//      }
-
-//      long startTime = System.currentTimeMillis();
-      
-//      ClientConfig clientConfig = createClientConfig();
-
-//      TransformationClient client = new TransformationClient(clientConfig);
-//      ContentConfig contentConfig = createContentConfig();
-//      ContentStoreAdmin store = ContentStoreFactory.createContentStore(contentConfig);
-
 		File root = contentStore.getRootDirectory();
-//		File targetFile = contentStore.create();
 		String targetPath = root.getAbsolutePath();
 
-//      ClientConfig config = new ClientConfig("localhost", null, routers);
-//      TransformationClient client = new TransformationClient(config);
       ContentReference source = new ContentReference(path, mimeType);
       TransformationOptions options = new TransformationOptions();
       options.setMimetype(MimeType.TEXT);
       options.setPath(targetPath);
       TransformRequest request = new TransformRequest(source, options);
       client.transform(request, callback);
-
-      return targetPath;
 	}
 
-	public InputStream getContent(String contentPath) throws IOException
+	@Override
+	public void transformToTextAsync(final String path, final MimeType mimeType,
+	        final TransformationCallback callback) throws IOException
 	{
-		return contentStore.getContent(contentPath);
+	    executor.execute(new Runnable()
+	    {
+            @Override
+            public void run()
+            {
+                // TODO
+                try
+                {
+                    transformToText(path, mimeType, callback);
+                }
+                catch (IOException e)
+                {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+            }
+	    });
 	}
+
+//	public InputStream getContent(String contentPath) throws IOException
+//	{
+//		return contentStore.getContent(contentPath);
+//	}
 }

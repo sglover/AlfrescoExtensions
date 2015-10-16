@@ -9,7 +9,7 @@ package org.alfresco.cacheserver.events;
 
 import java.io.Serializable;
 
-import org.alfresco.cacheserver.checksum.DocumentChecksums;
+import org.alfresco.checksum.NodeChecksums;
 
 /**
  * 
@@ -22,13 +22,13 @@ public class ChecksumsAvailableEvent implements Serializable
 
 	private String cacheServerId;
 	private String contentUrl;
-	private DocumentChecksums checksums;
+	private NodeChecksums checksums;
 
 	public ChecksumsAvailableEvent()
 	{
 	}
 
-	public ChecksumsAvailableEvent(String cacheServerId, String contentUrl, DocumentChecksums checksums)
+	public ChecksumsAvailableEvent(String cacheServerId, String contentUrl, NodeChecksums checksums)
     {
 	    super();
 	    this.cacheServerId = cacheServerId;
@@ -51,12 +51,12 @@ public class ChecksumsAvailableEvent implements Serializable
 		return contentUrl;
 	}
 
-	public DocumentChecksums getChecksums()
+	public NodeChecksums getChecksums()
 	{
 		return checksums;
 	}
 
-	public void setChecksums(DocumentChecksums checksums)
+	public void setChecksums(NodeChecksums checksums)
 	{
 		this.checksums = checksums;
 	}
