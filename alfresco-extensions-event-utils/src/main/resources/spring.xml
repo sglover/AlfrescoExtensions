@@ -1,0 +1,15 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+
+    <bean id="eventsResource" class="org.alfresco.extensions.events.dropwizard.resources.EventsResource">
+        <constructor-arg ref="countingEventListener"></constructor-arg>
+    </bean>
+
+    <import resource="classpath:services-common-messaging-context.xml"/>
+
+    <import resource="classpath:camel-context.xml"/>
+
+</beans>

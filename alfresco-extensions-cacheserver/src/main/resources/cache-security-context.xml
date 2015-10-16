@@ -9,8 +9,12 @@
             init-method="init">
       <property name="basicAuthUrl" value="${cache.authentication.basicAuthUrl}" />
    </bean>
-   
+
+   <bean id="cacheAuthenticationMetrics" class="org.alfresco.cacheserver.CacheAuthenticationMetrics">
+   </bean>
+
    <bean id="cacheProvider" class="org.alfresco.service.common.auth.CachingAuthenticationProvider">
+      <property name="authenticationMetrics" ref="cacheAuthenticationMetrics" />
       <property name="delegateAuthenticationProvider" ref="basicAuthAuthenticationProvider" />
       <property name="expiryMs" value="${cache.authentication.cache.expiryMs}" />
    </bean>

@@ -13,21 +13,26 @@
     
     <bean id="mongoDb" factory-bean="mongoDbFactory" factory-method="createInstance" />
 
-    <bean id="contentDAO" class="org.alfresco.cacheserver.dao.mongo.MongoContentDAO" init-method="init">
+    <bean id="contentDAO" class="org.alfresco.cacheserver.dao.mongo.MongoContentDAO">
        <constructor-arg ref="mongoDb" />
        <constructor-arg value="${mongo.contentCollectionName}"/>
        <constructor-arg value="${mongo.contentUsageCollectionName}"/>
        <constructor-arg ref="cacheServerIdentity" />
     </bean>
 
-    <bean id="checksumDAO" class="org.alfresco.cacheserver.dao.mongo.MongoChecksumDAO" init-method="init">
+    <bean id="checksumDAO" class="org.alfresco.checksum.dao.mongo.MongoChecksumDAO">
        <constructor-arg ref="mongoDb" />
        <constructor-arg value="${mongo.checksumsCollectionName}"/>
     </bean>
 
-    <bean id="entitiesDAO" class="org.alfresco.cacheserver.dao.mongo.MongoEntitiesDAO" init-method="init">
+    <bean id="entitiesDAO" class="org.alfresco.entities.dao.mongo.MongoEntitiesDAO">
        <constructor-arg ref="mongoDb" />
        <constructor-arg value="${mongo.entitiesCollectionName}"/>
     </bean>
+
+   <bean id="similarityDAO" class="org.alfresco.entities.dao.mongo.MongoSimilarityDAO">
+        <constructor-arg ref="mongoDb"/>
+        <constructor-arg value="${mongo.similarityCollectionName}"/>
+   </bean>
 
 </beans>

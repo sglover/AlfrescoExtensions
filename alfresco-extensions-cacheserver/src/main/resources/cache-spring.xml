@@ -1,0 +1,25 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+
+    <import resource="classpath:services-common-messaging-context.xml"/>
+
+    <import resource="cache-checksum-context.xml"/>
+    <import resource="cache-content-context.xml"/>
+    <import resource="cache-contentstore-context.xml"/>
+    <import resource="cache-text-content-context.xml"/>
+    <import resource="cache-contentgetter-context.xml"/>
+    <import resource="cache-entities-context.xml"/>
+    <import resource="cache-messages-context.xml"/>
+    <import resource="cache-patch-context.xml"/>
+    <import resource="cache-transform-context.xml"/>
+    <import resource="cache-server-context.xml"/>
+    <import resource="cache-core-context.xml"/>
+    <import resource="cache-mongo-context.xml"/>
+    <import resource="cache-dropwizard-context.xml"/>
+    <import resource="cache-camel-context.xml"/>
+    <import resource="cache-security-context.xml"/>
+
+</beans>

@@ -1,0 +1,14 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+
+    <bean id="contentUpdater" class="org.alfresco.cacheserver.content.ContentUpdaterImpl">
+        <constructor-arg ref="contentStore"></constructor-arg>
+        <constructor-arg ref="contentDAO"></constructor-arg>
+        <constructor-arg ref="messagesService"></constructor-arg>
+        <constructor-arg ref="checksumService"></constructor-arg>
+    </bean>
+
+</beans>

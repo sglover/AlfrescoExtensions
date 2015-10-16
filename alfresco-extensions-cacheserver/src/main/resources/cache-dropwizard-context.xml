@@ -4,8 +4,9 @@
        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 
     <bean id="cacheResource" class="org.alfresco.cacheserver.dropwizard.resources.CacheServerResource">
-        <constructor-arg ref="cacheServer"/>
+        <constructor-arg ref="localContentGetter"/>
         <constructor-arg ref="checksumService"/>
+        <constructor-arg ref="patchService"/>
     </bean>
  
     <bean id="cacheHealth" class="org.alfresco.service.common.dropwizard.health.VersionHealthCheck">

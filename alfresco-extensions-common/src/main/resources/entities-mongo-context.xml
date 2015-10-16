@@ -1,0 +1,28 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE beans PUBLIC '-//SPRING//DTD BEAN//EN' 'http://www.springframework.org/dtd/spring-beans.dtd'>
+
+<beans>
+
+    <bean id="mongoDbFactory" class="org.alfresco.service.common.mongo.MongoDbFactory">
+        <property name="mongoURI" value="${mongo.mongoURI}" />
+        <property name="dbName" value="${mongo.dbName}" />
+    </bean>
+    
+    <bean id="mongoDb" factory-bean="mongoDbFactory" factory-method="createInstance" />
+
+   <bean id="entitiesDAO" class="org.alfresco.entities.dao.mongo.MongoEntitiesDAO" init-method="init">
+        <property name="db" ref="mongoDb"/>
+        <property name="entitiesCollectionName" value="entities"/>
+   </bean>
+
+   <bean id="similarityDAO" class="org.alfresco.entities.dao.mongo.MongoSimilarityDAO" init-method="init">
+        <property name="db" ref="mongoDb"/>
+        <property name="similarityCollectionName" value="similarity"/>
+   </bean>
+
+   <bean id="userTrackingDAO" class="org.alfresco.entities.dao.mongo.MongoUserTrackingDAO" init-method="init">
+        <property name="db" ref="mongoDb"/>
+        <property name="collectionName" value="userTracking"/>
+   </bean>
+
+</beans>

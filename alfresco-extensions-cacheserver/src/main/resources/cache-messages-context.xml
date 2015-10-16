@@ -1,0 +1,21 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+
+    <bean id="messagesService" class="org.alfresco.cacheserver.messages.MessagesServiceImpl">
+        <constructor-arg ref="cacheServerIdentity"/>
+        <constructor-arg ref="cacheMessageProducer"/>
+    </bean>
+
+    <bean id="cacheMessageProducer" class="org.gytheio.messaging.camel.CamelMessageProducer">
+       <property name="producer" ref="camelProducerTemplate" />
+       <property name="endpoint" value="direct-vm:alfresco.events.edge" />
+    </bean>
+
+    <bean id="nodeEventHandler" class="org.alfresco.cacheserver.NodeEventHandler">
+       <property name="cacheServer" ref="cacheServer" />
+    </bean>
+
+</beans>

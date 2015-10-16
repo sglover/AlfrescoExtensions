@@ -1,0 +1,17 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+
+    <bean id="modelLoader" class="org.alfresco.services.nlp.SpringClasspathModelLoader"/>
+
+    <bean id="entitiesService" class="org.alfresco.entities.EntitiesServiceImpl">
+        <constructor-arg value="CoreNLP"></constructor-arg>
+        <constructor-arg ref="modelLoader"/>
+        <constructor-arg ref="entitiesDAO"/>
+        <constructor-arg ref="similarityDAO"/>
+        <constructor-arg ref="localContentGetter"/>
+    </bean>
+
+</beans>

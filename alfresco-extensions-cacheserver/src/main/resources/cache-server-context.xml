@@ -1,0 +1,25 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+
+    <bean id="alfrescoApi" class="org.alfresco.services.AlfrescoApiImpl">
+        <constructor-arg value="${repo.hostname}"/>
+        <constructor-arg value="${repo.port}"/>
+        <constructor-arg value="${repo.username}"/> 
+        <constructor-arg value="${repo.password}"/>
+    </bean>
+
+    <bean id="cacheServer" class="org.alfresco.cacheserver.CacheServer">
+        <constructor-arg ref="contentDAO"></constructor-arg>
+        <constructor-arg ref="contentStore"></constructor-arg>
+        <constructor-arg ref="entitiesService"></constructor-arg>
+        <constructor-arg ref="alfrescoApi"></constructor-arg>
+        <constructor-arg ref="remoteContentGetter"/>
+        <constructor-arg ref="localContentGetter"/>
+        <constructor-arg ref="transformService"/>
+        <constructor-arg ref="contentUpdater"/>
+    </bean>
+
+</beans>

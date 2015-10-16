@@ -1,0 +1,37 @@
+springContextFileLocation: spring.xml
+version: ${project.version} (${buildNumber})
+
+# ActiveMQ broker url
+messaging:
+    routing:
+        numThreads: 10
+    broker:
+        url: tcp://localhost:61616
+    sourceTopic:
+        endpoint: activemq:topic:alfresco.events.repo.ext.nodes
+        clientId: event-util4
+        durableSubscriptionName: event-util4
+        txnManager: camelRequiredTxn
+    startSync:
+        sourceTopic:
+                endpoint: activemq:topic:alfresco.sync.start
+                clientId: event-util5
+                durableSubscriptionName: event-util5
+                txnManager: camelRequiredTxn
+
+http:
+    port: 9098
+    adminPort: 9099
+
+logging:
+  level: INFO
+  loggers:
+    "org.alfresco.service": DEBUG
+    "org.alfresco.extensions.events": DEBUG
+  file:
+    enabled: true
+    threshold: ALL
+    currentLogFilename: ./logs/service-subscription.log
+    archive: true
+    archivedLogFilenamePattern: ./logs/service-subscription-%d.log.gz
+    archivedFileCount: 5

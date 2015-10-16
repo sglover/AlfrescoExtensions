@@ -10,14 +10,14 @@
     <context:component-scan base-package="org.alfresco.cacheserver.camel.routes"/>
 
     <bean id="nodeEventListener" class="org.alfresco.cacheserver.camel.CacheServerNodeEventListener">
-        <constructor-arg ref="cacheServer"></constructor-arg>
+        <constructor-arg ref="nodeEventHandler"></constructor-arg>
     </bean>
 
     <bean id="messagesEventListener" class="org.alfresco.cacheserver.camel.CacheServerMessagesEventListener">
-        <constructor-arg ref="cacheServer"></constructor-arg>
         <constructor-arg ref="cacheHttpClient"></constructor-arg>
         <constructor-arg ref="cacheServerIdentity"></constructor-arg>
         <constructor-arg ref="checksumDAO"></constructor-arg>
+        <constructor-arg ref="contentUpdater"></constructor-arg>
     </bean>
 
     <bean id="camelRequiredTxn" class="org.apache.camel.spring.spi.SpringTransactionPolicy">

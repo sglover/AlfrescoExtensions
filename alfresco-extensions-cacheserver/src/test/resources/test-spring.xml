@@ -1,0 +1,23 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+
+	<bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+	    <property name="locations">
+	        <value>/config.yml</value>
+	    </property>
+	    <property name="propertiesPersister" ref="persister"></property>
+	</bean>
+	<bean id="persister" class="org.alfresco.service.common.dropwizard.yaml.YamlPropertiesPersister"></bean>
+
+    <import resource="cache-core-context.xml"/>
+    <import resource="cache-mongo-context.xml"/>
+    <import resource="cache-content-context.xml"/>
+    <import resource="cache-checksum-context.xml"/>
+    <import resource="cache-patch-context.xml"/>
+
+    <bean id="messagesService" class="org.alfresco.cacheserver.MockMessagesService"/>
+
+</beans>

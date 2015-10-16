@@ -1,0 +1,95 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE beans PUBLIC '-//SPRING//DTD BEAN//EN' 'http://www.springframework.org/dtd/spring-beans.dtd'>
+
+<beans>
+
+    <bean id="modelLoader" class="org.alfresco.services.nlp.SpringClasspathModelLoader"/>
+
+   <bean id="entityTagger" class="org.alfresco.services.nlp.StanfordEntityTagger">
+        <constructor-arg value="2"/>
+   </bean>
+
+<!-- 
+	<bean id="taskExecutor" class="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">
+	    <property name="corePoolSize" value="5" />
+	    <property name="maxPoolSize" value="10" />
+	    <property name="queueCapacity" value="25" />
+	</bean>
+	 -->
+
+    <bean id="alfrescoApi" class="org.alfresco.services.AlfrescoApiImpl">
+        <constructor-arg value="localhost"/>
+        <constructor-arg value="8080"/>
+        <constructor-arg value="admin"/>
+        <constructor-arg value="admin"/>
+    </bean>
+
+    <bean id="springKeyResourceLoader" class="org.alfresco.encryption.SpringKeyResourceLoader">
+    </bean>
+
+    <bean id="sslKeyStoreParameters" class="org.alfresco.encryption.KeyStoreParameters" init-method="init">
+        <property name="name" value="SSL Key Store"/>
+        <property name="location" value="${encryption.ssl.keystore.location}"/>
+        <property name="type" value="${encryption.ssl.keystore.type}"/>
+        <!-- 
+        <property name="provider" value="${encryption.ssl.keystore.provider}"/>
+         -->
+        <property name="keyMetaDataFileLocation" value="${encryption.ssl.keystore.keyMetaData.location}"/>
+    </bean>
+
+    <bean id="sslTrustStoreParameters" class="org.alfresco.encryption.KeyStoreParameters" init-method="init">
+        <property name="name" value="SSL Trust Store"/>
+        <property name="location" value="${encryption.ssl.truststore.location}"/>
+        <property name="type" value="${encryption.ssl.truststore.type}"/>
+        <!-- 
+        <property name="provider" value="${encryption.ssl.truststore.provider}"/>
+         -->
+        <property name="keyMetaDataFileLocation" value="${encryption.ssl.truststore.keyMetaData.location}"/>
+    </bean>
+
+    <bean id="sslEncryptionParameters" class="org.alfresco.encryption.ssl.SSLEncryptionParameters">
+        <property name="keyStoreParameters" ref="sslKeyStoreParameters"/>
+        <property name="trustStoreParameters" ref="sslTrustStoreParameters"/>
+    </bean>
+
+    <bean id="clientBuilder" class="org.alfresco.services.RepoClientBuilder">
+        <constructor-arg value="https"/>
+        <constructor-arg ref="sslEncryptionParameters"/>
+        <constructor-arg ref="springKeyResourceLoader"/>
+        <constructor-arg value="localhost"/>
+        <constructor-arg value="8080"/>
+        <constructor-arg value="8443"/>
+        <constructor-arg value="10"/>
+        <constructor-arg value="10"/>
+        <constructor-arg value="60000"/>
+    </bean>
+
+    <bean id="contentGetter" class="org.alfresco.services.ContentGetterImpl">
+        <constructor-arg value="localhost"/>
+        <constructor-arg value="8080"/>
+        <constructor-arg value="8443"/>
+        <constructor-arg value="admin"/>
+        <constructor-arg value="admin"/>
+        <constructor-arg ref="clientBuilder"/>
+   </bean>
+
+   <bean id="entityExtracter" class="org.alfresco.services.nlp.EntityExtracter">
+        <constructor-arg ref="contentGetter"/>
+        <constructor-arg ref="entityTagger"/>
+   </bean>
+
+   <bean id="entitiesService" class="org.alfresco.entities.EntitiesServiceImpl" init-method="init">
+        <property name="entitiesDAO" ref="entitiesDAO"/>
+        <property name="similarityDAO" ref="similarityDAO"/>
+        <property name="entityExtracter" ref="entityExtracter"/>
+   </bean>
+
+   <bean id="userTrackingService" class="org.alfresco.entities.UserTrackingServiceImpl">
+        <property name="userTrackingDAO" ref="userTrackingDAO"/>
+   </bean>
+
+   <bean id="eventsListener" class="org.alfresco.entities.EventsListener">
+        <constructor-arg ref="entitiesService"/>
+        <constructor-arg ref="userTrackingService"/>
+   </bean>
+</beans>

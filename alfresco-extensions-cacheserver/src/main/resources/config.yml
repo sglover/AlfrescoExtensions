@@ -8,8 +8,10 @@ mongo:
     contentUsageCollectionName: contentUsage
     checksumsCollectionName: checksums
     entitiesCollectionName: entities
+    similarityCollectionName: similarity
 
 cache:
+    dataFilename: /Users/sglover/src/git/AlfrescoExtensions/cacheserver.json
     hostname: localhost
     content:
         rootFolder: content
@@ -40,6 +42,8 @@ repo:
 messaging:
     broker:
         url: tcp://localhost:61616
+    pool:
+        maxConnections: 10
 
 camel:
     node:
@@ -82,8 +86,9 @@ logging:
   level: WARN
   loggers:
     "org.alfresco.cacheserver": DEBUG
+    "org.alfresco.services": DEBUG
+    "org.alfresco.entities": DEBUG
     "org.alfresco.transformation": INFO
-    "org.alfresco.services": WARN
   appenders:
     - type: console
       threshold: ALL

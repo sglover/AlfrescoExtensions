@@ -23,12 +23,12 @@ public class ElasticSearchEventListener extends EventListener
 {
 	@Inject public ElasticSearchEventListener(ElasticSearchComponent elasticSearchComponent)
 	{
-		super(elasticSearchComponent.getElasticSearch());
+		super(elasticSearchComponent.getElasticSearchIndexer(), elasticSearchComponent.getElasticSearchMonitoringIndexer());
 	}
 
     public void onChange(Object message)
     {
-    	elasticSearch.init(true);
+    	elasticSearchIndexer.init(true);
     	super.onChange(message);
     }
 }
