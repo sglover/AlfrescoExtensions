@@ -7,6 +7,7 @@
  */
 package org.alfresco.contentstore.dao;
 
+import org.alfresco.extensions.common.MimeType;
 
 /**
  * 
@@ -16,11 +17,14 @@ package org.alfresco.contentstore.dao;
 public interface ContentDAO
 {
     boolean nodeExists(String nodeId, long nodeInternalVersion, boolean isPrimary);
-	NodeInfo getByNodeId(String nodeId, long nodeInternalVersion, boolean isPrimary);
-	NodeInfo getByNodePath(String contentURL);
-	NodeInfo getByNodeId(String nodeId, String nodeVersion, boolean isPrimary);
-	NodeInfo getByNodeId(long nodeInternalId, String mimeType);
-	void updateNode(NodeInfo node);
 
-	void addUsage(NodeUsage nodeUsage);
+    NodeInfo getByNodeId(String nodeId, long nodeInternalVersion, MimeType mimeType);
+
+    NodeInfo getByNodeId(String nodeId, long nodeInternalVersion, boolean isPrimary);
+
+    NodeInfo getByNodeId(String nodeId, String nodeVersion, boolean isPrimary);
+
+    NodeInfo getByNodeId(long nodeInternalId, String mimeType);
+
+    void updateNode(NodeInfo node);
 }

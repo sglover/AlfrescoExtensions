@@ -15,9 +15,9 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.alfresco.contentstore.ContentStore;
+import org.alfresco.extensions.common.Node;
 import org.alfresco.httpclient.AuthenticationException;
-import org.alfresco.services.ContentGetter;
-import org.alfresco.services.solr.GetTextContentResponse;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -31,36 +31,34 @@ public class EntityExtracter
     private static Log logger = LogFactory.getLog(EntityExtracter.class
             .getName());
 
-    private ContentGetter contentGetter;
+    private ContentStore contentStore;
     private EntityTagger entityTagger;
     private ExecutorService executorService;
 
     private Set<String> includeNodeTypes = new HashSet<>();
 
-    public EntityExtracter(ContentGetter contentGetter,
+    public EntityExtracter(ContentStore contentStore,
             EntityTagger entityTagger, ExecutorService executorService)
     {
-        this.contentGetter = contentGetter;
+        this.contentStore = contentStore;
         this.entityTagger = entityTagger;
         this.includeNodeTypes.add("cm:content");
         this.executorService = executorService;
     }
 
-    public EntityExtracter(ContentGetter contentGetter,
-            EntityTagger entityTagger)
+    public EntityExtracter(ContentStore contentStore, EntityTagger entityTagger)
     {
-        this.contentGetter = contentGetter;
+        this.contentStore = contentStore;
         this.entityTagger = entityTagger;
         this.includeNodeTypes.add("cm:content");
         this.executorService = Executors.newFixedThreadPool(10);
     }
 
-    public void getEntities(long nodeInternalId, EntityTaggerCallback callback)
+    public void getEntities(Node node, EntityTaggerCallback callback)
     {
-        logger.debug("Node " + nodeInternalId + " extracting entities");
+        logger.debug("Node " + node + " extracting entities");
 
-        ExtractEntitiesRunnable extractEntities = new ExtractEntitiesRunnable(
-                nodeInternalId, callback);
+        ExtractEntitiesRunnable extractEntities = new ExtractEntitiesRunnable(node, callback);
         executorService.execute(extractEntities);
     }
 
@@ -82,10 +80,9 @@ public class EntityExtracter
     {
         private EntityTaggerCallback callback;
 
-        public ExtractEntitiesRunnable(long nodeInternalId,
-                EntityTaggerCallback callback)
+        public ExtractEntitiesRunnable(Node node, EntityTaggerCallback callback)
         {
-            super(nodeInternalId);
+            super(node);
             this.callback = callback;
         }
 
@@ -116,43 +113,29 @@ public class EntityExtracter
 
     private class ExtractEntities
     {
-        private long nodeInternalId;
+        private Node node;
 
-        public ExtractEntities(long nodeInternalId)
+        public ExtractEntities(Node node)
         {
-            this.nodeInternalId = nodeInternalId;
+            this.node = node;
         }
 
         public Entities execute() throws IOException, AuthenticationException
         {
             Entities entities = null;
 
-            GetTextContentResponse response = contentGetter
-                    .getTextContent(nodeInternalId);
-            try
+            ReadableByteChannel channel = contentStore.getChannel(node);
+            if (channel != null)
             {
-                ReadableByteChannel channel = (response != null ? response
-                        .getContent() : null);
-                if (channel != null)
-                {
-                    String content = getContent(channel);
+                String content = getContent(channel);
 
-                    logger.debug("OpenNlp node = " + nodeInternalId);
+                logger.debug("OpenNlp node = " + node);
 
-                    entities = entityTagger.getEntities(content);
-                }
-                else
-                {
-                    logger.warn("Unable to get text content for node "
-                            + nodeInternalId);
-                }
+                entities = entityTagger.getEntities(content);
             }
-            finally
+            else
             {
-                if (response != null)
-                {
-                    response.release();
-                }
+                logger.warn("Unable to get text content for node " + node);
             }
 
             return entities;
@@ -162,35 +145,21 @@ public class EntityExtracter
         {
             try
             {
-                GetTextContentResponse response = contentGetter
-                        .getTextContent(nodeInternalId);
-                try
+                ReadableByteChannel channel = contentStore.getChannel(node);
+                if (channel != null)
                 {
-                    ReadableByteChannel channel = (response != null ? response.getContent()
-                            : null);
-                    if (channel != null)
-                    {
-                        String content = getContent(channel);
+                    String content = getContent(channel);
 
-                        logger.debug("OpenNlp node = " + nodeInternalId);
+                    logger.debug("OpenNlp node = " + node);
 
-                        entityTagger.getEntities(content, callback);
-                    }
-                    else
-                    {
-                        logger.warn("Unable to get text content for node "
-                                + nodeInternalId);
-                    }
+                    entityTagger.getEntities(content, callback);
                 }
-                finally
+                else
                 {
-                    if (response != null)
-                    {
-                        response.release();
-                    }
+                    logger.warn("Unable to get text content for node " + node);
                 }
             }
-            catch (IOException | AuthenticationException e)
+            catch (IOException e)
             {
                 logger.warn("", e);
             }

@@ -299,8 +299,8 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO
 			{
 				String nodeId = (String)dbObject.get("n");
 				long nodeInternalId = (Long)dbObject.get("ni");
-				String nodeVersion = (String)dbObject.get("v");
-				Node node = new Node(nodeInternalId, nodeId, nodeVersion);
+				Long nodeVersion = (Long)dbObject.get("v");
+				Node node = Node.build().nodeInternalId(nodeInternalId).nodeId(nodeId).nodeVersion(nodeVersion);
 				nodes.add(node);
 			}
 		}

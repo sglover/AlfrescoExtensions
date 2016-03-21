@@ -16,96 +16,186 @@ import java.io.Serializable;
  */
 public class Node implements Serializable
 {
-	private static final long serialVersionUID = 1038231899658487035L;
+    private static final long serialVersionUID = 1038231899658487035L;
 
-	private Long nodeInternalId;
-	private String nodeId;
-	private String versionLabel;
-	private Long nodeVersion;
-	private String nodePath;
+    private Long nodeInternalId;
+    private String nodeId;
+    private String versionLabel;
+    private Long nodeVersion;
+    private String nodePath;
+    private MimeType mimeType;
 
-	private Node()
-	{
-	}
-
-	public static Node build()
-	{
-		return new Node();
-	}
-
-	public String getNodePath()
-	{
-		return nodePath;
-	}
-
-	public Node nodeInternalId(Long nodeInternalId)
-	{
-		this.nodeInternalId = nodeInternalId;
-		return this;
-	}
-
-	public Node nodePath(String nodePath)
-	{
-		this.nodePath = nodePath;
-		return this;
-	}
-
-	public Node nodeId(String nodeId)
-	{
-		this.nodeId = nodeId;
-		return this;
-	}
-
-	public Node versionLabel(String versionLabel)
-	{
-		this.versionLabel = versionLabel;
-		return this;
-	}
-
-	public Node nodeVersion(Long nodeVersion)
-	{
-		this.nodeVersion = nodeVersion;
-		return this;
-	}
-
-	public Node(long nodeInternalId, String nodeId, String nodeVersion)
+    private Node()
     {
-		this(nodeId, nodeVersion);
-		this.nodeInternalId = nodeInternalId;
     }
 
-	public Node(String nodeId, String versionLabel)
+    public static Node build()
     {
-	    super();
-	    this.nodeId = nodeId;
-	    this.versionLabel = versionLabel;
+        return new Node();
     }
 
-	public String getNodeId()
-	{
-		return nodeId;
-	}
+    public String getNodePath()
+    {
+        return nodePath;
+    }
 
-	public Long getNodeInternalId()
-	{
-		return nodeInternalId;
-	}
+    public MimeType getMimeType()
+    {
+        return mimeType;
+    }
 
-	public Long getNodeVersion()
-	{
-		return nodeVersion;
-	}
+    public Node mimeType(MimeType mimeType)
+    {
+        this.mimeType = mimeType;
+        return this;
+    }
 
-	public String getVersionLabel()
-	{
-		return versionLabel;
-	}
+    public Node nodeInternalId(Long nodeInternalId)
+    {
+        this.nodeInternalId = nodeInternalId;
+        return this;
+    }
 
-	@Override
+    public Node nodePath(String nodePath)
+    {
+        this.nodePath = nodePath;
+        return this;
+    }
+
+    public Node nodeId(String nodeId)
+    {
+        this.nodeId = nodeId;
+        return this;
+    }
+
+    public Node versionLabel(String versionLabel)
+    {
+        this.versionLabel = versionLabel;
+        return this;
+    }
+
+    public Node nodeVersion(Long nodeVersion)
+    {
+        this.nodeVersion = nodeVersion;
+        return this;
+    }
+
+    public Node newNodeVersion(Long nodeVersion)
+    {
+        Node ret = new Node(nodeInternalId, nodeId, versionLabel, nodeVersion);
+        return ret;
+    }
+
+    public Node(Long nodeInternalId, String nodeId, String versionLabel,
+            long nodeVersion)
+    {
+        this(nodeId, versionLabel);
+        this.nodeInternalId = nodeInternalId;
+        this.nodeVersion = nodeVersion;
+    }
+
+    public Node(String nodeId, String versionLabel)
+    {
+        super();
+        this.nodeId = nodeId;
+        this.versionLabel = versionLabel;
+    }
+
+    public String getNodeId()
+    {
+        return nodeId;
+    }
+
+    public Long getNodeInternalId()
+    {
+        return nodeInternalId;
+    }
+
+    public Long getNodeVersion()
+    {
+        return nodeVersion;
+    }
+
+    public String getVersionLabel()
+    {
+        return versionLabel;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result
+                + ((mimeType == null) ? 0 : mimeType.hashCode());
+        result = prime * result + ((nodeId == null) ? 0 : nodeId.hashCode());
+        result = prime * result
+                + ((nodeInternalId == null) ? 0 : nodeInternalId.hashCode());
+        result = prime * result
+                + ((nodePath == null) ? 0 : nodePath.hashCode());
+        result = prime * result
+                + ((nodeVersion == null) ? 0 : nodeVersion.hashCode());
+        result = prime * result
+                + ((versionLabel == null) ? 0 : versionLabel.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        Node other = (Node) obj;
+        if (mimeType != other.mimeType)
+            return false;
+        if (nodeId == null)
+        {
+            if (other.nodeId != null)
+                return false;
+        }
+        else if (!nodeId.equals(other.nodeId))
+            return false;
+        if (nodeInternalId == null)
+        {
+            if (other.nodeInternalId != null)
+                return false;
+        }
+        else if (!nodeInternalId.equals(other.nodeInternalId))
+            return false;
+        if (nodePath == null)
+        {
+            if (other.nodePath != null)
+                return false;
+        }
+        else if (!nodePath.equals(other.nodePath))
+            return false;
+        if (nodeVersion == null)
+        {
+            if (other.nodeVersion != null)
+                return false;
+        }
+        else if (!nodeVersion.equals(other.nodeVersion))
+            return false;
+        if (versionLabel == null)
+        {
+            if (other.versionLabel != null)
+                return false;
+        }
+        else if (!versionLabel.equals(other.versionLabel))
+            return false;
+        return true;
+    }
+
+    @Override
     public String toString()
     {
-	    return "Node [nodeInternalId=" + nodeInternalId + ", nodeId=" + nodeId
-	            + ", versionLabel=" + versionLabel + ", nodeVersion="
-	            + nodeVersion + ", nodePath=" + nodePath + "]";
+        return "Node [nodeInternalId=" + nodeInternalId + ", nodeId=" + nodeId
+                + ", versionLabel=" + versionLabel + ", nodeVersion="
+                + nodeVersion + ", nodePath=" + nodePath + ", mimeType="
+                + mimeType + "]";
     }
 }

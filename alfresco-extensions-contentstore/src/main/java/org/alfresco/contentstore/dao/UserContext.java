@@ -7,19 +7,29 @@
  */
 package org.alfresco.contentstore.dao;
 
-import org.springframework.security.core.userdetails.UserDetails;
+import java.security.Principal;
 
+/**
+ * 
+ * @author sglover
+ *
+ */
 public class UserContext
 {
-	private static ThreadLocal<UserDetails> user = new ThreadLocal<>();
-	
-	public static UserDetails getUser()
-	{
-		return user.get();
-	}
-	
-	public static void setUser(UserDetails newUser)
-	{
-		user.set(newUser);
-	}
+    private static ThreadLocal<Principal> user = new ThreadLocal<>();
+
+    public static Principal getUser()
+    {
+        return user.get();
+    }
+
+    public static void setUser(Principal user)
+    {
+        UserContext.user.set(user);
+    }
+
+    public static void clearUser()
+    {
+        UserContext.user.set(null);
+    }
 }

@@ -7,14 +7,6 @@
  */
 package org.alfresco.contentstore.dao.orient;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-
-import org.alfresco.contentstore.dao.ContentDAO;
-import org.alfresco.contentstore.dao.NodeInfo;
-import org.alfresco.contentstore.dao.NodeUsage;
-import org.alfresco.extensions.common.Node;
 
 /**
  * 

@@ -24,22 +24,34 @@
         <module>alfresco-elasticsearch-plugin</module>
         <module>alfresco-extensions-hbase</module>
         <module>alfresco-extensions-entities</module>
+<!--
         <module>alfresco-extensions-entities-spark</module>
+-->
         <module>alfresco-extensions-nlp</module>
         <module>alfresco-extensions-repo-client</module>
         <module>alfresco-extensions-contentstore-api</module>
         <module>alfresco-extensions-contentstore</module>
+<!--
         <module>alfresco-extensions-cacheserver</module>
         <module>alfresco-extensions-cacheserver-dropwizard</module>
+-->
         <module>alfresco-extensions-camel</module>
         <module>alfresco-extensions-minhash</module>
         <module>alfresco-extensions-monitoring</module>
         <module>alfresco-extensions-checksum</module>
         <module>alfresco-extensions-cassandra</module>
+<!--
         <module>alfresco-extensions-transformations</module>
         <module>alfresco-extensions-transformations-akka</module>
+-->
         <module>alfresco-extensions-event-utils</module>
+<!--
+        <module>alfresco-extensions-repo-kafka</module>
+-->
+<!--
         <module>alfresco-extensions-nodedao-override</module>
+-->
+        <module>alfresco-extensions-ocr</module>
     </modules>
 
     <properties>
@@ -54,7 +66,7 @@
 
         <hamcrest.version>1.3</hamcrest.version>
 
-        <elasticsearch.version>1.7.0</elasticsearch.version>
+        <elasticsearch.version>2.2.0</elasticsearch.version>
 
         <dependency.flapdoodle.version>1.36</dependency.flapdoodle.version>
         <dependency.alfresco-services.version>1.3-SNAPSHOT</dependency.alfresco-services.version>
@@ -169,7 +181,7 @@
                 </executions>
             </plugin>
             
-            <!--  Check license headers -->
+            <!--  Check license headers 
             <plugin>
                 <groupId>org.apache.rat</groupId>
                 <artifactId>apache-rat-plugin</artifactId>
@@ -183,6 +195,9 @@
                     </execution>
                 </executions>
                 <configuration>
+		    <excludes>
+  		        <exclude>**/target/*</exclude>
+		    </excludes>
                     <includes>
                         <include>**/*.java</include>
                     </includes>
@@ -216,6 +231,7 @@
                     </licenseFamilies>
                 </configuration>
             </plugin>
+-->
         </plugins>
 
         <!-- Defining version and some configuration of Maven plugins -->

@@ -24,91 +24,110 @@ import com.mongodb.hadoop.MongoInputFormat;
 
 public class Spark1 implements Serializable
 {
-	private static final long serialVersionUID = -1486654511409655088L;
+    private static final long serialVersionUID = -1486654511409655088L;
 
-	private JavaSparkContext sc;
+    private JavaSparkContext sc;
 
-	public void init()
+    public void init()
+    {
+        Class<?>[] classes = new Class<?>[]
+        { Nodes.class, Node.class, Entities.class,
+                NodesAccumulableFunction.class, NodesAccumulableParam.class };
+        SparkConf conf = new SparkConf()
+                .setAppName("Entities")
+                .set("spark.serializer",
+                        "org.apache.spark.serializer.KryoSerializer")
+                .registerKryoClasses(classes)
+                .setMaster("spark://localhost:8299");
+        this.sc = new JavaSparkContext(conf);
+    }
+
+    public void shutdown()
+    {
+        if (sc != null)
+        {
+            sc.close();
+        }
+    }
+
+    // public void match(final long nodeInternalId, final long nodeVersion)
+    // {
+    // Configuration config = new Configuration();
+    // config.set("mongo.input.uri", "mongodb://127.0.0.1:27017/entities");
+    // config.set("mongo.output.uri",
+    // "mongodb://127.0.0.1:27017/entities.output");
+    // JavaPairRDD<Object, BSONObject> rdd = sc.newAPIHadoopRDD(config,
+    // MongoInputFormat.class, Object.class, BSONObject.class);
+    //
+    // JavaPairRDD<Object, BSONObject> nodeEntities = rdd.filter(new
+    // Function<Tuple2<Object,BSONObject>, Boolean>()
+    // {
+    // private static final long serialVersionUID = 1L;
+    //
+    // @Override
+    // public Boolean call(Tuple2<Object, BSONObject> v1) throws Exception
+    // {
+    // return v1._2.get("n").equals(nodeInternalId) &&
+    // v1._2.get("v").equals(nodeVersion);
+    // }
+    // });
+    // }
+
+    public void a()
 	{
-		Class<?>[] classes = new Class<?>[] { Nodes.class, Node.class, Entities.class, NodesAccumulableFunction.class,
-				NodesAccumulableParam.class};
-		SparkConf conf = new SparkConf()
-			.setAppName("Entities")
-			.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-			.registerKryoClasses(classes)
-			.setMaster("spark://localhost:8299");
-		this.sc = new JavaSparkContext(conf);
+//	    val myTable = sc.cassandraTable[(Long, String)](“myKeyspace”, “myTable”)
 	}
 
-	public void shutdown()
-	{
-		if(sc != null)
-		{
-			sc.close();
-		}
-	}
+    public Nodes matchNodes(final Entities entities)
+    {
+        Configuration config = new Configuration();
+        config.set("mongo.input.uri",
+                "mongodb://127.0.0.1:27017/entitiesTest.entities1425034463903");
+        config.set("mongo.output.uri",
+                "mongodb://127.0.0.1:27017/entitiesTest.entities1425034463903.matches");
 
-//	public void match(final long nodeInternalId, final long nodeVersion)
-//	{
-//		Configuration config = new Configuration();
-//		config.set("mongo.input.uri", "mongodb://127.0.0.1:27017/entities");
-//		config.set("mongo.output.uri", "mongodb://127.0.0.1:27017/entities.output");
-//		JavaPairRDD<Object, BSONObject> rdd = sc.newAPIHadoopRDD(config, MongoInputFormat.class, Object.class, BSONObject.class);
-//
-//		JavaPairRDD<Object, BSONObject> nodeEntities = rdd.filter(new Function<Tuple2<Object,BSONObject>, Boolean>()
-//		{
-//			private static final long serialVersionUID = 1L;
-//
-//			@Override
-//			public Boolean call(Tuple2<Object, BSONObject> v1) throws Exception
-//			{
-//				return v1._2.get("n").equals(nodeInternalId) && v1._2.get("v").equals(nodeVersion);
-//			}
-//		});
-//	}
-	
-	public Nodes matchNodes(final Entities entities)
-	{
-		Configuration config = new Configuration();
-		config.set("mongo.input.uri", "mongodb://127.0.0.1:27017/entitiesTest.entities1425034463903");
-		config.set("mongo.output.uri", "mongodb://127.0.0.1:27017/entitiesTest.entities1425034463903.matches");
+        JavaPairRDD<Object, BSONObject> rdd = sc.newAPIHadoopRDD(config,
+                MongoInputFormat.class, Object.class, BSONObject.class);
 
-		JavaPairRDD<Object, BSONObject> rdd = sc.newAPIHadoopRDD(config, MongoInputFormat.class, Object.class, BSONObject.class);
+        // JavaPairRDD<Object, BSONObject> nodeEntities = rdd.filter(new
+        // Function<Tuple2<Object,BSONObject>, Boolean>()
+        // {
+        // private static final long serialVersionUID = 1L;
+        //
+        // @Override
+        // public Boolean call(Tuple2<Object, BSONObject> v1) throws Exception
+        // {
+        // boolean ret = false;
+        //
+        // String name = (String)v1._2.get("nm");
+        // if(entities.hasName(name))
+        // {
+        // ret = true;
+        // }
+        // else
+        // {
+        //
+        // }
+        //
+        // return ret;
+        // }
+        // });
 
-//		JavaPairRDD<Object, BSONObject> nodeEntities = rdd.filter(new Function<Tuple2<Object,BSONObject>, Boolean>()
-//		{
-//			private static final long serialVersionUID = 1L;
-//
-//			@Override
-//			public Boolean call(Tuple2<Object, BSONObject> v1) throws Exception
-//			{
-//				boolean ret = false;
-//
-//				String name = (String)v1._2.get("nm");
-//				if(entities.hasName(name))
-//				{
-//					ret = true;
-//				}
-//				else
-//				{
-//					
-//				}
-//
-//				return ret;
-//			}
-//		});
+        JavaRDD<Node> matchingNodes = rdd.flatMap(new MatchNodesFunction(
+                entities));
 
-		JavaRDD<Node> matchingNodes = rdd.flatMap(new MatchNodesFunction(entities));
+        // sc.accumulator(new Nodes(), new NodesAccumulatorParam());
 
-//		sc.accumulator(new Nodes(), new NodesAccumulatorParam());
+        final Accumulable<Nodes, Node> nodesAccumulator = sc.accumulable(
+                new Nodes(), new NodesAccumulableParam());
+        matchingNodes.foreach(new NodesAccumulableFunction(nodesAccumulator));
 
-		final Accumulable<Nodes, Node> nodesAccumulator = sc.accumulable(new Nodes(), new NodesAccumulableParam());
-		matchingNodes.foreach(new NodesAccumulableFunction(nodesAccumulator));
+        // final Accumulator<Nodes> nodesAccumulator = sc.accumulator(new
+        // Nodes(), new NodesAccumulatorParam());
+        // matchingNodes.foreach(new
+        // NodesAccumulatorFunction(nodesAccumulator));
 
-//		final Accumulator<Nodes> nodesAccumulator = sc.accumulator(new Nodes(), new NodesAccumulatorParam());
-//		matchingNodes.foreach(new NodesAccumulatorFunction(nodesAccumulator));
-
-	    return nodesAccumulator.value();
-//		return null;
-	}
+        return nodesAccumulator.value();
+        // return null;
+    }
 }

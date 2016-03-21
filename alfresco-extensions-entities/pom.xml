@@ -21,12 +21,17 @@
         </dependency>
         <dependency>
             <groupId>org.alfresco.extensions</groupId>
-            <artifactId>alfresco-extensions-events-serialization-mongo</artifactId>
+            <artifactId>alfresco-extensions-minhash</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.alfresco.extensions</groupId>
-            <artifactId>alfresco-extensions-minhash</artifactId>
+            <artifactId>alfresco-extensions-contentstore-api</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.alfresco.extensions</groupId>
+            <artifactId>alfresco-extensions-contentstore</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
         <dependency>
@@ -58,6 +63,11 @@
           <groupId>org.alfresco.extensions</groupId>
           <artifactId>alfresco-extensions-repo-client</artifactId>
           <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.alfresco.extensions</groupId>
+            <artifactId>alfresco-extensions-events-serialization-mongo</artifactId>
+            <version>1.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.alfresco.extensions</groupId>
@@ -198,11 +208,19 @@
           <type>test-jar</type>
           <scope>test</scope>
         </dependency>
+       <!-- 
         <dependency>
         	<groupId>org.neo4j</groupId>
         	<artifactId>neo4j-cypher-compiler-2.1</artifactId>
         	<version>2.1.2</version>
+        	<exclusions>
+        		<exclusion>
+        			<artifactId>parboiled-scala_2.10</artifactId>
+        			<groupId>org.parboiled</groupId>
+        		</exclusion>
+        	</exclusions>
         </dependency>
+         -->
   </dependencies>
 
   <build>

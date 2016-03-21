@@ -9,7 +9,7 @@ package org.alfresco.cacheserver.transform;
 
 import java.io.IOException;
 
-import org.alfresco.extensions.content.MimeType;
+import org.alfresco.extensions.common.MimeType;
 import org.alfresco.extensions.transformations.client.TransformationCallback;
 
 /**

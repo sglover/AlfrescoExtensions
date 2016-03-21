@@ -49,16 +49,16 @@ public class CassandraSession
 
     private void deleteKeyspace()
     {
-        KeyspaceMetadata keySpaceMetadata = cassandraSession.getCluster().getMetadata().getKeyspace("sync");
+        KeyspaceMetadata keySpaceMetadata = cassandraSession.getCluster().getMetadata().getKeyspace("alfresco");
         if(keySpaceMetadata != null)
         {
-            cassandraSession.execute("DROP KEYSPACE sync;");
+            cassandraSession.execute("DROP KEYSPACE alfresco;");
         }
     }
 
     private void createKeyspace()
     {
-        cassandraSession.execute("CREATE KEYSPACE sync WITH replication "
+        cassandraSession.execute("CREATE KEYSPACE alfresco WITH replication "
                 + "= {'class':'SimpleStrategy', 'replication_factor':3};");
     }
 

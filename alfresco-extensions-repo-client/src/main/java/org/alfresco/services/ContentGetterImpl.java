@@ -7,26 +7,14 @@
  */
 package org.alfresco.services;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletResponse;
-
-import org.alfresco.error.AlfrescoRuntimeException;
-import org.alfresco.extensions.common.Content;
-import org.alfresco.httpclient.AlfrescoHttpClient;
-import org.alfresco.httpclient.AuthenticationException;
-import org.alfresco.httpclient.GetRequest;
-import org.alfresco.httpclient.Response;
-import org.alfresco.model.ContentModel;
-import org.alfresco.service.namespace.QName;
-import org.alfresco.services.solr.GetTextContentResponse;
+import org.alfresco.extensions.common.Node;
 import org.apache.chemistry.opencmis.client.api.Document;
 import org.apache.chemistry.opencmis.client.api.ObjectId;
 import org.apache.chemistry.opencmis.client.api.Session;
@@ -37,10 +25,8 @@ import org.apache.chemistry.opencmis.commons.SessionParameter;
 import org.apache.chemistry.opencmis.commons.data.ContentStream;
 import org.apache.chemistry.opencmis.commons.enums.BindingType;
 import org.apache.chemistry.opencmis.commons.exceptions.CmisObjectNotFoundException;
-import org.apache.commons.httpclient.util.DateUtil;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.extensions.surf.util.URLEncoder;
 
 /**
  * 
@@ -49,224 +35,139 @@ import org.springframework.extensions.surf.util.URLEncoder;
  */
 public class ContentGetterImpl implements ContentGetter
 {
-    private static final String GET_CONTENT = "api/solr/textContent";
-
     private static final Log logger = LogFactory.getLog(ContentGetterImpl.class);
 
     private String repoUserName;
     private String repoPassword;
-    private AlfrescoHttpClient repoClient;
     private SessionFactoryImpl cmisFactory;
     private Session cmisSession;
 
-//    private static AlfrescoHttpClient buildClient(String repoHost, int repoPort, int repoSSLPort, String repoUserName,
-//    		String repoPassword, int maxTotalConnections, int maxHostConnections, int socketTimeout,
-//    		String sslKeyStoreLocation)
-//    {
-//    	AlfrescoHttpClient client = HttpClientBuilder
-//        		.start()
-//        		.setAlfrescoHost(repoHost)
-//        		.setAlfrescoPort(repoPort)
-//        		.setAlfrescoSSLPort(repoSSLPort)
-//        		.setMaxHostConnections(maxHostConnections)
-//        		.setSocketTimeout(socketTimeout)
-//        		.setMaxTotalConnections(maxTotalConnections)
-//        		.setSslKeyStoreLocation(sslKeyStoreLocation)
-//        		.
-//        		.build();
-//    	return client;
-//    }
-
-    public ContentGetterImpl(String repoHost, int repoPort, int repoSSLPort, String repoUserName,
-    		String repoPassword, RepoClientBuilder clientBuilder)
+    public ContentGetterImpl(String repoHost, int repoPort, int repoSSLPort,
+            String repoUserName, String repoPassword)
     {
-        this(repoHost, repoPort, repoUserName, repoPassword, clientBuilder.getRepoClient());
+        this(repoHost, repoPort, repoUserName, repoPassword);
     }
 
-	public ContentGetterImpl(String repoHost, int repoPort, String repoUserName, String repoPassword, AlfrescoHttpClient repoClient)
-	{
-		this.repoUserName = repoUserName;
-		this.repoPassword = repoPassword;
-		this.repoClient = repoClient;
-		this.cmisFactory = SessionFactoryImpl.newInstance();
-	}
+    public ContentGetterImpl(String repoHost, int repoPort,
+            String repoUserName, String repoPassword)
+    {
+        this.repoUserName = repoUserName;
+        this.repoPassword = repoPassword;
+        this.cmisFactory = SessionFactoryImpl.newInstance();
+    }
 
     private Session getCMISSession()
     {
-    	if(this.cmisSession == null)
-    	{
-    		Map<String, String> parameters = new HashMap<String, String>();
-    		parameters.put(SessionParameter.USER, repoUserName);
-    		parameters.put(SessionParameter.PASSWORD, repoPassword);
-    		parameters.put(SessionParameter.BROWSER_URL, "http://localhost:8080/alfresco/api/-default-/public/cmis/versions/1.1/browser");
-    		parameters.put(SessionParameter.BINDING_TYPE, BindingType.BROWSER.value());
-    		parameters.put(SessionParameter.REPOSITORY_ID, "-default-");
+        if (this.cmisSession == null)
+        {
+            Map<String, String> parameters = new HashMap<String, String>();
+            parameters.put(SessionParameter.USER, repoUserName);
+            parameters.put(SessionParameter.PASSWORD, repoPassword);
+            parameters
+                    .put(SessionParameter.BROWSER_URL,
+                            "http://localhost:8080/alfresco/api/-default-/public/cmis/versions/1.1/browser");
+            parameters.put(SessionParameter.BINDING_TYPE,
+                    BindingType.BROWSER.value());
+            parameters.put(SessionParameter.REPOSITORY_ID, "-default-");
 
-    		this.cmisSession = cmisFactory.createSession(parameters);
-    	}
+            this.cmisSession = cmisFactory.createSession(parameters);
+        }
 
-    	return this.cmisSession;
+        return this.cmisSession;
     }
 
     @Override
-	public Content getContentByNodeId(String nodeId, String nodeVersion)
-	{
-    	Content content = null;
-
-		StringBuilder sb = new StringBuilder(nodeId);
-		if(nodeVersion != null)
-		{
-			sb.append(";");
-			sb.append(nodeVersion);
-		}
-		ObjectId objectId = new ObjectIdImpl(sb.toString());
-
-		Session session = getCMISSession();
-		try
-		{
-			Document document = (Document)session.getObject(objectId);
-			if(document != null)
-			{
-				if(document.isLatestVersion())
-				{
-			    	String mimeType = (String)document.getProperty(PropertyIds.CONTENT_STREAM_MIME_TYPE).getFirstValue();
-			    	BigInteger size = (BigInteger)document.getProperty(PropertyIds.CONTENT_STREAM_LENGTH).getFirstValue();
-			    	ContentStream stream = document.getContentStream();
-			    	if(stream != null)
-			    	{
-			    		InputStream is = stream.getStream();
-			    		ReadableByteChannel channel = Channels.newChannel(is);
-			        	content = new Content(channel, mimeType, size.longValue());
-			    	}
-				}
-				else
-				{
-					logger.warn("Node " + nodeId + "." + nodeVersion + " not latest version");
-				}
-			}
-			else
-			{
-				logger.warn("Node " + nodeId + "." + nodeVersion + " not found");
-			}
-		}
-		catch(CmisObjectNotFoundException e)
-		{
-			logger.warn("Node " + nodeId + "." + nodeVersion + " not found");
-		}
-
-    	return content;
-	}
-
-//    @Override
-//    public Content getContentByNodePath(String nodePath)
-//    {
-//        Content content = null;
-//
-//        Session session = getCMISSession();
-//        try
-//        {
-//            Document document = (Document)session.getObjectByPath(nodePath);
-//            if(document != null)
-//            {
-//                if(document.isLatestVersion())
-//                {
-//                    String mimeType = (String)document.getProperty(PropertyIds.CONTENT_STREAM_MIME_TYPE).getFirstValue();
-//                    BigInteger size = (BigInteger)document.getProperty(PropertyIds.CONTENT_STREAM_LENGTH).getFirstValue();
-//                    ContentStream stream = document.getContentStream();
-//                    if(stream != null)
-//                    {
-//                        InputStream is = stream.getStream();
-//                        content = new Content(is, mimeType, size.longValue());
-//                    }
-//                }
-//                else
-//                {
-//                    logger.warn("Node at path " + nodePath + " not latest version");
-//                }
-//            }
-//            else
-//            {
-//                logger.warn("Node at path " + nodePath + " not found");
-//            }
-//        }
-//        catch(CmisObjectNotFoundException e)
-//        {
-//            logger.warn("Node at path " + nodePath + " not found");
-//        }
-//
-//        return content;
-//    }
-
-	public GetTextContentResponse getTextContent(Long nodeId, QName propertyQName, Long modifiedSince) throws AuthenticationException, IOException
+    public Content getContentByNodeId(String nodeId, Long nodeVersion)
     {
-        StringBuilder url = new StringBuilder(128);
-        url.append(GET_CONTENT);
-        
-        StringBuilder args = new StringBuilder(128);
-        if(nodeId != null)
+        Content content = null;
+
+        StringBuilder sb = new StringBuilder(nodeId);
+        if (nodeVersion != null)
         {
-            args.append("?");
-            args.append("nodeId");
-            args.append("=");
-            args.append(nodeId);            
+            sb.append(";");
+            sb.append(nodeVersion);
         }
-        else
+        ObjectId objectId = new ObjectIdImpl(sb.toString());
+
+        Session session = getCMISSession();
+        try
         {
-            throw new NullPointerException("getTextContent(): nodeId cannot be null.");
-        }
-        if(propertyQName != null)
-        {
-            if(args.length() == 0)
+            Document document = (Document) session.getObject(objectId);
+            if (document != null)
             {
-                args.append("?");
+                if (document.isLatestVersion())
+                {
+                    String mimeType = (String) document.getProperty(
+                            PropertyIds.CONTENT_STREAM_MIME_TYPE)
+                            .getFirstValue();
+                    BigInteger size = (BigInteger) document.getProperty(
+                            PropertyIds.CONTENT_STREAM_LENGTH).getFirstValue();
+                    ContentStream stream = document.getContentStream();
+                    if (stream != null)
+                    {
+                        InputStream is = stream.getStream();
+                        ReadableByteChannel channel = Channels.newChannel(is);
+                        content = new Content(channel, size.longValue());
+                    }
+                }
+                else
+                {
+                    logger.warn("Node " + nodeId + "." + nodeVersion
+                            + " not latest version");
+                }
             }
             else
             {
-                args.append("&");
+                logger.warn("Node " + nodeId + "." + nodeVersion + " not found");
             }
-            args.append("propertyQName");
-            args.append("=");
-            args.append(URLEncoder.encode(propertyQName.toString()));
         }
-        
-        url.append(args);
-        
-        GetRequest req = new GetRequest(url.toString());
-        
-        if(modifiedSince != null)
+        catch (CmisObjectNotFoundException e)
         {
-            Map<String, String> headers = new HashMap<String, String>(1, 1.0f);
-            headers.put("If-Modified-Since", String.valueOf(DateUtil.formatDate(new Date(modifiedSince))));
-            req.setHeaders(headers);
+            logger.warn("Node " + nodeId + "." + nodeVersion + " not found");
         }
 
-        Response response = repoClient.sendRequest(req);
-
-        if(response.getStatus() != HttpServletResponse.SC_NOT_MODIFIED &&
-                response.getStatus() != HttpServletResponse.SC_NO_CONTENT &&
-                response.getStatus() != HttpServletResponse.SC_OK)
-        {
-            throw new AlfrescoRuntimeException("GetTextContentResponse return status is " + response.getStatus());
-        }
-
-        return new GetTextContentResponse(response);
-	}
-
-    public GetTextContentResponse getTextContent(long nodeId) throws AuthenticationException, IOException
-    {
-    	long start = System.currentTimeMillis();
-
-    	GetTextContentResponse response = null;
-
-    	try
-    	{
-    		response = getTextContent(nodeId, ContentModel.PROP_CONTENT, 0l);
-	    	return response;
-    	}
-    	finally
-    	{
-        	long end = System.currentTimeMillis();
-        	logger.debug("Text content get time = " + (end - start));
-    	}
+        return content;
     }
+
+    // @Override
+    // public Content getContentByNodePath(String nodePath)
+    // {
+    // Content content = null;
+    //
+    // Session session = getCMISSession();
+    // try
+    // {
+    // Document document = (Document)session.getObjectByPath(nodePath);
+    // if(document != null)
+    // {
+    // if(document.isLatestVersion())
+    // {
+    // String mimeType =
+    // (String)document.getProperty(PropertyIds.CONTENT_STREAM_MIME_TYPE).getFirstValue();
+    // BigInteger size =
+    // (BigInteger)document.getProperty(PropertyIds.CONTENT_STREAM_LENGTH).getFirstValue();
+    // ContentStream stream = document.getContentStream();
+    // if(stream != null)
+    // {
+    // InputStream is = stream.getStream();
+    // content = new Content(is, mimeType, size.longValue());
+    // }
+    // }
+    // else
+    // {
+    // logger.warn("Node at path " + nodePath + " not latest version");
+    // }
+    // }
+    // else
+    // {
+    // logger.warn("Node at path " + nodePath + " not found");
+    // }
+    // }
+    // catch(CmisObjectNotFoundException e)
+    // {
+    // logger.warn("Node at path " + nodePath + " not found");
+    // }
+    //
+    // return content;
+    // }
 }

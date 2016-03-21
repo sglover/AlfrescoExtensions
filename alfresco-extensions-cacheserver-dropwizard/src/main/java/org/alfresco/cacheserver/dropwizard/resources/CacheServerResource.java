@@ -31,7 +31,7 @@ import org.alfresco.cacheserver.UserContext;
 import org.alfresco.checksum.ChecksumService;
 import org.alfresco.checksum.NodeChecksums;
 import org.alfresco.contentstore.patch.PatchService;
-import org.alfresco.extensions.common.Content;
+import org.alfresco.extensions.common.ContentReader;
 import org.alfresco.services.ContentGetter;
 import org.apache.log4j.Logger;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -159,7 +159,7 @@ public class CacheServerResource
                 UserContext.setUser(user);
                 try
                 {
-	            	Content content = localContentGetter.getContentByNodeId(nodeId, nodeVersion);
+	            	ContentReader content = localContentGetter.getContentByNodeId(nodeId, nodeVersion);
 	            	if(content != null)
 	            	{
 	            	    ReadableByteChannel inputChannel = content.getChannel();

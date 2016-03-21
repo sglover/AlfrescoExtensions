@@ -21,32 +21,34 @@ import org.elasticsearch.common.settings.Settings;
  */
 public class ContentGetterProvider implements Provider<ContentGetter>
 {
-	private Settings settings;
+    private Settings settings;
 
-	private ContentGetter contentGetter;
+    private ContentGetter contentGetter;
 
-	@Inject public ContentGetterProvider(Settings settings, AlfrescoHttpClient repoClient)
-	{
-		this.settings = settings;
-		buildContentGetter(repoClient);
-	}
+    @Inject
+    public ContentGetterProvider(Settings settings,
+            AlfrescoHttpClient repoClient)
+    {
+        this.settings = settings;
+        buildContentGetter(repoClient);
+    }
 
-	private void buildContentGetter(AlfrescoHttpClient repoClient)
-	{
-		String repoHost = settings.get("alfrescoHost", "localhost");
-		int repoPort = settings.getAsInt("alfrescoPort", 8080);
-		String repoUsername = settings.get("alfrescoUsername", "admin");
-		String repoPassword = settings.get("alfrescoPassword", "admin");
+    private void buildContentGetter(AlfrescoHttpClient repoClient)
+    {
+        String repoHost = settings.get("alfrescoHost", "localhost");
+        int repoPort = settings.getAsInt("alfrescoPort", 8080);
+        String repoUsername = settings.get("alfrescoUsername", "admin");
+        String repoPassword = settings.get("alfrescoPassword", "admin");
 
-		ContentGetterFactory contentGetterFactory = new ContentGetterFactory(repoHost, repoPort, repoUsername,
-				repoPassword, repoClient);
-		this.contentGetter = contentGetterFactory.getObject();
-	}
+        ContentGetterFactory contentGetterFactory = new ContentGetterFactory(
+                repoHost, repoPort, repoUsername, repoPassword);
+        this.contentGetter = contentGetterFactory.getObject();
+    }
 
-	@Override
+    @Override
     public ContentGetter get()
     {
-	    return contentGetter;
+        return contentGetter;
     }
 
 }

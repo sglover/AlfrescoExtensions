@@ -8,6 +8,7 @@
 package org.alfresco.checksum;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
@@ -20,8 +21,9 @@ import org.alfresco.extensions.common.Node;
  */
 public interface ChecksumService
 {
-	void extractChecksumsAsync(Node node, String contentPath);
-	NodeChecksums extractChecksums(Node node, String contentPath);
+	void extractChecksumsAsync(Node node, InputStream in);
+	NodeChecksums getChecksums(final Node node, final InputStream in);
+	NodeChecksums extractChecksums(Node node, InputStream in);
 	NodeChecksums getChecksums(String nodeId, long nodeVersion);
 	PatchDocument createPatchDocument(NodeChecksums checksums, ReadableByteChannel channel) throws IOException;
 	PatchDocument createPatchDocument(NodeChecksums checksums, ByteBuffer data);

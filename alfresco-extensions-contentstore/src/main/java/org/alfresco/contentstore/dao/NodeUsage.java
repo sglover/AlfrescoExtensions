@@ -15,19 +15,37 @@ package org.alfresco.contentstore.dao;
 public class NodeUsage
 {
 	private String nodeId;
-	private String nodeVersion;
+	private Long nodeVersion;
 	private long timestamp;
 	private String username;
+	private NodeUsageType type;
 
-	public NodeUsage(String nodeId, String nodeVersion, long timestamp, String username)
+	public NodeUsage(String nodeId, Long nodeVersion, long timestamp, String username, NodeUsageType type)
     {
 	    super();
 	    this.nodeId = nodeId;
 	    this.nodeVersion = nodeVersion;
 	    this.timestamp = timestamp;
 	    this.username = username;
+	    this.type = type;
     }
-	public String getNodeId()
+	
+	public NodeUsageType getType()
+    {
+        return type;
+    }
+
+    public void setType(NodeUsageType type)
+    {
+        this.type = type;
+    }
+
+    public void setUsername(String username)
+    {
+        this.username = username;
+    }
+
+    public String getNodeId()
 	{
 		return nodeId;
 	}
@@ -35,11 +53,11 @@ public class NodeUsage
 	{
 		this.nodeId = nodeId;
 	}
-	public String getNodeVersion()
+	public Long getNodeVersion()
 	{
 		return nodeVersion;
 	}
-	public void setNodeVersion(String nodeVersion)
+	public void setNodeVersion(Long nodeVersion)
 	{
 		this.nodeVersion = nodeVersion;
 	}

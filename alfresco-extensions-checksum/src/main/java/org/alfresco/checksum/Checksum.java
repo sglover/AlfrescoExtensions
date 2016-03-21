@@ -19,62 +19,73 @@ public class Checksum implements Serializable
     private static final long serialVersionUID = -2457615877114129670L;
 
     private int blockIndex;
-	private int hash;
-	private int adler32;
-	private String md5;
+    private long start;
+    private long end;
+    private int hash;
+    private int adler32;
+    private String md5;
 
-	public Checksum(int blockIndex, int hash, int adler32, String md5)
+    public Checksum(int blockIndex, long start, long end, int hash, int adler32, String md5)
     {
         super();
         this.blockIndex = blockIndex;
+        this.start = start;
+        this.end = end;
         this.adler32 = adler32;
         this.md5 = md5;
         this.hash = hash;
     }
 
-	
-	public int getBlockIndex()
-	{
-		return blockIndex;
-	}
-
-
-	public int getHash()
-	{
-		return hash;
-	}
-
-	public void setHash(int hash)
-	{
-		this.hash = hash;
-	}
-
-	public void setAdler32(int adler32)
-	{
-		this.adler32 = adler32;
-	}
-
-	public void setMd5(String md5)
-	{
-		this.md5 = md5;
-	}
-
-	public int getAdler32()
-	{
-		return adler32;
-	}
-	public String getMd5()
-	{
-		return md5;
-	}
-
-
-	@Override
-    public String toString()
+    public int getBlockIndex()
     {
-	    return "Checksum [blockIndex=" + blockIndex + ", hash=" + hash
-	            + ", adler32=" + adler32 + ", md5=" + md5 + "]";
+        return blockIndex;
     }
 
+    public int getHash()
+    {
+        return hash;
+    }
 
+    public void setHash(int hash)
+    {
+        this.hash = hash;
+    }
+
+    public void setAdler32(int adler32)
+    {
+        this.adler32 = adler32;
+    }
+
+    public void setMd5(String md5)
+    {
+        this.md5 = md5;
+    }
+
+    public int getAdler32()
+    {
+        return adler32;
+    }
+
+    public String getMd5()
+    {
+        return md5;
+    }
+
+    public long getStart()
+    {
+        return start;
+    }
+
+    public long getEnd()
+    {
+        return end;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "Checksum [blockIndex=" + blockIndex + ", start=" + start
+                + ", end=" + end + ", hash=" + hash + ", adler32=" + adler32
+                + ", md5=" + md5 + "]";
+    }
 }

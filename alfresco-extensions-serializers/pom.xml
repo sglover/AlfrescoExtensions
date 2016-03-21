@@ -57,6 +57,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <!--  
         <dependency>
             <groupId>${alfresco.groupId}</groupId>
             <artifactId>alfresco-repository</artifactId>
@@ -72,6 +73,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
+                        -->
         <dependency>
             <groupId>${alfresco.groupId}</groupId>
             <artifactId>alfresco-data-model</artifactId>

@@ -14,23 +14,37 @@ import static org.junit.Assert.fail;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 
-import org.alfresco.checksum.ChecksumService;
+import org.alfresco.checksum.Checksum;
 import org.alfresco.checksum.ChecksumServiceImpl;
 import org.alfresco.checksum.NodeChecksums;
+import org.alfresco.checksum.Patch;
 import org.alfresco.checksum.PatchDocument;
 import org.alfresco.checksum.dao.ChecksumDAO;
 import org.alfresco.checksum.dao.mongo.MongoChecksumDAO;
-import org.alfresco.extensions.common.Content;
+import org.alfresco.contentstore.dao.NodeUsageDAO;
+import org.alfresco.contentstore.dao.UserContext;
+import org.alfresco.contentstore.dao.mongo.MongoNodeUsageDAO;
 import org.alfresco.extensions.common.GUID;
+import org.alfresco.extensions.common.MimeType;
 import org.alfresco.extensions.common.MongoDbFactory;
 import org.alfresco.extensions.common.Node;
+import org.alfresco.extensions.common.identity.ServerIdentity;
+import org.alfresco.extensions.common.identity.ServerIdentityImpl;
+import org.alfresco.util.TempFileProvider;
+import org.apache.commons.io.IOUtils;
+import org.apache.http.auth.BasicUserPrincipal;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -52,7 +66,7 @@ public class ContentStoreTest
 {
     private static MongodForTestsFactory mongoFactory;
 
-    private ChecksumService checksumService;
+    private ChecksumServiceImpl checksumService;
     private AbstractContentStore contentStore;
 
     @BeforeClass
@@ -85,62 +99,25 @@ public class ContentStoreTest
         }
         final DB db = factory.createInstance();
 
-        // final Mongo mongo = mongoFactory.newMongo();
-        // DB db = mongoFactory.newDB(mongo);
-
         File rootDirectory = Files.createTempDir();
 
         System.out.println("rootDirectory = " + rootDirectory);
 
-        ChecksumDAO checksumDAO = new MongoChecksumDAO(db, "checksums"
-                + System.currentTimeMillis());
-        // MessageProducer messageProducer = new MessageProducer()
-        // {
-        // @Override
-        // public void send(Object arg0, String arg1, Map<String, Object> arg2)
-        // throws MessagingException
-        // {
-        // }
-        //
-        // @Override
-        // public void send(Object arg0, String arg1) throws MessagingException
-        // {
-        // }
-        //
-        // @Override
-        // public void send(Object arg0, Map<String, Object> arg1)
-        // throws MessagingException
-        // {
-        // }
-        //
-        // @Override
-        // public void send(Object arg0) throws MessagingException
-        // {
-        // }
-        // };
-        // CacheServerIdentity cacheServerIdentity = new CacheServerIdentity()
-        // {
-        //
-        // @Override
-        // public int getPort()
-        // {
-        // return 0;
-        // }
-        //
-        // @Override
-        // public String getId()
-        // {
-        // return GUID.generate();
-        // }
-        //
-        // @Override
-        // public String getHostname()
-        // {
-        // return "localhost";
-        // }
-        // };
+        ServerIdentity serverIdentity = new ServerIdentityImpl("localhost", 8080, "test");
+        long time = System.currentTimeMillis();
+
+        ChecksumDAO checksumDAO = new MongoChecksumDAO(db, "checksums" + time);
+        NodeUsageDAO nodeUsageDAO = new MongoNodeUsageDAO(db, "nodeUsage" + time, serverIdentity);
+
         this.checksumService = new ChecksumServiceImpl(checksumDAO, 5);
-        this.contentStore = new FileContentStore(rootDirectory, checksumService);
+
+//        ContentDAO contentDAO = new MongoContentDAO(db, "nodes" + time, serverIdentity);
+//        this.contentStore = new FileContentStoreImpl(rootDirectory.getAbsolutePath(), checksumService,
+//                nodeUsageDAO, contentDAO);
+
+        CassandraSession cassandraSession = new CassandraSession("localhost", true);
+        this.contentStore = new CassandraContentStore(cassandraSession, rootDirectory.getAbsolutePath(), checksumService,
+                nodeUsageDAO, 5);
     }
 
     private void assertFileEquals(byte[] bytes, String contentPath)
@@ -195,17 +172,27 @@ public class ContentStoreTest
     public void test1() throws Exception
     {
         String text = "Hello world";
-        long size = text.getBytes().length;
-        InputStream in = new ByteArrayInputStream(text.getBytes());
-        ReadableByteChannel channel = Channels.newChannel(in);
 
+        UserContext.setUser(new BasicUserPrincipal("user1"));
         try
         {
-            Node node = Node.build().nodeId(GUID.generate()).nodeVersion(1l);
-            Content content = new Content(channel, "text/plain", size);
-            File file = contentStore.write(node, content);
-            String contentPath = file.getAbsolutePath();
-            // checksumService.extractChecksums("1", "1.0", contentPath);
+            String nodeId = GUID.generate();
+            long nodeVersion = 1l;
+
+            Node node = Node.build().nodeId(nodeId).nodeVersion(nodeVersion);
+            ContentReader contentReader = new StringContentReader(text, null, node);
+            ContentWriter contentWriter = contentStore.getWriter(node, MimeType.TEXT);
+            try(InputStream in = contentReader.getStream();
+                    OutputStream out = contentWriter.getOutputStream())
+            {
+                IOUtils.copy(in, out);
+            }
+
+            try(InputStream in = contentReader.getStream())
+            {
+                checksumService.extractChecksums(node, in);
+            }
+
             NodeChecksums checksums = checksumService.getChecksums(
                     node.getNodeId(), node.getNodeVersion());
             System.out.println(checksums);
@@ -218,110 +205,223 @@ public class ContentStoreTest
             PatchDocument patchDocument = checksumService.createPatchDocument(
                     checksums, data);
             System.out.print(patchDocument);
-
-            // ByteBuffer currentData = ByteBuffer.allocate(1024);
-            // currentData.put(content.getBytes());
-
+    
             long start = System.nanoTime();
 
-            String newContentPath = contentStore.applyPatch(patchDocument,
-                    contentPath);
+            Node newNode = contentStore.applyPatch(nodeId, nodeVersion, patchDocument);
             long end = System.nanoTime();
             System.out.println("time = " + (end - start)/1000000 + "ms");
-            System.out.println(newContentPath);
-            assertFileEquals(newContent.getBytes(), newContentPath);
 
-            // ByteBuffer bb = contentStore.applyPatch(patchDocument,
-            // contentPath);
-            // byte[] b = new byte[bb.limit()];
-            // bb.get(b);
-            // String patchedContent = new String(b);
-            // assertEquals(newContent, patchedContent);
+            ContentReader contentReader1 = contentStore.getReader(newNode);
+
+            try(InputStream is = contentReader1.getStream())
+            {
+                byte[] bytes = new byte[1024];
+                is.read(bytes);
+                System.out.println(new String(bytes, "UTF-8"));
+            }
+
+            try(InputStream in3 = new ByteArrayInputStream(newContent.getBytes());
+                    InputStream in4 = contentReader1.getStream())
+            {
+                assertFileEquals(in3, in4);
+            }
         }
         finally
         {
-            in.close();
+            UserContext.clearUser();
         }
     }
 
     @Test
     public void test2() throws Exception
     {
+        UserContext.setUser(new BasicUserPrincipal("user1"));
+
+        String nodeId = GUID.generate();
+        long nodeVersion = 1l;
+        Node node = Node.build().nodeId(nodeId).nodeVersion(nodeVersion);
+        ContentWriter contentWriter = contentStore.getWriter(node, MimeType.XLSX);
+
         try(InputStream in = getClass().getClassLoader().getResourceAsStream("test.xlsx");
-                ReadableByteChannel channel = Channels.newChannel(in);
-                InputStream in1 = getClass().getClassLoader().getResourceAsStream("test1.xlsx");
+                OutputStream out = contentWriter.getOutputStream())
+        {
+            IOUtils.copy(in, out);
+            checksumService.extractChecksums(node, in);
+        }
+
+        NodeChecksums checksums = checksumService.getChecksums(
+                node.getNodeId(), node.getNodeVersion());
+
+        try(InputStream in1 = getClass().getClassLoader().getResourceAsStream("test1.xlsx");
                 ReadableByteChannel channel1 = Channels.newChannel(in1))
         {
-            Node node = Node.build().nodeId(GUID.generate()).nodeVersion(1l);
-            Content content = new Content(channel, "text/plain", null);
-            File file = contentStore.write(node, content);
-            String contentPath = file.getAbsolutePath();
-            System.out.println("contentPath = " + contentPath);
-
-            NodeChecksums checksums = checksumService.getChecksums(
-                    node.getNodeId(), node.getNodeVersion());
-            System.out.println(checksums);
-
             PatchDocument patchDocument = checksumService.createPatchDocument(
                     checksums, channel1);
-            System.out.print(patchDocument);
 
             long start = System.nanoTime();
 
-            String newContentPath = contentStore.applyPatch(patchDocument,
-                    contentPath);
-            System.out.println("newContentPath = " + newContentPath);
+            contentStore.applyPatch(nodeId, nodeVersion, patchDocument);
 
             long end = System.nanoTime();
-            System.out.println("time = " + (end - start)/1000000 + "ms");
+            System.out.println("Patch applied time = " + (end - start)/1000000 + "ms");
 
+            node = node.nodeVersion(node.getNodeVersion() + 1);
+            ContentReader reader1 = contentStore.getReader(node);
             try(InputStream in3 = getClass().getClassLoader().getResourceAsStream("test1.xlsx");
-                    InputStream in4 = new FileInputStream(newContentPath))
+                    InputStream in4 = reader1.getStream())
             {
                 assertFileEquals(in3, in4);
             }
-
-            // ByteBuffer bb = contentStore.applyPatch(patchDocument,
-            // contentPath);
-            // byte[] b = new byte[bb.limit()];
-            // bb.get(b);
-            // String patchedContent = new String(b);
-            // assertEquals(newContent, patchedContent);
+        }
+        finally
+        {
+            UserContext.clearUser();
         }
     }
 
-    // @Test
-    // public void test2() throws Exception
-    // {
-    // // server
-    // byte[] content = new byte[1024];
-    // random.nextBytes(content);
-    //
-    // InputStream in = new ByteArrayInputStream(content);
-    // File file = contentStore.write(in);
-    // String contentPath = file.getAbsolutePath();
-    // NodeChecksums checksums = checksumService.getChecksums(contentPath);
-    // System.out.println(checksums);
-    //
-    // // client
-    // byte[] newContent = new byte[1024];
-    // random.nextBytes(newContent);
-    //
-    // ByteBuffer data = ByteBuffer.allocate(1024);
-    // data.put(newContent);
-    // data.flip();
-    // PatchDocument patchDocument =
-    // checksumService.createPatchDocument(checksums, data);
-    //
-    // // client -> server
-    // String newContentPath = contentStore.applyPatch(patchDocument,
-    // contentPath);
-    // assertFileEquals(newContent, newContentPath);
-    // // ByteBuffer currentData = ByteBuffer.allocate(1024);
-    // // currentData.put(content);
-    // // ByteBuffer bb = contentStore.applyPatch(patchDocument, currentData);
-    // // byte[] b = new byte[bb.limit()];
-    // // bb.get(b);
-    // // assertArrayEquals(newContent, b);
-    // }
+    private void applyPatch(File f, PatchDocument patchDocument) throws FileNotFoundException, IOException
+    {
+        int blockSize = checksumService.getBlockSize();
+
+        try(RandomAccessFile file = new RandomAccessFile(f, "rw");
+                FileChannel fc = file.getChannel())
+        {
+            long start = System.currentTimeMillis();
+
+            for(Patch patch : patchDocument.getPatches())
+            {
+                int blockIndex = patch.getLastMatchIndex();
+                long pos = blockIndex * blockSize;
+                MappedByteBuffer mem = fc.map(FileChannel.MapMode.READ_WRITE, pos, patch.getSize());
+                ByteBuffer bb = ByteBuffer.wrap(patch.getBuffer());
+                mem.put(bb);
+            }
+
+            long end = System.currentTimeMillis();
+            long time = end - start;
+
+            System.out.println("patch time = " + time);
+        }
+    }
+
+    private File copy(String resourceName) throws IOException
+    {
+        File f = TempFileProvider.createTempFile("ContentStoreTest", GUID.generate());
+        try(InputStream in = getClass().getClassLoader().getResourceAsStream(resourceName);
+                OutputStream out = new FileOutputStream(f))
+        {
+            IOUtils.copy(in, out);
+        }
+        return f;
+    }
+
+    @Test
+    public void test3() throws IOException
+    {
+        checksumService.setBlockSize(8192);
+        contentStore.setBlockSize(8192);
+
+        UserContext.setUser(new BasicUserPrincipal("user1"));
+
+        File f = copy("marbles-uncompressed.tif");
+        Node node = Node.build().nodeId(GUID.generate()).nodeVersion(1l);
+
+        try(InputStream in = getClass().getClassLoader().getResourceAsStream("marbles-uncompressed.tif"))
+        {
+            NodeChecksums checksums = checksumService.getChecksums(node, in);
+            System.out.println("checksums = " + checksums);
+
+            try(InputStream in1 = getClass().getClassLoader().getResourceAsStream("marbles-uncompressed.tif");
+                    ReadableByteChannel channel1 = Channels.newChannel(in1))
+            {
+                PatchDocument patchDocument = checksumService.createPatchDocument(
+                        checksums, channel1);
+                System.out.println("patchDocument = " + patchDocument);
+                applyPatch(f, patchDocument);
+            }
+        }
+
+        try(InputStream in3 = getClass().getClassLoader().getResourceAsStream("marbles-uncompressed.tif");
+                InputStream in4 = new FileInputStream(f))
+        {
+            assertFileEquals(in3, in4);
+        }
+    }
+
+    @Test
+    public void test4() throws IOException
+    {
+        checksumService.setBlockSize(4);
+        contentStore.setBlockSize(4);
+
+        UserContext.setUser(new BasicUserPrincipal("user1"));
+
+        Node node = Node.build().nodeId(GUID.generate()).nodeVersion(1l);
+
+        String content = "content";
+        String content1 = "content1";
+
+        try(InputStream in = new ByteArrayInputStream(content.getBytes());
+                InputStream in1 = new ByteArrayInputStream(content1.getBytes()))
+        {
+//        try(InputStream in = getClass().getClassLoader().getResourceAsStream("test.xlsx");
+//                InputStream in1 = getClass().getClassLoader().getResourceAsStream("test1.xlsx"))
+//        {
+            NodeChecksums checksums1 = checksumService.getChecksums(node, in);
+            Checksum checksum1 = checksums1.getChecksumsByBlock().get(0);
+            NodeChecksums checksums2 = checksumService.getChecksums(node, in1);
+            Checksum checksum2 = checksums2.getChecksumsByBlock().get(0);
+            System.out.println(checksum1);
+            System.out.println(checksum2);
+        }
+    }
+
+    @Test
+    public void test5() throws IOException
+    {
+        try(InputStream in = getClass().getClassLoader().getResourceAsStream("marbles-uncompressed.tif");
+                InputStream in1 = getClass().getClassLoader().getResourceAsStream("marbles-uncompressed1.tif"))
+        {
+            ByteBuffer buf1 = ByteBuffer.allocate(8192);
+            ByteBuffer buf2 = ByteBuffer.allocate(8192);
+            ReadableByteChannel channel1 = Channels.newChannel(in);
+            ReadableByteChannel channel2 = Channels.newChannel(in1);
+            int numRead1 = -1;
+            int numRead2 = -1;
+            int total = 0;
+            int same = 0;
+//            do
+//            {
+                numRead1 = channel1.read(buf1);
+                numRead2 = channel2.read(buf2);
+                buf1.clear();
+                buf2.clear();
+
+                numRead1 = channel1.read(buf1);
+                numRead2 = channel2.read(buf2);
+
+                buf1.flip();
+                buf2.flip();
+                if(numRead1 > 0 && numRead1 == numRead2)
+                {
+                    while(buf1.hasRemaining())
+                    {
+                        total++;
+                        byte b1 = buf1.get();
+                        byte b2 = buf2.get();
+                        if(b1 == b2)
+                        {
+                            same++;
+                        }
+                    }
+                    buf1.clear();
+                    buf2.clear();
+                }
+//            }
+//            while(numRead1 > 0 && numRead1 == numRead2);
+
+            System.out.println(numRead1 + ", " + numRead2 + ", " + total + ", " + same + ", " + (double)same/total);
+        }
+    }
 }

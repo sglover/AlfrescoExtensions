@@ -37,7 +37,7 @@ public class MongoMetricsService implements MetricsService, InitializingBean
     {
         this.collection = db.getCollection(collection);
     }
-    
+
     @Override
     public void afterPropertiesSet() throws Exception
     {
@@ -45,8 +45,8 @@ public class MongoMetricsService implements MetricsService, InitializingBean
     }
 
     /**
-     * Ensure that the MongoDB collection has the required indexes associated with
-     * this user bean.
+     * Ensure that the MongoDB collection has the required indexes associated
+     * with this user bean.
      */
     private void checkIndexes()
     {
@@ -54,35 +54,28 @@ public class MongoMetricsService implements MetricsService, InitializingBean
     }
 
     @Override
-    public void addMetrics(DBObject syncMetrics, DBObject subsMetrics, DBObject activeMQStats)
+    public void addMetrics(DBObject syncMetrics, DBObject activeMQStats)
     {
-    	long timestamp = System.currentTimeMillis();
-    	LocalDateTime time = new LocalDateTime(timestamp, DateTimeZone.UTC);
-    	String formattedTime = time.toString();
+        long timestamp = System.currentTimeMillis();
+        LocalDateTime time = new LocalDateTime(timestamp, DateTimeZone.UTC);
+        String formattedTime = time.toString();
 
-    	DBObject insert = BasicDBObjectBuilder
-    			.start("timestamp", timestamp)
-    			.add("time", formattedTime)
-    			.add("sync", syncMetrics)
-    			.add("subs", subsMetrics)
-    			.add("activeMQ", activeMQStats)
-    			.get();
-    	collection.insert(insert);
+        DBObject insert = BasicDBObjectBuilder.start("timestamp", timestamp)
+                .add("time", formattedTime).add("sync", syncMetrics)
+                .add("activeMQ", activeMQStats).get();
+        collection.insert(insert);
     }
-    
+
     @Override
     public Stream<Metrics> getMetrics(int skip, int limit)
     {
-    	DBObject query = BasicDBObjectBuilder
-    			.start()
-    			.get();
-    	DBObject orderBy = BasicDBObjectBuilder
-    			.start("timestampMS", 1)
-    			.get();
-    	DBCursor cur = collection.find(query).sort(orderBy).skip(skip).limit(limit);
-    	Stream<Metrics> stream = StreamSupport.stream(cur.spliterator(), false)
-    		.onClose(() -> cur.close()) // need to close cursor;
-    		.map(dbo -> Metrics.fromDBObject(dbo));
-    	return stream;
+        DBObject query = BasicDBObjectBuilder.start().get();
+        DBObject orderBy = BasicDBObjectBuilder.start("timestampMS", 1).get();
+        DBCursor cur = collection.find(query).sort(orderBy).skip(skip)
+                .limit(limit);
+        Stream<Metrics> stream = StreamSupport.stream(cur.spliterator(), false)
+                .onClose(() -> cur.close()) // need to close cursor;
+                .map(dbo -> Metrics.fromDBObject(dbo));
+        return stream;
     }
 }

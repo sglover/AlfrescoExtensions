@@ -20,7 +20,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.alfresco.events.node.types.NodeContentPutEvent;
 import org.alfresco.events.node.types.NodeEvent;
 import org.alfresco.events.node.types.NodeUpdatedEvent;
-import org.alfresco.events.node.types.Property;
 import org.alfresco.serializers.DefaultFilesImpl;
 import org.alfresco.serializers.Files;
 import org.alfresco.serializers.HierarchicalNodeMetadataSerializer;
@@ -30,16 +29,13 @@ import org.alfresco.serializers.PropertySerializer;
 import org.alfresco.serializers.types.SerializerRegistry;
 import org.alfresco.serializers.types.Serializers;
 import org.alfresco.service.cmr.dictionary.DictionaryService;
-import org.alfresco.service.common.elasticsearch.entities.EntityTaggerCallbackImpl;
 import org.alfresco.service.namespace.NamespaceService;
 import org.alfresco.services.AlfrescoApi;
 import org.alfresco.services.AlfrescoDictionary;
-import org.alfresco.services.ContentGetter;
-import org.alfresco.services.nlp.Entities;
+import org.alfresco.services.Content;
+import org.alfresco.services.TextContentGetter;
 import org.alfresco.services.nlp.EntityExtracter;
 import org.alfresco.services.nlp.EntityTagger;
-import org.alfresco.services.nlp.EntityTaggerCallback;
-import org.alfresco.services.solr.GetTextContentResponse;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.elasticsearch.ElasticsearchException;
@@ -72,12 +68,12 @@ public class ElasticSearchIndexer
     private NodeMetadataSerializer nodeMetadataSerializer;
     private Files files;
     private Client client;
-    private ContentGetter contentGetter;
+    private TextContentGetter contentGetter;
 
     private AtomicBoolean initialized = new AtomicBoolean(false);
 
     public ElasticSearchIndexer(AlfrescoApi alfrescoApi,
-            ContentGetter contentGetter, EntityTagger entityTagger,
+            TextContentGetter contentGetter, EntityTagger entityTagger,
             EntityExtracter entityExtracter, Client client,
             AlfrescoDictionary alfrescoDictionary,
             ElasticSearchClient elasticSearchClient, String indexName)
@@ -539,49 +535,38 @@ public class ElasticSearchIndexer
 
         try
         {
-            GetTextContentResponse response = contentGetter
-                    .getTextContent(nodeInternalId);
+//            GetTextContentResponse response = contentGetter.getContentByNodeId(nodeInternalId);
+            Content content = contentGetter.getContentByNodeId(nodeInternalId);
 
-            try
+            ReadableByteChannel channel = (content != null ? content.getChannel() : null);
+            if (channel != null)
             {
-                ReadableByteChannel channel = (response != null ? response
-                        .getContent() : null);
-                if (channel != null)
-                {
-                    String str = getContent(channel);
+                String str = getContent(channel);
 
-                    BasicDBObjectBuilder builder = BasicDBObjectBuilder
-                            .start("n", nodeId).add("nid", nodeInternalId)
-                            .add("t", nodeType).add("p", path)
-                            // .add("_n", nodeInternalId)
-                            .add("v", nodeVersion).add("l", versionLabel)
-                            // .add("c_enc", base64);
-                            .add("c", str);
+                BasicDBObjectBuilder builder = BasicDBObjectBuilder
+                        .start("n", nodeId).add("nid", nodeInternalId)
+                        .add("t", nodeType).add("p", path)
+                        // .add("_n", nodeInternalId)
+                        .add("v", nodeVersion).add("l", versionLabel)
+                        // .add("c_enc", base64);
+                        .add("c", str);
 
-                    String id = buildIndexId(event);
-                    String json = builder.get().toString();
+                String id = buildIndexId(event);
+                String json = builder.get().toString();
 
-                    UpdateResponse esResponse = elasticSearchClient.reindex(
-                            indexName, id, IndexType.content, json, false);
+                UpdateResponse esResponse = elasticSearchClient.reindex(
+                        indexName, id, IndexType.content, json, false);
 
-                    logger.debug("Re-indexed content " + nodeId + ", "
-                            + builder.get() + "response " + esResponse.getId()
-                            + ", " + esResponse.getType() + ", "
-                            + esResponse.getIndex() + ", "
-                            + esResponse.getVersion());
-                }
-                else
-                {
-                    logger.debug("No content for " + nodeInternalId + "."
-                            + nodeVersion);
-                }
+                logger.debug("Re-indexed content " + nodeId + ", "
+                        + builder.get() + "response " + esResponse.getId()
+                        + ", " + esResponse.getType() + ", "
+                        + esResponse.getIndex() + ", "
+                        + esResponse.getVersion());
             }
-            finally
+            else
             {
-                if (response != null)
-                {
-                    response.release();
-                }
+                logger.debug("No content for " + nodeInternalId + "."
+                        + nodeVersion);
             }
         }
         catch (Exception e)
@@ -620,76 +605,76 @@ public class ElasticSearchIndexer
     // TODO this is done asynchronously and may fail, in which case the even
     // read will have completed
     // successfully. Need to address this.
-    public void indexEntities(NodeEvent nodeEvent)
-    {
-        if (nodeEvent instanceof NodeContentPutEvent)
-        {
-            long nodeInternalId = nodeEvent.getNodeInternalId();
-            long nodeVersion = nodeEvent.getNodeVersion();
-            String nodeType = nodeEvent.getNodeType();
-            String versionLabel = getVersionLabel(nodeEvent);
-            String indexId = buildIndexId(nodeEvent);
-            indexEntitiesForContent(nodeInternalId, nodeVersion, nodeType,
-                    versionLabel, indexId);
-        }
-        else if (nodeEvent instanceof NodeUpdatedEvent)
-        {
-            NodeUpdatedEvent nodeUpdatedEvent = (NodeUpdatedEvent) nodeEvent;
-            indexEntities(nodeUpdatedEvent);
-        }
-        else
-        {
-            // TODO
-        }
-    }
+//    public void indexEntities(NodeEvent nodeEvent)
+//    {
+//        if (nodeEvent instanceof NodeContentPutEvent)
+//        {
+//            long nodeInternalId = nodeEvent.getNodeInternalId();
+//            long nodeVersion = nodeEvent.getNodeVersion();
+//            String nodeType = nodeEvent.getNodeType();
+//            String versionLabel = getVersionLabel(nodeEvent);
+//            String indexId = buildIndexId(nodeEvent);
+//            indexEntitiesForContent(nodeInternalId, nodeVersion, nodeType,
+//                    versionLabel, indexId);
+//        }
+//        else if (nodeEvent instanceof NodeUpdatedEvent)
+//        {
+//            NodeUpdatedEvent nodeUpdatedEvent = (NodeUpdatedEvent) nodeEvent;
+//            indexEntities(nodeUpdatedEvent);
+//        }
+//        else
+//        {
+//            // TODO
+//        }
+//    }
+//
+//    public void indexEntitiesForContent(long nodeInternalId, long nodeVersion,
+//            String nodeType, String versionLabel, String indexId)
+//    {
+//        EntityTaggerCallback callback = new EntityTaggerCallbackImpl(client,
+//                nodeInternalId, nodeVersion, versionLabel, indexId);
+//        entityExtracter.getEntities(nodeInternalId, callback);
+//    }
 
-    public void indexEntitiesForContent(long nodeInternalId, long nodeVersion,
-            String nodeType, String versionLabel, String indexId)
-    {
-        EntityTaggerCallback callback = new EntityTaggerCallbackImpl(client,
-                nodeInternalId, nodeVersion, versionLabel, indexId);
-        entityExtracter.getEntities(nodeInternalId, callback);
-    }
-
-    private void indexEntities(NodeUpdatedEvent nodeEvent)
-    {
-        long nodeInternalId = nodeEvent.getNodeInternalId();
-        long nodeVersion = nodeEvent.getNodeVersion();
-        String nodeType = nodeEvent.getNodeType();
-        String versionLabel = getVersionLabel(nodeEvent);
-        String indexId = buildIndexId(nodeEvent);
-        Map<String, Property> propertiesAdded = nodeEvent.getPropertiesAdded();
-        // EntityTaggerCallback callback = new EntityTaggerCallbackImpl(client,
-        // nodeInternalId, nodeVersion, versionLabel,
-        // indexId);
-        for (Map.Entry<String, Property> entry : propertiesAdded.entrySet())
-        {
-            Property property = entry.getValue();
-            Serializable value = property.getValue();
-            if (value instanceof String)
-            {
-                String content = (String) value;
-                EntityTaggerCallback callback = new EntityTaggerCallback()
-                {
-
-                    @Override
-                    public void onSuccess(Entities entities)
-                    {
-                        // TODO Auto-generated method stub
-
-                    }
-
-                    @Override
-                    public void onFailure(Throwable ex)
-                    {
-                        // TODO Auto-generated method stub
-
-                    }
-                };
-                entityTagger.getEntities(content, callback);
-            }
-        }
-    }
+//    private void indexEntities(NodeUpdatedEvent nodeEvent)
+//    {
+//        long nodeInternalId = nodeEvent.getNodeInternalId();
+//        long nodeVersion = nodeEvent.getNodeVersion();
+//        String nodeType = nodeEvent.getNodeType();
+//        String versionLabel = getVersionLabel(nodeEvent);
+//        String indexId = buildIndexId(nodeEvent);
+//        Map<String, Property> propertiesAdded = nodeEvent.getPropertiesAdded();
+//        // EntityTaggerCallback callback = new EntityTaggerCallbackImpl(client,
+//        // nodeInternalId, nodeVersion, versionLabel,
+//        // indexId);
+//        for (Map.Entry<String, Property> entry : propertiesAdded.entrySet())
+//        {
+//            Property property = entry.getValue();
+//            Serializable value = property.getValue();
+//            if (value instanceof String)
+//            {
+//                String content = (String) value;
+//                EntityTaggerCallback callback = new EntityTaggerCallback()
+//                {
+//
+//                    @Override
+//                    public void onSuccess(Entities entities)
+//                    {
+//                        // TODO Auto-generated method stub
+//
+//                    }
+//
+//                    @Override
+//                    public void onFailure(Throwable ex)
+//                    {
+//                        // TODO Auto-generated method stub
+//
+//                    }
+//                };
+//                entityTagger.getEntities(content, callback);
+//            }
+//        }
+//    }
 
     // public double similarity(long nodeInternalId1, long nodeInternalId2)
     // throws Exception

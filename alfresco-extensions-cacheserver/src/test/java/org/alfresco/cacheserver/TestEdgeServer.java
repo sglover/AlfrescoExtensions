@@ -23,7 +23,7 @@ import org.alfresco.checksum.ChecksumService;
 import org.alfresco.checksum.ChecksumServiceImpl;
 import org.alfresco.checksum.NodeChecksums;
 import org.alfresco.checksum.dao.ChecksumDAO;
-import org.alfresco.extensions.common.Content;
+import org.alfresco.contentstore.ContentReader;
 import org.alfresco.extensions.common.GUID;
 import org.alfresco.extensions.common.Node;
 import org.alfresco.services.AlfrescoApi;
@@ -205,7 +205,7 @@ public class TestEdgeServer
             UserDetails userDetails = new User("admin", null, null);
             UserContext.setUser(userDetails);
 
-            Content content = edgeServer.getByNodeId(nodeId, nodeVersion, true);
+            ContentReader content = edgeServer.getByNodeId(nodeId, nodeVersion, true);
             channel = content.getChannel();
             ByteBuffer bb = ByteBuffer.allocate(2048);
             channel.read(bb);

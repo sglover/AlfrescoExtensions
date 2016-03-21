@@ -31,51 +31,54 @@ import com.mongodb.WriteResult;
  */
 public class MongoChecksumDAO implements ChecksumDAO
 {
-	private DB db;
+    private DB db;
 
-	private DBCollection checksums;
-	private String checksumsCollectionName;
+    private DBCollection checksums;
+    private String checksumsCollectionName;
 
-	public MongoChecksumDAO(DB db, String checksumsCollectionName) throws Exception
-	{
-		this.db = db;
-		this.checksumsCollectionName = checksumsCollectionName;
-		init();
-	}
-
-	public void drop()
-	{
-		checksums.drop();
-	}
-
-	protected DBCollection getCollection(DB db, String collectionName, WriteConcern writeConcern)
-	{
-	    if(!db.collectionExists(collectionName))
-	    {
-	        DBObject options = new BasicDBObject();
-	        db.createCollection(collectionName, options);
-	    }
-	    DBCollection collection = db.getCollection(collectionName);
-	    collection.setWriteConcern(writeConcern);
-
-	    return collection;
-	}
-
-    protected DBCollection getCappedCollection(DB db, String collectionName, Integer maxCollectionSize, Integer maxDocuments, WriteConcern writeConcern)
+    public MongoChecksumDAO(DB db, String checksumsCollectionName)
+            throws Exception
     {
-        if(!db.collectionExists(collectionName))
+        this.db = db;
+        this.checksumsCollectionName = checksumsCollectionName;
+        init();
+    }
+
+    public void drop()
+    {
+        checksums.drop();
+    }
+
+    protected DBCollection getCollection(DB db, String collectionName,
+            WriteConcern writeConcern)
+    {
+        if (!db.collectionExists(collectionName))
         {
-            BasicDBObjectBuilder builder = BasicDBObjectBuilder
-                    .start();
+            DBObject options = new BasicDBObject();
+            db.createCollection(collectionName, options);
+        }
+        DBCollection collection = db.getCollection(collectionName);
+        collection.setWriteConcern(writeConcern);
+
+        return collection;
+    }
+
+    protected DBCollection getCappedCollection(DB db, String collectionName,
+            Integer maxCollectionSize, Integer maxDocuments,
+            WriteConcern writeConcern)
+    {
+        if (!db.collectionExists(collectionName))
+        {
+            BasicDBObjectBuilder builder = BasicDBObjectBuilder.start();
 
             builder.add("capped", true);
-            
-            if(maxCollectionSize != null)
+
+            if (maxCollectionSize != null)
             {
                 builder.add("size", maxCollectionSize);
             }
 
-            if(maxDocuments != null)
+            if (maxDocuments != null)
             {
                 builder.add("max", maxDocuments);
             }
@@ -89,143 +92,141 @@ public class MongoChecksumDAO implements ChecksumDAO
         return collection;
     }
 
-	protected void checkResult(WriteResult result, int expectedNum)
-	{
-	    boolean ok = result.getLastError().ok();
-	    if(!ok)
-	    {
-	        throw new RuntimeException("Mongo write failed");
-	    }
-	    if(expectedNum != result.getN())
-	    {
-	        throw new RuntimeException("Mongo write failed, expected " + expectedNum + " writes, got " + result.getN());
-	    }
-	}
-
-	
-	protected void checkResult(WriteResult result)
-	{
+    protected void checkResult(WriteResult result, int expectedNum)
+    {
         boolean ok = result.getLastError().ok();
-        if(!ok)
+        if (!ok)
         {
             throw new RuntimeException("Mongo write failed");
         }
-	}
+        if (expectedNum != result.getN())
+        {
+            throw new RuntimeException("Mongo write failed, expected "
+                    + expectedNum + " writes, got " + result.getN());
+        }
+    }
 
-	private void init()
-	{
+    protected void checkResult(WriteResult result)
+    {
+        boolean ok = result.getLastError().ok();
+        if (!ok)
+        {
+            throw new RuntimeException("Mongo write failed");
+        }
+    }
+
+    private void init()
+    {
         if (db == null)
         {
             throw new RuntimeException("Mongo DB must not be null");
         }
 
-		this.checksums = getCollection(db, checksumsCollectionName, WriteConcern.ACKNOWLEDGED);
+        this.checksums = getCollection(db, checksumsCollectionName,
+                WriteConcern.ACKNOWLEDGED);
 
-//		{
-//	        DBObject keys = BasicDBObjectBuilder
-//	        		.start("e", 1)
-//	                .add("n", 1)
-//	                .add("v", 1)
-//	                .get();
-//	        this.checksums.ensureIndex(keys, "byNodeId", false);
-//		}
-	}
+        // {
+        // DBObject keys = BasicDBObjectBuilder
+        // .start("e", 1)
+        // .add("n", 1)
+        // .add("v", 1)
+        // .get();
+        // this.checksums.ensureIndex(keys, "byNodeId", false);
+        // }
+    }
 
     private Checksum toChecksum(DBObject dbObject)
-	{
-		int blockIndex = (Integer)dbObject.get("i");
-		int hash = (Integer)dbObject.get("h");
-		int adler32 = (Integer)dbObject.get("a");
-		String md5 = (String)dbObject.get("m");
-		Checksum checksum = new Checksum(blockIndex, hash, adler32, md5);
-		return checksum;
-	}
+    {
+        int blockIndex = (Integer) dbObject.get("i");
+        int hash = (Integer) dbObject.get("h");
+        int adler32 = (Integer) dbObject.get("a");
+        String md5 = (String) dbObject.get("m");
+        Checksum checksum = new Checksum(blockIndex, -1, -1l, hash, adler32, md5);
+        return checksum;
+    }
 
-	@SuppressWarnings("unchecked")
+    @SuppressWarnings("unchecked")
     private NodeChecksums toChecksums(DBObject dbObject)
-	{
-	    NodeChecksums documentChecksums = null;
-	    if(dbObject != null)
-	    {
-    		String nodeId = (String)dbObject.get("n");
-    		Long nodeInternalId = (Long)dbObject.get("ni");
-            Long nodeVersion = (Long)dbObject.get("v");
-    		String versionLabel = (String)dbObject.get("l");
-    		String contentUrl = (String)dbObject.get("u");
-    		int blockSize = (Integer)dbObject.get("b");
-    		long numBlocks = (Long)dbObject.get("nb");
-    
-    		documentChecksums = new NodeChecksums(nodeId, nodeInternalId, nodeVersion, versionLabel,
-    				contentUrl, blockSize, numBlocks);
-    
-    		DBObject documentChecksumDBObject = (DBObject)dbObject.get("c");
-    		for(String hashStr : documentChecksumDBObject.keySet())
-    		{
-    			List<DBObject> checksumDBObjects = (List<DBObject>)documentChecksumDBObject.get(hashStr);
-    			for(DBObject checksumDBObject : checksumDBObjects)
-    			{
-    				Checksum checksum = toChecksum(checksumDBObject);
-    				documentChecksums.addChecksum(checksum);
-    			}
-    		}
-	    }
+    {
+        NodeChecksums documentChecksums = null;
+        if (dbObject != null)
+        {
+            String nodeId = (String) dbObject.get("n");
+            Long nodeInternalId = (Long) dbObject.get("ni");
+            Long nodeVersion = (Long) dbObject.get("v");
+            String versionLabel = (String) dbObject.get("l");
+            int blockSize = (Integer) dbObject.get("b");
+            long numBlocks = (Long) dbObject.get("nb");
 
-		return documentChecksums;
-	}
+            documentChecksums = new NodeChecksums(nodeId, nodeInternalId,
+                    nodeVersion, versionLabel, blockSize, numBlocks);
 
-	private DBObject toDBObject(Checksum checksum)
-	{
-		DBObject dbObject = BasicDBObjectBuilder
-				.start("i", checksum.getBlockIndex())
-				.add("h", checksum.getHash())
-				.add("a", checksum.getAdler32())
-				.add("m", checksum.getMd5())
-				.get();
-		return dbObject;
-	}
+            DBObject documentChecksumDBObject = (DBObject) dbObject.get("c");
+            for (String hashStr : documentChecksumDBObject.keySet())
+            {
+                List<DBObject> checksumDBObjects = (List<DBObject>) documentChecksumDBObject
+                        .get(hashStr);
+                for (DBObject checksumDBObject : checksumDBObjects)
+                {
+                    Checksum checksum = toChecksum(checksumDBObject);
+                    documentChecksums.addChecksum(checksum);
+                }
+            }
+        }
 
-	private DBObject toDBObject(NodeChecksums documentChecksums)
-	{
-		BasicDBObjectBuilder checksumsObjectBuilder = BasicDBObjectBuilder.start();
-		for(Map.Entry<Integer, List<Checksum>> checksums : documentChecksums.getChecksums().entrySet())
-		{
-			List<DBObject> checksumDBObjects = new LinkedList<>();
-			for(Checksum checksum : checksums.getValue())
-			{
-				DBObject checksumDBObject = toDBObject(checksum);
-				checksumDBObjects.add(checksumDBObject);
-			}
-			checksumsObjectBuilder.add(String.valueOf(checksums.getKey()), checksumDBObjects);
-		}
-		DBObject dbObject = BasicDBObjectBuilder
-				.start("n", documentChecksums.getNodeId())
-				.add("ni", documentChecksums.getNodeInternalId())
+        return documentChecksums;
+    }
+
+    private DBObject toDBObject(Checksum checksum)
+    {
+        DBObject dbObject = BasicDBObjectBuilder
+                .start("i", checksum.getBlockIndex())
+                .add("h", checksum.getHash()).add("a", checksum.getAdler32())
+                .add("m", checksum.getMd5()).get();
+        return dbObject;
+    }
+
+    private DBObject toDBObject(NodeChecksums documentChecksums)
+    {
+        BasicDBObjectBuilder checksumsObjectBuilder = BasicDBObjectBuilder
+                .start();
+        for (Map.Entry<Integer, List<Checksum>> checksums : documentChecksums
+                .getChecksums().entrySet())
+        {
+            List<DBObject> checksumDBObjects = new LinkedList<>();
+            for (Checksum checksum : checksums.getValue())
+            {
+                DBObject checksumDBObject = toDBObject(checksum);
+                checksumDBObjects.add(checksumDBObject);
+            }
+            checksumsObjectBuilder.add(String.valueOf(checksums.getKey()),
+                    checksumDBObjects);
+        }
+        DBObject dbObject = BasicDBObjectBuilder
+                .start("n", documentChecksums.getNodeId())
+                .add("ni", documentChecksums.getNodeInternalId())
                 .add("v", documentChecksums.getNodeVersion())
                 .add("l", documentChecksums.getVersionLabel())
-				.add("u", documentChecksums.getContentUrl())
-				.add("b", documentChecksums.getBlockSize())
-				.add("nb", documentChecksums.getNumBlocks())
-				.add("c", checksumsObjectBuilder.get())
-				.get();
-		return dbObject;
-	}
+                .add("b", documentChecksums.getBlockSize())
+                .add("nb", documentChecksums.getNumBlocks())
+                .add("c", checksumsObjectBuilder.get()).get();
+        return dbObject;
+    }
 
-	public void saveChecksums(NodeChecksums checksums)
-	{
-		DBObject dbObject = toDBObject(checksums);
-		this.checksums.insert(dbObject);
-	}
+    public void saveChecksums(NodeChecksums checksums)
+    {
+        DBObject dbObject = toDBObject(checksums);
+        this.checksums.insert(dbObject);
+    }
 
-	@Override
-	public NodeChecksums getChecksums(String nodeId, long nodeVersion)
-	{
-		DBObject query = QueryBuilder
-				.start("n").is(nodeId)
-				.and("v").is(nodeVersion)
-				.get();
+    @Override
+    public NodeChecksums getChecksums(String nodeId, long nodeVersion)
+    {
+        DBObject query = QueryBuilder.start("n").is(nodeId).and("v")
+                .is(nodeVersion).get();
 
-		DBObject dbObject = checksums.findOne(query);
-		NodeChecksums checksums = toChecksums(dbObject);
-		return checksums;
-	}
+        DBObject dbObject = checksums.findOne(query);
+        NodeChecksums checksums = toChecksums(dbObject);
+        return checksums;
+    }
 }

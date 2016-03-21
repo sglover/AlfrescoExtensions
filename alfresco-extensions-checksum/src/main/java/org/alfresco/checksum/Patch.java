@@ -97,10 +97,36 @@ public class Patch
         return true;
     }
 
+    private String printBuffer()
+    {
+        StringBuilder sb = new StringBuilder("[");
+        if(buffer.length > 0)
+        {
+            sb.append(buffer[0]);
+        }
+        if(buffer.length > 1)
+        {
+            sb.append(",");
+            sb.append(buffer[1]);
+        }
+        if(buffer.length > 2)
+        {
+            sb.append("...");
+            sb.append(buffer[buffer.length - 2]);
+        }
+        if(buffer.length > 3)
+        {
+            sb.append(",");
+            sb.append(buffer[buffer.length - 1]);
+        }
+        sb.append("]");
+        return sb.toString();
+    }
+
     @Override
     public String toString()
     {
 	    return "Patch [lastMatchIndex=" + lastMatchIndex + ", size=" + size
-	            + ", buffer=" + Arrays.toString(buffer) + ", is=" + is + "]";
+	            + ", buffer=" + printBuffer() + ", is=" + is + "]";
     }
 }

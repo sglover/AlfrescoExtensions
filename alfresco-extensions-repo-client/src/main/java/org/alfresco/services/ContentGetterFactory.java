@@ -20,22 +20,23 @@ public class ContentGetterFactory
     private int alfrescoPort = 8080;
     private String alfrescoUserName = "admin";
     private String alfrescoPassword = "admin";
-    private AlfrescoHttpClient repoClient;
+//    private AlfrescoHttpClient repoClient;
 
 	public ContentGetterFactory(String alfrescoHost, int alfrescoPort, String alfrescoUserName,
-            String alfrescoPassword, AlfrescoHttpClient repoClient)
+            String alfrescoPassword/*, AlfrescoHttpClient repoClient*/)
     {
 	    super();
 	    this.alfrescoHost = alfrescoHost;
 	    this.alfrescoPort = alfrescoPort;
 	    this.alfrescoUserName = alfrescoUserName;
 	    this.alfrescoPassword = alfrescoPassword;
-	    this.repoClient = repoClient;
+//	    this.repoClient = repoClient;
     }
 
 	public ContentGetter getObject()
 	{
-    	ContentGetter contentGetter = new ContentGetterImpl(alfrescoHost, alfrescoPort, alfrescoUserName, alfrescoPassword, repoClient);
+    	ContentGetter contentGetter = new ContentGetterImpl(alfrescoHost, alfrescoPort, alfrescoUserName,
+    	        alfrescoPassword/*, repoClient*/);
     	return contentGetter;
 	}
 }

@@ -7,11 +7,10 @@
  */
 package org.alfresco.checksum;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
+import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -47,108 +46,74 @@ public class ChecksumServiceImpl implements ChecksumService
         this.blockSize = blocksize;
     }
 
+    public void setBlockSize(int blockSize)
+    {
+        this.blockSize = blockSize;
+    }
+
     public ChecksumServiceImpl(ChecksumDAO checksumDAO)
     {
         this.checksumDAO = checksumDAO;
     }
 
-    @SuppressWarnings("resource")
-    private FileChannel getChannel(String contentPath) throws IOException
+    private ReadableByteChannel getChannel(InputStream in) throws IOException
     {
-        File file = new File(contentPath);
-        FileInputStream fin = new FileInputStream(file);
-        FileChannel channel = fin.getChannel();
+//        File file = new File(contentPath);
+//        FileInputStream fin = new FileInputStream(file);
+//        FileChannel channel = fin.getChannel();
+
+        ReadableByteChannel channel = Channels.newChannel(in);
         return channel;
     }
 
-    private int checkMatch(Adler32 adlerInfo, NodeChecksums documentChecksums,
-            ByteBuffer data, int chunkSize)
-    {
-        List<Checksum> checksums = documentChecksums.getChecksums(adlerInfo
-                .getHash());
-        if (checksums == null)
-        {
-            return -1;
-        }
+//    private String getHash(byte[] bytes, String hashType)
+//            throws NoSuchAlgorithmException
+//    {
+//        MessageDigest md = MessageDigest.getInstance(hashType);
+//        byte[] array = md.digest(bytes);
+//        StringBuffer sb = new StringBuffer();
+//        for (int i = 0; i < array.length; ++i)
+//        {
+//            sb.append(Integer.toHexString((array[i] & 0xFF) | 0x100).substring(
+//                    1, 3));
+//        }
+//        return sb.toString();
+//    }
 
-        for (Checksum checksum : checksums)
-        {
-            // compare adler32sum
-            if (checksum.getAdler32() == adlerInfo.getChecksum())
-            {
-                // do strong comparison
-                try
-                {
-                    data.mark();
-                    byte[] dst = new byte[chunkSize];
-                    data.get(dst, 0, chunkSize);
-                    String md5sum1 = md5(dst);
-                    data.reset();
-                    String md5sum2 = checksum.getMd5();
-                    if (md5sum1.equals(md5sum2))
-                    {
-                        return checksum.getBlockIndex(); // match found, return
-                                                         // the matched block
-                                                         // index
-                    }
-                }
-                catch (NoSuchAlgorithmException e)
-                {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
-
-        return -1;
-    }
-
-    private String getHash(byte[] bytes, String hashType)
+    private String getHash(ByteBuffer bytes, int start, int end, String hashType)
             throws NoSuchAlgorithmException
     {
+        int saveLimit = bytes.limit();
+        bytes.limit(end);
+
+        bytes.mark();
+        bytes.position(start);
+
         MessageDigest md = MessageDigest.getInstance(hashType);
-        byte[] array = md.digest(bytes);
+        md.update(bytes);
+        byte[] array = md.digest();
         StringBuffer sb = new StringBuffer();
         for (int i = 0; i < array.length; ++i)
         {
             sb.append(Integer.toHexString((array[i] & 0xFF) | 0x100).substring(
                     1, 3));
         }
+
+        bytes.limit(saveLimit);
+        bytes.reset();
+
         return sb.toString();
     }
 
-    private String md5(byte[] bytes) throws NoSuchAlgorithmException
+//    private String md5(byte[] bytes) throws NoSuchAlgorithmException
+//    {
+//        return getHash(bytes, "MD5");
+//    }
+
+    private String md5(ByteBuffer bytes, int start, int end) throws NoSuchAlgorithmException
     {
-        return getHash(bytes, "MD5");
+        return getHash(bytes, start, end, "MD5");
     }
-
-    private Adler32 adler32(int offset, int end, ByteBuffer data)
-    {
-        int i = 0;
-        int a = 0;
-        int b = 0;
-
-        // adjust the end to make sure we don't exceed the extents of the data.
-        if (end >= data.limit())
-        {
-            end = data.limit() - 1;
-        }
-
-        for (i = offset; i <= end; i++)
-        {
-            a += data.get(i);
-            b += a;
-        }
-
-        a %= 65536; // 65536 = 2^16, used for M in the tridgell equation
-        b %= 65536;
-
-        return new Adler32(a, b, ((b << 16) | a) >>> 0);
-    }
-
-    // public int hash16(int num)
-    // {
-    // return num % 65536;
-    // }
 
     @Override
     public NodeChecksums getChecksums(String nodeId, long nodeVersion)
@@ -161,22 +126,171 @@ public class ChecksumServiceImpl implements ChecksumService
     public PatchDocument createPatchDocument(NodeChecksums checksums, ReadableByteChannel channel) throws IOException
     {
         // Create a direct ByteBuffer; see also e158 Creating a ByteBuffer
-        ByteBuffer buf = ByteBuffer.allocateDirect(500000);
-        channel.read(buf);
-        buf.flip();
-        return createPatchDocument(checksums, buf);
+        ByteBuffer data = ByteBuffer.allocateDirect(blockSize * 20);
+
+        int blockSize = checksums.getBlockSize();
+
+        List<Patch> patches = new LinkedList<>();
+        int i = 0;
+
+        Adler32 adlerInfo = new Adler32();
+        int lastMatchIndex = 1; // starts at 1
+        ByteBuffer currentPatch = ByteBuffer.allocate(5000000); // TODO
+
+        // int matchCount = 0;
+        ArrayList<Integer> matchedBlockIndexes = new ArrayList<>(10);
+        int x = 0;
+
+        for (;;)
+        {
+            if(x == 0 || i >= data.limit())
+            {
+                // read in more data, preserving the last block if data already exists in the buffer
+                if(i > 0)
+                {
+                    data.position(i - blockSize + 1);
+                    data.compact();
+                }
+                int numRead = channel.read(data);
+                data.flip();
+                if(numRead < 1)
+                {
+                    break;
+                }
+                x += numRead;
+                if(i > 0)
+                {
+                    i = blockSize;
+                }
+            }
+
+            int chunkSize = 0;
+            // determine the size of the next data chuck to evaluate. Default to
+            // blockSize, but clamp to end of data
+            if ((i + blockSize) > data.limit())
+            {
+                chunkSize = data.limit() - i;
+                adlerInfo.reset(); // need to reset this because the rolling
+                                  // checksum doesn't work correctly on a final
+                                  // non-aligned block
+            }
+            else
+            {
+                chunkSize = blockSize;
+            }
+
+            int end = i + chunkSize - 1;
+
+            int matchedBlockIndex = adlerInfo.checkMatch(lastMatchIndex, checksums, data, i, end);
+            if (matchedBlockIndex != -1)
+            {
+                try
+                {
+                    String y = md5(data, i, i + chunkSize - 1);
+                    System.out.println("y = " + y + ", x = " + x + ", i = " + i + ", end = " + end);
+                }
+                catch (NoSuchAlgorithmException e)
+                {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+
+                // if we have a match, do the following:
+                // 1) add the matched block index to our tracking buffer
+                // 2) check to see if there's a current patch. If so, add it to
+                // the patch document.
+                // 3) jump forward blockSize bytes and continue
+                matchedBlockIndexes.add(matchedBlockIndex);
+
+                if (currentPatch.position() > 0)
+                {
+                    // there are outstanding patches, add them to the list
+                    // create the patch and append it to the patches buffer
+                    currentPatch.flip();
+                    int size = currentPatch.limit();
+                    byte[] dst = new byte[size];
+                    currentPatch.get(dst, 0, size);
+                    Patch patch = new Patch(lastMatchIndex, size, dst);
+                    patches.add(patch);
+                    currentPatch.clear();
+                    System.out.println("count100=" + currentPatch.position() + ", " + currentPatch.limit());
+                }
+
+                lastMatchIndex = matchedBlockIndex;
+
+                i += chunkSize;
+
+                adlerInfo.reset();
+            }
+            else
+            {
+                // while we don't have a block match, append bytes to the
+                // current patch
+                if(currentPatch.position() >= currentPatch.limit())
+                {
+                    System.out.println("count=" + (x + i));
+                    System.out.println("count1=" + currentPatch.position() + ", " + currentPatch.limit());
+                    System.out.println(matchedBlockIndexes);
+                    System.out.println(patches);
+                }
+                currentPatch.put(data.get(i));
+                i++;
+            }
+
+//            if(!dataExhausted)
+//            {
+//                if(data.limit() - i < 1)
+//                {
+//                    x += data.limit();
+//                    // read in more data, preserving the last block
+//                    data.position(i - blockSize + 1);
+//                    data.compact();
+//                    int numRead = channel.read(data);
+//                    if(numRead < 1)
+//                    {
+//                        break;
+////                        dataExhausted = true;
+//                    }
+//                    data.flip();
+//                    i = blockSize;
+//                }
+//            }
+//            else
+//            {
+//                if(i >= data.limit())
+//                {
+//                    break;
+//                }
+//            }
+        } // end for each byte in the data
+
+        if (currentPatch.position() > 0)
+        {
+            currentPatch.flip();
+            int size = currentPatch.limit();
+            byte[] dst = new byte[size];
+            currentPatch.get(dst, 0, size);
+            Patch patch = new Patch(lastMatchIndex, size, dst);
+            patches.add(patch);
+        }
+
+        PatchDocument patchDocument = new PatchDocument(blockSize, /*
+                                                                    * matchCount,
+                                                                    */
+                matchedBlockIndexes, patches);
+        return patchDocument;
+
     }
 
     @Override
-    public PatchDocument createPatchDocument(NodeChecksums checksums,
-            ByteBuffer data)
+    public PatchDocument createPatchDocument(NodeChecksums checksums, ByteBuffer data)
     {
         int blockSize = checksums.getBlockSize();
 
         List<Patch> patches = new LinkedList<>();
         int i = 0;
 
-        Adler32 adlerInfo = null;
+        Adler32 adlerInfo = new Adler32();
         int lastMatchIndex = 0;
         ByteBuffer currentPatch = ByteBuffer.allocate(600000); // TODO
 
@@ -193,7 +307,7 @@ public class ChecksumServiceImpl implements ChecksumService
             if ((i + blockSize) > data.limit())
             {
                 chunkSize = data.limit() - i;
-                adlerInfo = null; // need to reset this because the rolling
+                adlerInfo.reset(); // need to reset this because the rolling
                                   // checksum doesn't work correctly on a final
                                   // non-aligned block
             }
@@ -202,33 +316,25 @@ public class ChecksumServiceImpl implements ChecksumService
                 chunkSize = blockSize;
             }
 
-            if (adlerInfo != null)
-            {
-                adlerInfo.rollingChecksum(i, i + chunkSize - 1, data);
-            }
-            else
-            {
-                adlerInfo = adler32(i, i + chunkSize - 1, data);
-                logger.debug("adler32.1:" + i + "," + (i + chunkSize - 1) + ","
-                        + adlerInfo.toString());
-            }
-
-            // byte[] dst = new byte[chunkSize];
-            // data.mark();//position(i);
-            // data.get(dst, 0, chunkSize);
-            int matchedBlock = checkMatch(adlerInfo, checksums, data, chunkSize);
+            int matchedBlock = adlerInfo.checkMatch(lastMatchIndex, checksums, data, i, i + chunkSize - 1);
             if (matchedBlock != -1)
             {
+                try
+                {
+                    String y = md5(data, i, i + chunkSize - 1);
+                    System.out.println("y = " + y);
+                }
+                catch (NoSuchAlgorithmException e)
+                {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
                 // if we have a match, do the following:
                 // 1) add the matched block index to our tracking buffer
                 // 2) check to see if there's a current patch. If so, add it to
                 // the patch document.
                 // 3) jump forward blockSize bytes and continue
-                // matchedBlocksUint32[matchCount] = matchedBlock;
-                // matchedBlocks.set(matchCount, matchedBlock);
-                // matchedBlocks.ensureCapacity(matchCount + 100);
                 matchedBlocks.add(matchedBlock);
-                // matchCount++;
 
                 if (currentPatchSize > 0)
                 {
@@ -244,13 +350,13 @@ public class ChecksumServiceImpl implements ChecksumService
 
                 lastMatchIndex = matchedBlock;
 
-                i += blockSize;
-                if (i >= data.limit() - 1)
-                {
-                    break;
-                }
+                i += chunkSize;
+//                if (i >= data.capacity() - 1)
+//                {
+//                    break;
+//                }
 
-                adlerInfo = null;
+                adlerInfo.reset();
 
                 continue;
             }
@@ -300,92 +406,89 @@ public class ChecksumServiceImpl implements ChecksumService
     }
 
     @Override
-    public void extractChecksumsAsync(final Node node, final String contentPath)
+    public void extractChecksumsAsync(final Node node, final InputStream in)
     {
         executors.submit(new Runnable()
         {
             @Override
             public void run()
             {
-                extractChecksums(node, contentPath);
+                extractChecksums(node, in);
             }
         });
     }
 
     @Override
-    public NodeChecksums extractChecksums(final Node node,
-            final String contentPath)
+    public NodeChecksums getChecksums(final Node node, final InputStream in)
     {
-        try
+        final String nodeId = node.getNodeId();
+        final Long nodeVersion = node.getNodeVersion();
+        final Long nodeInternalId = node.getNodeInternalId();
+        final String versionLabel = node.getVersionLabel();
+
+        NodeChecksums documentChecksums = new NodeChecksums(nodeId, nodeInternalId,
+                nodeVersion, versionLabel, blockSize);
+
+        try(ReadableByteChannel fc = getChannel(in))
         {
-            final String nodeId = node.getNodeId();
-            final Long nodeVersion = node.getNodeVersion();
-            final Long nodeInternalId = node.getNodeInternalId();
-            final String versionLabel = node.getVersionLabel();
+            ByteBuffer data = ByteBuffer.allocate(blockSize*10);
+            int bytesRead = -1;
+            int blockNum = 1; // starts at 1
 
-            NodeChecksums documentChecksums = null;
-
-            FileChannel fc = getChannel(contentPath);
-            // int blockSize = getBlockSize();
-
-            try
+            do
             {
-                ByteBuffer data = ByteBuffer.allocate(48);
-                int bytesRead = fc.read(data);
-                data.flip();
-
-                long numBlocks = data.limit() / blockSize + 1;
-
-                documentChecksums = new NodeChecksums(nodeId, nodeInternalId,
-                        nodeVersion, versionLabel, contentPath, blockSize,
-                        numBlocks);
-
-                // spin through the data and create checksums for each block
-                for (int i = 0; i < numBlocks; i++)
+                bytesRead = fc.read(data);
+                if(bytesRead > 0)
                 {
-                    int start = i * blockSize;
-                    int end = (i * blockSize) + blockSize;
-
-                    // calculate the adler32 checksum
-                    Adler32 adlerInfo = adler32(start, end - 1, data);
-                    // System.out.println("adler32:" + start + "," + (end - 1) +
-                    // "," + adlerInfo.toString());
-                    // int checksum = adlerInfo.checksum;
-                    // offset++;
-
-                    // calculate the full md5 checksum
-                    int chunkLength = blockSize;
-                    if ((start + blockSize) > data.limit())
+                    data.flip();
+    
+                    long numBlocks = data.limit() / blockSize + (data.limit() % blockSize > 0 ? 1 : 0);
+    
+                    // spin through the data and create checksums for each block
+                    for (int i = 0; i < numBlocks; i++)
                     {
-                        chunkLength = data.limit() - start;
+                        int start = i * blockSize;
+                        int end = start + blockSize - 1;
+
+                        if (end > data.limit())
+                        {
+                            end = data.limit();
+                        }
+
+                        // calculate the adler32 checksum
+                        Adler32 adlerInfo = new Adler32(data, start, end);
+
+                        // calculate the full md5 checksum
+                        String md5sum = md5(data, start, end);
+                        Checksum checksum = new Checksum(blockNum, start, end, adlerInfo.getHash(),
+                                adlerInfo.getAdler32(), md5sum);
+                        if(blockNum < 2)
+                        {
+                            System.out.println(checksum);
+                        }
+                        documentChecksums.addChecksum(checksum);
+
+                        blockNum++;
                     }
 
-                    byte[] chunk = new byte[chunkLength];
-                    for (int k = 0; k < chunkLength; k++)
-                    {
-                        chunk[k] = data.get(k + start);
-                    }
-                    String md5sum = md5(chunk);
-                    Checksum checksum = new Checksum(i, adlerInfo.getHash(),
-                            adlerInfo.getChecksum(), md5sum);
-                    documentChecksums.addChecksum(checksum);
+                    data.clear();
                 }
             }
-            finally
-            {
-                if (fc != null)
-                {
-                    fc.close();
-                }
-            }
-
-            saveChecksums(documentChecksums);
-
-            return documentChecksums;
+            while(bytesRead > 0);
         }
         catch (NoSuchAlgorithmException | IOException e)
         {
             throw new RuntimeException(e);
         }
+
+        return documentChecksums;
+    }
+
+    @Override
+    public NodeChecksums extractChecksums(final Node node, final InputStream in)
+    {
+        NodeChecksums documentChecksums = getChecksums(node, in);
+        saveChecksums(documentChecksums);
+        return documentChecksums;
     }
 }

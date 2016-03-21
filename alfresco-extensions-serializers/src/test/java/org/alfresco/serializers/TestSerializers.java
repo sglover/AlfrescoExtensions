@@ -18,7 +18,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.alfresco.model.ContentModel;
-import org.alfresco.repo.domain.node.ContentDataWithId;
+//import org.alfresco.repo.domain.node.ContentDataWithId;
 import org.alfresco.serializers.types.QNameSerializer;
 import org.alfresco.serializers.types.SerializerRegistry;
 import org.alfresco.serializers.types.Serializers;
@@ -85,52 +85,52 @@ public class TestSerializers
 				serializerRegistry, files, propertySerializer);
 	}
 
-	@Test
-	public void test1() throws Exception
-	{
-		BasicDBObjectBuilder builder = BasicDBObjectBuilder.start();
-		NodeVersionKey nodeVersionKey = new NodeVersionKey(1l, 1l);
-		String changeTxnId = GUID.generate();
-		Long txnId = 1l;
-
-		QName nodeTypeQName = ContentModel.TYPE_CONTENT;
-		String nodeType = (String)serializerRegistry.serialize(nodeTypeQName);
-
-		Map<String, Serializable> props = new HashMap<>();
-		String authorProp = (String)serializerRegistry.serialize(ContentModel.PROP_AUTHOR);
-		String contentProp = (String)serializerRegistry.serialize(ContentModel.PROP_CONTENT);
-		props.put(authorProp, "steve");
-		ContentData contentData = new ContentData("file:/a/b/c", "text/plain", 10l, "UTF-8");
-		ContentDataWithId content = new ContentDataWithId(contentData, 1l);
-		props.put(contentProp, content);
-
-		Set<String> aspectQNames = new HashSet<>();
-		String authorAspect = (String)serializerRegistry.serialize(ContentModel.ASPECT_AUTHOR);
-		aspectQNames.add(authorAspect);
-
-		serializer.buildNodeMetadata(builder, nodeVersionKey, changeTxnId, txnId, nodeType, props, aspectQNames);
-
-		DBObject dbObject = builder.get();
-
-		System.out.println(dbObject.toString());
-	}
+//	@Test
+//	public void test1() throws Exception
+//	{
+//		BasicDBObjectBuilder builder = BasicDBObjectBuilder.start();
+//		NodeVersionKey nodeVersionKey = new NodeVersionKey(1l, 1l);
+//		String changeTxnId = GUID.generate();
+//		Long txnId = 1l;
+//
+//		QName nodeTypeQName = ContentModel.TYPE_CONTENT;
+//		String nodeType = (String)serializerRegistry.serialize(nodeTypeQName);
+//
+//		Map<String, Serializable> props = new HashMap<>();
+//		String authorProp = (String)serializerRegistry.serialize(ContentModel.PROP_AUTHOR);
+//		String contentProp = (String)serializerRegistry.serialize(ContentModel.PROP_CONTENT);
+//		props.put(authorProp, "steve");
+//		ContentData contentData = new ContentData("file:/a/b/c", "text/plain", 10l, "UTF-8");
+//		ContentDataWithId content = new ContentDataWithId(contentData, 1l);
+//		props.put(contentProp, content);
+//
+//		Set<String> aspectQNames = new HashSet<>();
+//		String authorAspect = (String)serializerRegistry.serialize(ContentModel.ASPECT_AUTHOR);
+//		aspectQNames.add(authorAspect);
+//
+//		serializer.buildNodeMetadata(builder, nodeVersionKey, changeTxnId, txnId, nodeType, props, aspectQNames);
+//
+//		DBObject dbObject = builder.get();
+//
+//		System.out.println(dbObject.toString());
+//	}
 	
-	@Test
-	public void test2() throws Exception
-	{
-        ContentData contentData = new ContentData("file:/a/b/c", "text/plain", 10l, "UTF-8");
-        ContentDataWithId content = new ContentDataWithId(contentData, 1l);
-
-        BasicDBObjectBuilder builder = BasicDBObjectBuilder.start();
-        propertySerializer.serialize(ContentModel.PROP_CONTENT, content, builder);
-        DBObject dbObject = builder.get();
-
-        System.out.println(dbObject.toString());
-
-        String contentProp = ContentModel.PROP_CONTENT.toPrefixString(namespaceService);
-        DBObject contentDBObject = (DBObject)dbObject.get(contentProp);
-        JSON json = JSON.from(contentDBObject);
-        Serializable content1 = propertySerializer.deserialize(ContentModel.PROP_CONTENT, json);
-        System.out.println(content1);
-	}
+//	@Test
+//	public void test2() throws Exception
+//	{
+//        ContentData contentData = new ContentData("file:/a/b/c", "text/plain", 10l, "UTF-8");
+//        ContentDataWithId content = new ContentDataWithId(contentData, 1l);
+//
+//        BasicDBObjectBuilder builder = BasicDBObjectBuilder.start();
+//        propertySerializer.serialize(ContentModel.PROP_CONTENT, content, builder);
+//        DBObject dbObject = builder.get();
+//
+//        System.out.println(dbObject.toString());
+//
+//        String contentProp = ContentModel.PROP_CONTENT.toPrefixString(namespaceService);
+//        DBObject contentDBObject = (DBObject)dbObject.get(contentProp);
+//        JSON json = JSON.from(contentDBObject);
+//        Serializable content1 = propertySerializer.deserialize(ContentModel.PROP_CONTENT, json);
+//        System.out.println(content1);
+//	}
 }

@@ -11,7 +11,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -24,9 +23,8 @@ import org.alfresco.checksum.ChecksumService;
 import org.alfresco.checksum.NodeChecksums;
 import org.alfresco.checksum.Patch;
 import org.alfresco.checksum.PatchDocument;
-import org.alfresco.contentstore.AbstractContentStore;
-import org.alfresco.contentstore.dao.ContentDAO;
-import org.alfresco.contentstore.dao.NodeInfo;
+import org.alfresco.contentstore.ContentStore;
+import org.alfresco.extensions.common.Node;
 import org.apache.commons.lang3.StringUtils;
 
 import com.sun.jersey.core.header.ContentDisposition;
@@ -44,15 +42,12 @@ import com.sun.jersey.multipart.file.StreamDataBodyPart;
  */
 public class PatchServiceImpl implements PatchService
 {
-    private ContentDAO contentDAO;
     private ChecksumService checksumService;
-    private AbstractContentStore contentStore;
+    private ContentStore contentStore;
 
-    public PatchServiceImpl(ContentDAO contentDAO,
-            ChecksumService checksumService, AbstractContentStore contentStore)
+    public PatchServiceImpl(ChecksumService checksumService, ContentStore contentStore)
     {
         super();
-        this.contentDAO = contentDAO;
         this.checksumService = checksumService;
         this.contentStore = contentStore;
     }
@@ -61,7 +56,7 @@ public class PatchServiceImpl implements PatchService
     public PatchDocument getPatch(String nodeId, long nodeVersion)
             throws IOException
     {
-        if (contentDAO.nodeExists(nodeId, nodeVersion - 1, true))
+        if(contentStore.exists(nodeId, nodeVersion - 1/*, true*/))
         {
             // previous version
             NodeChecksums nodeChecksums = checksumService.getChecksums(nodeId,
@@ -69,10 +64,8 @@ public class PatchServiceImpl implements PatchService
             if (nodeChecksums != null)
             {
                 // parameters version
-                NodeInfo nodeInfo1 = contentDAO.getByNodeId(nodeId,
-                        nodeVersion, true);
-                String contentPath1 = nodeInfo1.getContentPath();
-                FileChannel inChannel = contentStore.getChannel(contentPath1);
+                Node node = Node.build().nodeId(nodeId).nodeVersion(nodeVersion);
+                ReadableByteChannel inChannel = contentStore.getChannel(node);
                 ByteBuffer buffer = ByteBuffer.allocate(1024 * 100);
                 inChannel.read(buffer);
                 buffer.flip();

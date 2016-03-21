@@ -18,6 +18,6 @@ import com.mongodb.DBObject;
  */
 public interface MetricsService
 {
-	void addMetrics(DBObject syncMetrics, DBObject subsMetrics, DBObject activeMQStats);
+	void addMetrics(DBObject syncMetrics, DBObject activeMQStats);
 	Stream<Metrics> getMetrics(int skip, int limit);
 }

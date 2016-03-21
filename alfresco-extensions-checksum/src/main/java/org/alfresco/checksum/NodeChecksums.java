@@ -27,36 +27,39 @@ public class NodeChecksums implements Serializable
     private Long nodeInternalId;
     private Long nodeVersion;
     private String versionLabel;
-    private String contentUrl;
     private int blockSize;
-    private Map<Integer, List<Checksum>> checksums;
+    private Map<Integer, List<Checksum>> checksumsByHash;
+    private Map<Integer, Checksum> checksumsByBlock;
     private long numBlocks;
 
     public NodeChecksums()
     {
-
+        this.checksumsByHash = new HashMap<>();
+        this.checksumsByBlock = new HashMap<>();
     }
 
     public NodeChecksums(String nodeId, Long nodeInternalId, Long nodeVersion,
-            String versionLabel, String contentUrl, int blockSize,
-            long numBlocks)
+            String versionLabel, int blockSize)
     {
-        this(nodeId, nodeInternalId, nodeVersion, versionLabel, contentUrl, blockSize, numBlocks, null);
+        this(nodeId, nodeInternalId, nodeVersion, versionLabel, blockSize, 0, null);
     }
 
     public NodeChecksums(String nodeId, Long nodeInternalId, Long nodeVersion,
-            String versionLabel, String contentUrl, int blockSize,
-            long numBlocks, List<Checksum> checksums)
+            String versionLabel, int blockSize, long numBlocks)
     {
-        super();
+        this(nodeId, nodeInternalId, nodeVersion, versionLabel, blockSize, numBlocks, null);
+    }
+
+    public NodeChecksums(String nodeId, Long nodeInternalId, Long nodeVersion,
+            String versionLabel, int blockSize, long numBlocks, List<Checksum> checksums)
+    {
+        this();
         this.nodeId = nodeId;
         this.nodeInternalId = nodeInternalId;
         this.nodeVersion = nodeVersion;
         this.versionLabel = versionLabel;
-        this.contentUrl = contentUrl;
         this.blockSize = blockSize;
         this.numBlocks = numBlocks;
-        this.checksums = new HashMap<>();
         if(checksums != null && !checksums.isEmpty())
         {
             for(Checksum checksum : checksums)
@@ -121,34 +124,25 @@ public class NodeChecksums implements Serializable
         this.blockSize = blockSize;
     }
 
-    public String getContentUrl()
-    {
-        return contentUrl;
-    }
-
-    public void setContentUrl(String contentUrl)
-    {
-        this.contentUrl = contentUrl;
-    }
-
     public void setChecksums(Map<Integer, List<Checksum>> checksums)
     {
-        this.checksums = checksums;
+        this.checksumsByHash = checksums;
     }
 
     public List<Checksum> getChecksums(int hash)
     {
-        return checksums.get(hash);
+        return checksumsByHash.get(hash);
     }
 
     public void addChecksum(Checksum checksum)
     {
-        List<Checksum> checksums = this.checksums.get(checksum.getHash());
+        List<Checksum> checksums = this.checksumsByHash.get(checksum.getHash());
         if (checksums == null)
         {
             checksums = new LinkedList<>();
-            this.checksums.put(checksum.getHash(), checksums);
+            this.checksumsByHash.put(checksum.getHash(), checksums);
         }
+        this.checksumsByBlock.put(checksum.getBlockIndex(), checksum);
         checksums.add(checksum);
     }
 
@@ -162,7 +156,12 @@ public class NodeChecksums implements Serializable
 
     public Map<Integer, List<Checksum>> getChecksums()
     {
-        return checksums;
+        return checksumsByHash;
+    }
+
+    public Map<Integer, Checksum> getChecksumsByBlock()
+    {
+        return checksumsByBlock;
     }
 
     @Override
@@ -170,9 +169,8 @@ public class NodeChecksums implements Serializable
     {
         return "NodeChecksums [nodeId=" + nodeId + ", nodeInternalId="
                 + nodeInternalId + ", nodeVersion=" + nodeVersion
-                + ", versionLabel=" + versionLabel + ", contentUrl="
-                + contentUrl + ", blockSize=" + blockSize + ", checksums="
-                + checksums + ", numBlocks=" + numBlocks + "]";
+                + ", versionLabel=" + versionLabel + ", blockSize=" + blockSize + ", checksums="
+                + checksumsByHash + ", numBlocks=" + numBlocks + "]";
     }
 
 }

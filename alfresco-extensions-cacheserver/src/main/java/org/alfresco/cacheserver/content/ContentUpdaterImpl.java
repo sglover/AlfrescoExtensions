@@ -19,13 +19,13 @@ import org.alfresco.cacheserver.transform.TransformService;
 import org.alfresco.checksum.ChecksumService;
 import org.alfresco.checksum.NodeChecksums;
 import org.alfresco.contentstore.AbstractContentStore;
+import org.alfresco.contentstore.ContentReader;
+import org.alfresco.contentstore.ContentReference;
 import org.alfresco.contentstore.dao.ContentDAO;
 import org.alfresco.contentstore.dao.NodeInfo;
 import org.alfresco.entities.EntitiesService;
-import org.alfresco.extensions.common.Content;
+import org.alfresco.extensions.common.MimeType;
 import org.alfresco.extensions.common.Node;
-import org.alfresco.extensions.content.ContentReference;
-import org.alfresco.extensions.content.MimeType;
 import org.alfresco.extensions.transformations.api.TransformRequest;
 import org.alfresco.extensions.transformations.api.TransformResponse;
 import org.alfresco.extensions.transformations.client.TransformationCallback;
@@ -67,7 +67,7 @@ public class ContentUpdaterImpl implements ContentUpdater
         this.transformService = transformService;
     }
 
-    private NodeChecksums extractChecksums(final Node node, final Content content, final String contentPath)
+    private NodeChecksums extractChecksums(final Node node, final ContentReader content, final String contentPath)
     {
         NodeChecksums checksums = checksumService.extractChecksums(node, contentPath);
         messagingService.sendContentAvailableMessage(node, content.getMimeType(), content.getSize(),
@@ -75,7 +75,7 @@ public class ContentUpdaterImpl implements ContentUpdater
         return checksums;
     }
 
-    private void extractChecksumsAsync(final Node node, final Content content, final String contentPath)
+    private void extractChecksumsAsync(final Node node, final ContentReader content, final String contentPath)
     {
         executors.submit(new Runnable()
         {
@@ -92,7 +92,7 @@ public class ContentUpdaterImpl implements ContentUpdater
             final String expectedMimeType,
             final Long expectedSize) throws IOException, CmisObjectNotFoundException
     {
-        Content content = remoteContentGetter.getContentByNodeId(node.getNodeId(), node.getVersionLabel());
+        ContentReader content = remoteContentGetter.getContentByNodeId(node.getNodeId(), node.getVersionLabel());
         if(content != null)
         {
             final String mimeType = content.getMimeType();

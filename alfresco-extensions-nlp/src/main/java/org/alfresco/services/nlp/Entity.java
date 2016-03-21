@@ -7,7 +7,6 @@
  */
 package org.alfresco.services.nlp;
 
-import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -18,14 +17,18 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @param <T>
  */
-public class Entity<T> implements Serializable
+public class Entity<T> //implements Serializable
 {
 	private static final long serialVersionUID = -812303299537246310L;
 
 	private String type;
 	private List<EntityLocation> locations = new LinkedList<>();
-	private T entity;
+    private T entity;
 	private AtomicLong count = new AtomicLong();
+
+	public Entity()
+	{
+	}
 
 	public Entity(String type, T entity, long count)
     {

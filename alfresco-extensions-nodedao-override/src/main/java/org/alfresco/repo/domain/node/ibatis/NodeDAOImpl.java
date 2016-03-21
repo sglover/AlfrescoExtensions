@@ -18,6 +18,7 @@
  */
 package org.alfresco.repo.domain.node.ibatis;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -52,6 +53,7 @@ import org.alfresco.repo.domain.node.TransactionQueryEntity;
 import org.alfresco.repo.domain.qname.QNameDAO;
 import org.alfresco.service.cmr.dictionary.DictionaryService;
 import org.alfresco.service.cmr.dictionary.PropertyDefinition;
+import org.alfresco.service.cmr.repository.AssociationRef;
 import org.alfresco.service.cmr.repository.ChildAssociationRef;
 import org.alfresco.service.cmr.repository.NodeRef;
 import org.alfresco.service.cmr.repository.StoreRef;
@@ -1593,7 +1595,6 @@ public class NodeDAOImpl extends AbstractNodeDAOImpl
         return template.selectOne(SELECT_TXN_MAX_ID);
     }
 
-    @Override
     public List<NodePropertyEntity> selectProperties(Collection<PropertyDefinition> propertyDefs)
     {
 		final List<NodePropertyEntity> properties = new ArrayList<NodePropertyEntity>();
@@ -1702,6 +1703,45 @@ public class NodeDAOImpl extends AbstractNodeDAOImpl
         query.setMaxCommitTime(toTimeExclusive);
         query.setExcludeServerId(serverId);
         return template.selectList(SELECT_ONE_TXNS_BY_COMMIT_TIME_DESC, query);
+    }
+
+    @Override
+    public Collection<Pair<Long, AssociationRef>> getTargetAssocsByPropertyValue(
+            Long sourceNodeId, QName typeQName, QName propertyQName,
+            Serializable propertyValue)
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public Long getMinNodeId()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public Long getMaxNodeId()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public List<NodePropertyEntity> selectNodePropertiesByTypes(
+            Set<QName> qnames)
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public List<NodePropertyEntity> selectNodePropertiesByDataType(
+            QName dataType, long minNodeId, long maxNodeId)
+    {
+        // TODO Auto-generated method stub
+        return null;
     }
 
 }

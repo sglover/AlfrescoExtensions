@@ -11,6 +11,8 @@ import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 import static org.elasticsearch.node.NodeBuilder.nodeBuilder;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -34,11 +36,9 @@ import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.settings.ImmutableSettings;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.index.query.FilterBuilder;
-import org.elasticsearch.index.query.FilterBuilders;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.node.Node;
@@ -54,326 +54,172 @@ import org.elasticsearch.search.sort.SortOrder;
  */
 public class ElasticSearchClient
 {
-    private static final Log logger = LogFactory.getLog(ElasticSearchClient.class);
+    private static final Log logger = LogFactory
+            .getLog(ElasticSearchClient.class);
 
     private Client client;
     private String indexName;
 
     public ElasticSearchClient(String clusterName, String indexName)
-	{
-    	Node node = nodeBuilder().clusterName(clusterName).node();
-    	this.client = node.client();
+    {
+        Node node = nodeBuilder().clusterName(clusterName).node();
+        this.client = node.client();
         this.indexName = indexName;
-	}
+    }
 
     @SuppressWarnings("resource")
     public ElasticSearchClient(String hostname, int port, String indexName)
-	{
-        this.client = new TransportClient()
-        	.addTransportAddress(new InetSocketTransportAddress(hostname, port));
+            throws UnknownHostException
+    {
+        this.client = TransportClient.builder().build().addTransportAddress(
+                new InetSocketTransportAddress(InetAddress.getByName(hostname),
+                        port));
         this.indexName = indexName;
-	}
+    }
 
     public ElasticSearchClient(Client client, String indexName)
-	{
+    {
         this.client = client;
         this.indexName = indexName;
-	}
+    }
 
-	private void checkIndexes() throws IOException
-	{
+    private void checkIndexes() throws IOException
+    {
         XContentBuilder contentMapping = jsonBuilder().startObject()
                 .startObject(IndexType.content.getName())
-                  .startObject("properties")
-                    .startObject("t")
-                    	.field("type", "string")
-                    	.field("index", "not_analyzed")
-                    	.field("doc_values", true)
-                    	.field("store", true)
-                    .endObject()
-                    .startObject("n")
-                    	.field("type", "string")
-                    	.field("doc_values", true)
-                    	.field("index", "not_analyzed")
-                    	.field("store", true)
-                    .endObject()
-                    .startObject("nid")
-                    	.field("type", "long")
-                    	.field("doc_values", true)
-                    	.field("store", true)
-                    .endObject()
-                    .startObject("v")
-                    	.field("type", "long")
-                    	.field("doc_values", true)
-                    	.field("store",true)
-                    .endObject()
-                    .startObject("l")
-                    	.field("type", "string")
-                    	.field("index", "not_analyzed")
-                    	.field("store", true)
-                    .endObject()
-                    .startObject("nt")
-                    	.field("type", "string")
-                    	.field("index", "not_analyzed")
-                    	.field("doc_values", true)
-                    	.field("store", true)
-                    .endObject()
-                    .startObject("p")
-                    	.field("type", "string")
-//                    	.field("index_analyzer", "myPathAnalyzer")
-//                    	.field("search_analyzer", "myPathAnalyzer")
-                    	.field("index", "not_analyzed")
-                    	.field("doc_values", true)
-                    	.field("store",true)
-                    .endObject()
-                    .startObject("u")
-                    	.field("type", "string")
-                    	.field("index", "not_analyzed")
-                    	.field("doc_values", true)
-                    	.field("store", true)
-                    .endObject()
-                  .endObject()
-             .endObject();
+                .startObject("properties").startObject("t")
+                .field("type", "string").field("index", "not_analyzed")
+                .field("doc_values", true).field("store", true).endObject()
+                .startObject("n").field("type", "string")
+                .field("doc_values", true).field("index", "not_analyzed")
+                .field("store", true).endObject().startObject("nid")
+                .field("type", "long").field("doc_values", true)
+                .field("store", true).endObject().startObject("v")
+                .field("type", "long").field("doc_values", true)
+                .field("store", true).endObject().startObject("l")
+                .field("type", "string").field("index", "not_analyzed")
+                .field("store", true).endObject().startObject("nt")
+                .field("type", "string").field("index", "not_analyzed")
+                .field("doc_values", true).field("store", true).endObject()
+                .startObject("p").field("type", "string")
+                // .field("index_analyzer", "myPathAnalyzer")
+                // .field("search_analyzer", "myPathAnalyzer")
+                .field("index", "not_analyzed").field("doc_values", true)
+                .field("store", true).endObject().startObject("u")
+                .field("type", "string").field("index", "not_analyzed")
+                .field("doc_values", true).field("store", true).endObject()
+                .endObject().endObject();
 
         XContentBuilder eventMapping = jsonBuilder().startObject()
                 .startObject(IndexType.event.getName())
-                  .startObject("properties")
-                    .startObject("ct")
-                    	.field("type", "string")
-                    	.field("index", "not_analyzed")
-                    	.field("doc_values", true)
-                    	.field("store",true)
-                    .endObject()
-                    .startObject("nt")
-                    	.field("type", "string")
-                    	.field("index", "not_analyzed")
-                    	.field("doc_values", true)
-                    	.field("store", true)
-                    .endObject()
-                    .startObject("p")
-                    	.field("type", "string")
-//                    	.field("index_analyzer", "myPathAnalyzer")
-//                    	.field("search_analyzer", "myPathAnalyzer")
-                    	.field("index", "not_analyzed")
-                    	.field("doc_values", true)
-                    	.field("store",true)
-                    .endObject()
-                    .startObject("tx")
-                    	.field("type", "long")
-                    	.field("store",true)
-                    .endObject()
-                    .startObject("ti")
-                		.field("type", "date")
-                		.field("format", "date_time")
-                    	.field("doc_values", true)
-                		.field("store",true)
-                	.endObject()
-                    .startObject("tim")
-                    	.field("type", "long")
-                    	.field("null_value", 0l)
-                    	.field("store",true)
-                    .endObject()
-                    .startObject("nid")
-                    	.field("type", "long")
-                    	.field("store",true)
-                    .endObject()
-                    .startObject("v")
-                    	.field("type", "long")
-                    	.field("store",true)
-                    .endObject()
-                    .startObject("u")
-                    	.field("type", "string")
-                    	.field("index", "not_analyzed")
-                    	.field("store",true)
-                    .endObject()
-                    .startObject("s")
-                    	.field("type", "string")
-                    	.field("index", "not_analyzed")
-                    	.field("doc_values", true)
-                    	.field("store",true)
-                    .endObject()
-                    .startObject("n")
-                    	.field("type", "string")
-                    	.field("index", "not_analyzed")
-                    	.field("store", true)
-                    .endObject()
-                    .startObject("ne")
-                    	.field("type", "string")
-                    	.field("index", "not_analyzed")
-                    	.field("store", true)
-                    .endObject()
-                    .startObject("c")
-                    	.field("type", "string")
-                    	.field("index", "not_analyzed")
-                    	.field("store", true)
-                    .endObject()
-                  .endObject()
-             .endObject();
+                .startObject("properties").startObject("ct")
+                .field("type", "string").field("index", "not_analyzed")
+                .field("doc_values", true).field("store", true).endObject()
+                .startObject("nt").field("type", "string")
+                .field("index", "not_analyzed").field("doc_values", true)
+                .field("store", true).endObject().startObject("p")
+                .field("type", "string")
+                // .field("index_analyzer", "myPathAnalyzer")
+                // .field("search_analyzer", "myPathAnalyzer")
+                .field("index", "not_analyzed").field("doc_values", true)
+                .field("store", true).endObject().startObject("tx")
+                .field("type", "long").field("store", true).endObject()
+                .startObject("ti").field("type", "date")
+                .field("format", "date_time").field("doc_values", true)
+                .field("store", true).endObject().startObject("tim")
+                .field("type", "long").field("null_value", 0l)
+                .field("store", true).endObject().startObject("nid")
+                .field("type", "long").field("store", true).endObject()
+                .startObject("v").field("type", "long").field("store", true)
+                .endObject().startObject("u").field("type", "string")
+                .field("index", "not_analyzed").field("store", true).endObject()
+                .startObject("s").field("type", "string")
+                .field("index", "not_analyzed").field("doc_values", true)
+                .field("store", true).endObject().startObject("n")
+                .field("type", "string").field("index", "not_analyzed")
+                .field("store", true).endObject().startObject("ne")
+                .field("type", "string").field("index", "not_analyzed")
+                .field("store", true).endObject().startObject("c")
+                .field("type", "string").field("index", "not_analyzed")
+                .field("store", true).endObject().endObject().endObject();
 
         XContentBuilder syncEventsMapping = jsonBuilder().startObject()
-                .startObject(IndexType.sync.getName())
-                  .startObject("properties")
-                    .startObject("syncId")
-                    	.field("type", "string")
-                    	.field("index", "not_analyzed")
-                    	.field("store",true)
-                    .endObject()
-                    .startObject("u")
-                    	.field("type", "string")
-                    	.field("index", "not_analyzed")
-                    	.field("doc_values", true)
-                    	.field("store",true)
-                    .endObject()
-                    .startObject("numSyncChanges")
-                    	.field("type", "long")
-                    	.field("store", true)
-                    	.field("null_value", 0l)
-                    .endObject()
-                    .startObject("numConflicts")
-                    	.field("type", "long")
-                    	.field("store", true)
-                    	.field("null_value", 0l)
-                    .endObject()
-                    .startObject("isSuccess")
-                    	.field("type", "boolean")
-                    	.field("store",true)
-                    .endObject()
-                    .startObject("ti")
-                		.field("type", "date")
-                		.field("format", "date_time")
-                    	.field("doc_values", true)
-                		.field("store",true)
-                	.endObject()
-                    .startObject("tim")
-                    	.field("type", "long")
-                    	.field("store",true)
-                    	.field("null_value", 0l)
-                    .endObject()
-                    .startObject("duration")
-                    	.field("type", "long")
-                    	.field("store", true)
-                    	.field("null_value", 0l)
-                    .endObject()
-                    .startObject("s")
-                    	.field("type", "string")
-                    	.field("store", true)
-                    	.field("doc_values", true)
-                    	.field("index", "not_analyzed")
-                    .endObject()
-                  .endObject()
-             .endObject();
+                .startObject(IndexType.sync.getName()).startObject("properties")
+                .startObject("syncId").field("type", "string")
+                .field("index", "not_analyzed").field("store", true).endObject()
+                .startObject("u").field("type", "string")
+                .field("index", "not_analyzed").field("doc_values", true)
+                .field("store", true).endObject().startObject("numSyncChanges")
+                .field("type", "long").field("store", true)
+                .field("null_value", 0l).endObject().startObject("numConflicts")
+                .field("type", "long").field("store", true)
+                .field("null_value", 0l).endObject().startObject("isSuccess")
+                .field("type", "boolean").field("store", true).endObject()
+                .startObject("ti").field("type", "date")
+                .field("format", "date_time").field("doc_values", true)
+                .field("store", true).endObject().startObject("tim")
+                .field("type", "long").field("store", true)
+                .field("null_value", 0l).endObject().startObject("duration")
+                .field("type", "long").field("store", true)
+                .field("null_value", 0l).endObject().startObject("s")
+                .field("type", "string").field("store", true)
+                .field("doc_values", true).field("index", "not_analyzed")
+                .endObject().endObject().endObject();
 
         XContentBuilder monitoringMapping = jsonBuilder().startObject()
                 .startObject(IndexType.monitoring.getName())
-                  .startObject("properties")
-                    .startObject("mt")
-                    	.field("type", "string")
-                    	.field("index", "not_analyzed")
-                    	.field("store",true)
-                    .endObject()
-                    .startObject("value")
-                    	.field("type", "double")
-                    	.field("index", "not_analyzed")
-                    	.field("store",true)
-                    .endObject()
-                    .startObject("max")
-                    	.field("type", "double")
-                    	.field("index", "not_analyzed")
-                    	.field("store",true)
-                    .endObject()
-                    .startObject("mean")
-                    	.field("type", "double")
-                    	.field("index", "not_analyzed")
-                    	.field("store",true)
-                    .endObject()
-                    .startObject("min")
-                    	.field("type", "double")
-                    	.field("index", "not_analyzed")
-                    	.field("store",true)
-                    .endObject()
-                    .startObject("p50")
-                    	.field("type", "double")
-                    	.field("index", "not_analyzed")
-                    	.field("store",true)
-                    .endObject()
-                    .startObject("p75")
-                    	.field("type", "double")
-                    	.field("index", "not_analyzed")
-                    	.field("store",true)
-                    .endObject()
-                    .startObject("p95")
-                    	.field("type", "double")
-                    	.field("index", "not_analyzed")
-                    	.field("store",true)
-                    .endObject()
-                    .startObject("p98")
-                    	.field("type", "double")
-                    	.field("index", "not_analyzed")
-                    	.field("store",true)
-                    .endObject()
-                    .startObject("p99")
-                    	.field("type", "double")
-                    	.field("index", "not_analyzed")
-                    	.field("store",true)
-                    .endObject()
-                    .startObject("p999")
-                    	.field("type", "double")
-                    	.field("index", "not_analyzed")
-                    	.field("store",true)
-                    .endObject()
-                    .startObject("stddev")
-                    	.field("type", "double")
-                    	.field("index", "not_analyzed")
-                    	.field("store",true)
-                    .endObject()
-                    .startObject("m15_rate")
-                    	.field("type", "double")
-                    	.field("index", "not_analyzed")
-                    	.field("store",true)
-                    .endObject()
-                    .startObject("m1_rate")
-                    	.field("type", "double")
-                    	.field("index", "not_analyzed")
-                    	.field("store",true)
-                    .endObject()
-                    .startObject("m5_rate")
-                    	.field("type", "double")
-                    	.field("index", "not_analyzed")
-                    	.field("store",true)
-                    .endObject()
-                    .startObject("mean_rate")
-                    	.field("type", "double")
-                    	.field("index", "not_analyzed")
-                    	.field("store",true)
-                    .endObject()
-                    .startObject("ti")
-                		.field("type", "date")
-                		.field("format", "date_time")
-                    	.field("doc_values", true)
-                		.field("store",true)
-                	.endObject()
-                    .startObject("tim")
-                    	.field("type", "long")
-                    	.field("store",true)
-                    	.field("null_value", 0l)
-                    .endObject()
-                  .endObject()
-             .endObject();
+                .startObject("properties").startObject("mt")
+                .field("type", "string").field("index", "not_analyzed")
+                .field("store", true).endObject().startObject("value")
+                .field("type", "double").field("index", "not_analyzed")
+                .field("store", true).endObject().startObject("max")
+                .field("type", "double").field("index", "not_analyzed")
+                .field("store", true).endObject().startObject("mean")
+                .field("type", "double").field("index", "not_analyzed")
+                .field("store", true).endObject().startObject("min")
+                .field("type", "double").field("index", "not_analyzed")
+                .field("store", true).endObject().startObject("p50")
+                .field("type", "double").field("index", "not_analyzed")
+                .field("store", true).endObject().startObject("p75")
+                .field("type", "double").field("index", "not_analyzed")
+                .field("store", true).endObject().startObject("p95")
+                .field("type", "double").field("index", "not_analyzed")
+                .field("store", true).endObject().startObject("p98")
+                .field("type", "double").field("index", "not_analyzed")
+                .field("store", true).endObject().startObject("p99")
+                .field("type", "double").field("index", "not_analyzed")
+                .field("store", true).endObject().startObject("p999")
+                .field("type", "double").field("index", "not_analyzed")
+                .field("store", true).endObject().startObject("stddev")
+                .field("type", "double").field("index", "not_analyzed")
+                .field("store", true).endObject().startObject("m15_rate")
+                .field("type", "double").field("index", "not_analyzed")
+                .field("store", true).endObject().startObject("m1_rate")
+                .field("type", "double").field("index", "not_analyzed")
+                .field("store", true).endObject().startObject("m5_rate")
+                .field("type", "double").field("index", "not_analyzed")
+                .field("store", true).endObject().startObject("mean_rate")
+                .field("type", "double").field("index", "not_analyzed")
+                .field("store", true).endObject().startObject("ti")
+                .field("type", "date").field("format", "date_time")
+                .field("doc_values", true).field("store", true).endObject()
+                .startObject("tim").field("type", "long").field("store", true)
+                .field("null_value", 0l).endObject().endObject().endObject();
 
         Map<String, XContentBuilder> mappings = new HashMap<>();
-//        mappings.put(IndexType.node.getName(), nodeMapping);
+        // mappings.put(IndexType.node.getName(), nodeMapping);
         mappings.put(IndexType.content.getName(), contentMapping);
         mappings.put(IndexType.event.getName(), eventMapping);
         mappings.put(IndexType.sync.getName(), syncEventsMapping);
         mappings.put(IndexType.monitoring.getName(), monitoringMapping);
         createIndex(indexName, false, mappings);
-	}
+    }
 
     public void init(boolean checkIndexes) throws Exception
     {
-        if(checkIndexes)
+        if (checkIndexes)
         {
-        	checkIndexes();
+            checkIndexes();
         }
     }
 
@@ -382,292 +228,264 @@ public class ElasticSearchClient
         client.close();
     }
 
-	public void deleteIndex(String name) throws IOException
-	{
-        if(indexExists(name))
+    public void deleteIndex(String name) throws IOException
+    {
+        if (indexExists(name))
         {
-			DeleteIndexResponse delete = client.admin().indices().delete(
-					new DeleteIndexRequest(name)).actionGet();
-			if (!delete.isAcknowledged())
-			{
-				throw new RuntimeException("Index wasn't deleted");
-			}
+            DeleteIndexResponse delete = client.admin().indices()
+                    .delete(new DeleteIndexRequest(name)).actionGet();
+            if (!delete.isAcknowledged())
+            {
+                throw new RuntimeException("Index wasn't deleted");
+            }
         }
         else
         {
-        	logger.debug("Index " + name + " not deleted because it does not exist");
+            logger.debug(
+                    "Index " + name + " not deleted because it does not exist");
         }
-	}
+    }
 
-	public boolean indexExists(String name) throws IOException
-	{
-		boolean exists = false;
+    public boolean indexExists(String name) throws IOException
+    {
+        boolean exists = false;
 
-		ActionFuture<IndicesExistsResponse> res = client.admin().indices().exists(new IndicesExistsRequest(name));
+        ActionFuture<IndicesExistsResponse> res = client.admin().indices()
+                .exists(new IndicesExistsRequest(name));
         IndicesExistsResponse indicesExistsResp = res.actionGet(2000);
-        if(indicesExistsResp.isExists())
+        if (indicesExistsResp.isExists())
         {
-        	exists = true;
+            exists = true;
         }
 
         return exists;
-	}
+    }
 
-	public void createIndex(String name, boolean deleteIfExists,
-			Map<String, XContentBuilder> mappings) throws IOException
-	{
-		boolean indexExists = indexExists(name);
-		boolean createIndex = false;
+    public void createIndex(String name, boolean deleteIfExists,
+            Map<String, XContentBuilder> mappings) throws IOException
+    {
+        boolean indexExists = indexExists(name);
+        boolean createIndex = false;
 
-        if(indexExists)
+        if (indexExists)
         {
-        	if(deleteIfExists)
-        	{
-	        	logger.debug("Index " + name + " exists, deleting");
-	        	deleteIndex(name);
-	        	createIndex = true;
-        	}
+            if (deleteIfExists)
+            {
+                logger.debug("Index " + name + " exists, deleting");
+                deleteIndex(name);
+                createIndex = true;
+            }
         }
         else
         {
-        	logger.debug("Index " + name + " does not exist");
-        	createIndex = true;
+            logger.debug("Index " + name + " does not exist");
+            createIndex = true;
         }
 
-        if(createIndex)
+        if (createIndex)
         {
-	        CreateIndexRequestBuilder builder = client.admin().indices()
-        		.prepareCreate(name)
-	        	.setSettings(
-	        			ImmutableSettings.settingsBuilder()
-	        			.loadFromSource(jsonBuilder()
-	        					.startObject()
-	        						.field("number_of_shards", 1)
-	        						.field("index.numberOfReplicas", 1)
-//	        						.startObject("analysis")
-//	        							.startObject("analyzer")
-//	        								.startObject("myPathAnalyzer")
-//	        									.field("type", "custom")
-//	        									.field("tokenizer", "path-tokenizer")
-//	        									.field("filter", new String[]{"snowball", "standard"})
-//	        								.endObject()
-//	        							.endObject()
-//	        							.startObject("tokenizer")
-//	        								.startObject("path_hierarchy")
-//	        									.field("type", "PathHierarchy")
-//	        								.endObject()
-//	        							.endObject()
-//	        						.endObject()
-	        					.endObject().string()));
-//        		.setSettings(
-//        				ImmutableSettings.settingsBuilder()
-//        				.put("number_of_shards", 1)
-//        				.put("index.numberOfReplicas", 1));
-	        for(Map.Entry<String, XContentBuilder> mapping : mappings.entrySet())
-	        {
-	        	builder.addMapping(mapping.getKey(), mapping.getValue());
-	        }
+            CreateIndexRequestBuilder builder = client.admin().indices()
+                    .prepareCreate(name)
+                    .setSettings(Settings.settingsBuilder()
+                            .loadFromSource(jsonBuilder().startObject()
+                                    .field("number_of_shards", 1)
+                                    .field("index.numberOfReplicas", 1)
+                                    .endObject().string()));
+            // .setSettings(
+            // ImmutableSettings.settingsBuilder()
+            // .put("number_of_shards", 1)
+            // .put("index.numberOfReplicas", 1));
+            for (Map.Entry<String, XContentBuilder> mapping : mappings
+                    .entrySet())
+            {
+                builder.addMapping(mapping.getKey(), mapping.getValue());
+            }
 
-//	        client.admin().indices()
-//	        	.prepareCreate(name)
-//	        	.setSettings(
-//	        			ImmutableSettings.settingsBuilder()
-//	        			.loadFromSource(jsonBuilder()
-//	        					.startObject()
-//	        						.field("number_of_shards", 1)
-//	        						.field("index.numberOfReplicas", 1)
-//	        						.startObject("analysis")
-//	        							.startObject("analyzer")
-//	        								.startObject("steak")
-//	        									.field("type", "custom")
-//	        									.field("tokenizer", "standard")
-//	        									.field("filter", new String[]{"snowball", "standard", "lowercase"})
-//	        								.endObject()
-//	        							.endObject()
-//	        						.endObject()
-//	        					.endObject().string()))
+            CreateIndexResponse createIndexResp = builder.execute().actionGet();
 
-	        CreateIndexResponse createIndexResp = builder.execute().actionGet();
+            logger.debug("Created index " + name + ", " + createIndexResp);
+        }
+    }
 
-	        logger.debug("Created index " + name + ", " + createIndexResp);
-	    }
-	}
-	
-	public IndexResponse index(String indexName, String id, IndexType indexType, String json, boolean refresh)
-	{
-        IndexResponse response = client.prepareIndex(indexName, indexType.getName(), id)
-        		.setRefresh(refresh)
-                .setSource(json)
-                .execute()
+    public IndexResponse index(String indexName, String id, IndexType indexType,
+            String json, boolean refresh)
+    {
+        IndexResponse response = client
+                .prepareIndex(indexName, indexType.getName(), id)
+                .setRefresh(refresh).setSource(json).execute().actionGet();
+        return response;
+    }
+
+    public UpdateResponse reindex(String indexName, String id,
+            IndexType indexType, String json, boolean refresh)
+    {
+        // XContentFactory.xContent(XContentType.JSON).createParser(reader)
+        UpdateResponse response = client
+                .prepareUpdate(indexName, indexType.getName(), id)
+                .setRefresh(refresh).setDocAsUpsert(true).setDoc(json).execute()
                 .actionGet();
         return response;
-	}
+    }
 
-	public UpdateResponse reindex(String indexName, String id, IndexType indexType, String json, boolean refresh)
-	{
-//		XContentFactory.xContent(XContentType.JSON).createParser(reader)
-        UpdateResponse response = client.prepareUpdate(indexName, indexType.getName(), id)
-        		.setRefresh(refresh)
-        		.setDocAsUpsert(true)
-        		.setDoc(json)
-                .execute()
+    public UpdateResponse reindexContent(String indexName, String id,
+            String json, boolean refresh)
+    {
+        UpdateResponse response = client
+                .prepareUpdate(indexName, IndexType.content.getName(), id)
+                .setRefresh(refresh).setDocAsUpsert(true).setDoc(json).execute()
                 .actionGet();
         return response;
-	}
+    }
 
-	public UpdateResponse reindexContent(String indexName, String id, String json, boolean refresh)
-	{
-        UpdateResponse response = client.prepareUpdate(indexName, IndexType.content.getName(), id)
-        		.setRefresh(refresh)
-        		.setDocAsUpsert(true)
-        		.setDoc(json)
-                .execute()
+    // public SearchResponse moreLikeThis()
+    // {
+    // QueryBuilders.moreLikeThisQuery("names") // Fields
+    // .likeText("text like this one") // Text
+    // .minTermFreq(1);
+    //
+    // MoreLikeThisRequestBuilder builder = new
+    // MoreLikeThisRequestBuilder(client);
+    // builder.setSearchIndices("alfresco");
+    // builder.setField("names");
+    // builder.set
+    // MoreLikeThisRequest mltRequest = builder.request();
+    // SearchResponse response = client.moreLikeThis(mltRequest).actionGet();
+    // return response;
+    // }
+
+    public DeleteResponse unindex(String indexName, String id,
+            IndexType indexType)
+    {
+        DeleteResponse response = client
+                .prepareDelete(indexName, indexType.getName(), id).execute()
                 .actionGet();
         return response;
-	}
+    }
 
-//	public SearchResponse moreLikeThis()
-//	{
-//		QueryBuilders.moreLikeThisQuery("names")      // Fields
-//        	.likeText("text like this one")                 // Text
-//        	.minTermFreq(1);         
-//
-//        MoreLikeThisRequestBuilder builder = new MoreLikeThisRequestBuilder(client);
-//        builder.setSearchIndices("alfresco");
-//        builder.setField("names");
-//        builder.set
-//        MoreLikeThisRequest mltRequest = builder.request();
-//        SearchResponse response = client.moreLikeThis(mltRequest).actionGet();
-//        return response;
-//	}
-
-	public DeleteResponse unindex(String indexName, String id, IndexType indexType)
-	{
-        DeleteResponse response = client.prepareDelete(indexName, indexType.getName(), id)
-        		.execute()
-        		.actionGet();
-        return response;
-	}
-
-	public SearchResponse namesSearch(String indexName, String... names)
-	{
-		QueryBuilder queryBuilder = QueryBuilders.matchAllQuery();
-        FilterBuilder filterBuilder = FilterBuilders.termsFilter("names", names);
-        queryBuilder = QueryBuilders.filteredQuery(queryBuilder, filterBuilder);
+    public SearchResponse namesSearch(String indexName, String... names)
+    {
+//        QueryBuilder queryBuilder = QueryBuilders.matchAllQuery();
+//        FilterBuilder filterBuilder = FilterBuilder.termsFilter("names",
+//                names);
+        QueryBuilder queryBuilder = QueryBuilders
+                .boolQuery().must(QueryBuilders.matchAllQuery())
+                .filter(QueryBuilders.termQuery("names", names));
+//                .filteredQuery(queryBuilder, filterBuilder);
 
         SearchRequestBuilder builder = client.prepareSearch(indexName)
-    	        .addFields("id","n","v")
-    	        .setSearchType(SearchType.QUERY_THEN_FETCH)
-    	        .setQuery(queryBuilder)             // Query
-    	        .setFrom(0).setSize(60);
+                .addFields("id", "n", "v")
+                .setSearchType(SearchType.QUERY_THEN_FETCH)
+                .setQuery(queryBuilder) // Query
+                .setFrom(0).setSize(60);
         SearchResponse response = builder.execute().actionGet();
         return response;
-	}
+    }
 
-	public SearchResponse matchEvents(String indexName, String username, int skip, int maxItems)
-	{
-		String[] types = new String[] {IndexType.event.toString()};
-		String[] fields = new String[] {"t", "u", "ct", "tx", "txnId", "ti", "id", "v", "n"};
-    	QueryBuilder queryBuilder = QueryBuilders.boolQuery()
-    			.must(QueryBuilders.matchQuery("u", username));
-//    			.must(QueryBuilders.matchQuery("t", NodeContentGetEvent.EVENT_TYPE));
+    public SearchResponse matchEvents(String indexName, String username,
+            int skip, int maxItems)
+    {
+        String[] types = new String[]
+        { IndexType.event.toString() };
+        String[] fields = new String[]
+        { "t", "u", "ct", "tx", "txnId", "ti", "id", "v", "n" };
+        QueryBuilder queryBuilder = QueryBuilders.boolQuery()
+                .must(QueryBuilders.matchQuery("u", username));
+        // .must(QueryBuilders.matchQuery("t", NodeContentGetEvent.EVENT_TYPE));
 
-    	SortBuilder sortBuilder = SortBuilders
-    			.fieldSort("ti").order(SortOrder.DESC);
+        SortBuilder sortBuilder = SortBuilders.fieldSort("ti")
+                .order(SortOrder.DESC);
 
         SearchRequestBuilder builder = client.prepareSearch(indexName)
-        		.addFields(fields)
-    	        .setTypes(types)
-    	        .setSearchType(SearchType.QUERY_THEN_FETCH)
-                .setQuery(queryBuilder)             // Query
-                .addSort(sortBuilder)
-                .setFrom(skip).setSize(maxItems);
-        SearchResponse response = builder.execute()
-                .actionGet(); 
+                .addFields(fields).setTypes(types)
+                .setSearchType(SearchType.QUERY_THEN_FETCH)
+                .setQuery(queryBuilder) // Query
+                .addSort(sortBuilder).setFrom(skip).setSize(maxItems);
+        SearchResponse response = builder.execute().actionGet();
         return response;
-	}
+    }
 
-	public SearchResponse matchEventsForNode(String indexName, String nodeId, int skip, int maxItems)
-	{
-		String[] types = new String[] {IndexType.event.toString()};
-		String[] fields = new String[] {"t", "u", "ct", "tx", "txnId", "ti", "id", "v", "n"};
-    	QueryBuilder queryBuilder = QueryBuilders.boolQuery()
-    			.must(QueryBuilders.matchQuery("n", nodeId))
-    			.must(QueryBuilders.matchQuery("t", NodeContentGetEvent.EVENT_TYPE));
+    public SearchResponse matchEventsForNode(String indexName, String nodeId,
+            int skip, int maxItems)
+    {
+        String[] types = new String[]
+        { IndexType.event.toString() };
+        String[] fields = new String[]
+        { "t", "u", "ct", "tx", "txnId", "ti", "id", "v", "n" };
+        QueryBuilder queryBuilder = QueryBuilders.boolQuery()
+                .must(QueryBuilders.matchQuery("n", nodeId)).must(QueryBuilders
+                        .matchQuery("t", NodeContentGetEvent.EVENT_TYPE));
 
-    	SortBuilder sortBuilder = SortBuilders
-    			.fieldSort("ti").order(SortOrder.DESC);
+        SortBuilder sortBuilder = SortBuilders.fieldSort("ti")
+                .order(SortOrder.DESC);
 
         SearchRequestBuilder builder = client.prepareSearch(indexName)
-        		.addFields(fields)
-    	        .setTypes(types)
-    	        .setSearchType(SearchType.QUERY_THEN_FETCH)
-                .setQuery(queryBuilder)             // Query
-                .addSort(sortBuilder)
-                .setFrom(skip).setSize(maxItems);
-        SearchResponse response = builder.execute()
-                .actionGet(); 
+                .addFields(fields).setTypes(types)
+                .setSearchType(SearchType.QUERY_THEN_FETCH)
+                .setQuery(queryBuilder) // Query
+                .addSort(sortBuilder).setFrom(skip).setSize(maxItems);
+        SearchResponse response = builder.execute().actionGet();
         return response;
-	}
+    }
 
-	public SearchResponse match(String indexName, String text)
-	{
-		String[] types = new String[] {IndexType.content.toString()};
-		String[] fields = new String[] {"id","n","v","l","t"};
-    	QueryBuilder queryBuilder = QueryBuilders.boolQuery()
-    			.must(QueryBuilders.matchQuery("c", text));
+    public SearchResponse match(String indexName, String text)
+    {
+        String[] types = new String[]
+        { IndexType.content.toString() };
+        String[] fields = new String[]
+        { "id", "n", "v", "l", "t" };
+        QueryBuilder queryBuilder = QueryBuilders.boolQuery()
+                .must(QueryBuilders.matchQuery("c", text));
 
         SearchRequestBuilder builder = client.prepareSearch(indexName)
-        		.addFields(fields)
-    	        .setTypes(types)
-    	        .setSearchType(SearchType.QUERY_THEN_FETCH)
-                .setQuery(queryBuilder)             // Query
+                .addFields(fields).setTypes(types)
+                .setSearchType(SearchType.QUERY_THEN_FETCH)
+                .setQuery(queryBuilder) // Query
                 .setFrom(0).setSize(60);
-        SearchResponse response = builder.execute()
-                .actionGet(); 
+        SearchResponse response = builder.execute().actionGet();
         return response;
-	}
+    }
 
-	public SearchResponse search(String indexName, QueryBuilder queryBuilder, AggregationBuilder aggregation,
-			List<IndexType> types, String[] fields)
-	{
-//        logger.debug("Searching index " + indexName);
+    public SearchResponse search(String indexName, QueryBuilder queryBuilder,
+            AggregationBuilder aggregation, List<IndexType> types,
+            String[] fields)
+    {
+        // logger.debug("Searching index " + indexName);
 
-//    	queryBuilder = QueryBuilders.filteredQuery(queryBuilder, filterBuilder);
+        // queryBuilder = QueryBuilders.filteredQuery(queryBuilder,
+        // filterBuilder);
 
         List<String> typesList = new ArrayList<>();
-        if(types != null && types.size() > 0)
+        if (types != null && types.size() > 0)
         {
-        	typesList = new ArrayList<>(types.size());
-        	for(IndexType type : types)
-        	{
-        		typesList.add(type.getName());
-        	}
-//            logger.debug("Searching types " + typesList);
+            typesList = new ArrayList<>(types.size());
+            for (IndexType type : types)
+            {
+                typesList.add(type.getName());
+            }
+            // logger.debug("Searching types " + typesList);
         }
 
         SearchRequestBuilder builder = client.prepareSearch(indexName)
-        		.addFields(fields)
-//    	        .addFields("id","n","v")
-//    	        .setPostFilter(postFilter)
-    	        .setTypes(typesList.toArray(new String[0]));
-        if(aggregation != null)
+                .addFields(fields)
+                // .addFields("id","n","v")
+                // .setPostFilter(postFilter)
+                .setTypes(typesList.toArray(new String[0]));
+        if (aggregation != null)
         {
-        	builder = builder.addAggregation(aggregation);
+            builder = builder.addAggregation(aggregation);
         }
 
-        builder = builder
-                .setSearchType(SearchType.QUERY_THEN_FETCH)
-                .setQuery(queryBuilder)             // Query
+        builder = builder.setSearchType(SearchType.QUERY_THEN_FETCH)
+                .setQuery(queryBuilder) // Query
                 .setFrom(0).setSize(60);
 
-//		.addHighlightedField("c")
-        //.setPostFilter(FilterBuilders.rangeFilter("age").from(12).to(18))   // Filter
-        //                .setExplain(true);
+        // .addHighlightedField("c")
+        // .setPostFilter(FilterBuilders.rangeFilter("age").from(12).to(18)) //
+        // Filter
+        // .setExplain(true);
 
-        SearchResponse response = builder.execute()
-                .actionGet(); 
+        SearchResponse response = builder.execute().actionGet();
 
         return response;
-	}
+    }
 }
