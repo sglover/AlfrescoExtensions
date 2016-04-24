@@ -17,11 +17,11 @@ import javax.mail.BodyPart;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMultipart;
 
-import org.alfresco.checksum.Patch;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.junit.Test;
+import org.sglover.checksum.Patch;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.WebResource;

@@ -42,7 +42,7 @@ public class TestTitanPermissionsDAO
 
 		permissionsDAO = new TitanPermissionsDAO(Arrays.asList(
 				new RemoteCassandraConfig("localhost", true),
-				new RemoteElasticSearchConfig("localhost", true)
+				new RemoteElasticSearchConfig("127.0.0.1", true)
 				));
 
 		{

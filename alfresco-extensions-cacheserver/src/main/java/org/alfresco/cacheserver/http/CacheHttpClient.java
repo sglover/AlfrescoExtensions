@@ -17,7 +17,6 @@ import javax.mail.MessagingException;
 //import javax.mail.internet.MimeMultipart;
 import javax.net.ssl.SSLException;
 
-import org.alfresco.checksum.PatchDocument;
 import org.alfresco.contentstore.patch.PatchService;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -48,6 +47,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicHeaderElementIterator;
 import org.apache.http.protocol.HTTP;
 import org.apache.http.protocol.HttpContext;
+import org.sglover.checksum.PatchDocument;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.WebResource;

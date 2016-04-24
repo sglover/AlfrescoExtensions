@@ -9,10 +9,10 @@ package org.alfresco.contentstore.dao.mongo;
 
 import org.alfresco.contentstore.dao.ContentDAO;
 import org.alfresco.contentstore.dao.NodeInfo;
-import org.alfresco.extensions.common.MimeType;
-import org.alfresco.extensions.common.Node;
-import org.alfresco.extensions.common.identity.ServerIdentity;
 import org.alfresco.util.InvalidNodeException;
+import org.sglover.alfrescoextensions.common.MimeType;
+import org.sglover.alfrescoextensions.common.Node;
+import org.sglover.alfrescoextensions.common.identity.ServerIdentity;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.BasicDBObjectBuilder;

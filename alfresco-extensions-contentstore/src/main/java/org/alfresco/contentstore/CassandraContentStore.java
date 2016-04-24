@@ -9,6 +9,7 @@ package org.alfresco.contentstore;
 
 import static com.datastax.driver.core.querybuilder.QueryBuilder.eq;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -20,15 +21,23 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.charset.Charset;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.alfresco.checksum.ChecksumService;
-import org.alfresco.checksum.PatchDocument;
 import org.alfresco.contentstore.dao.NodeUsageDAO;
-import org.alfresco.extensions.common.MimeType;
-import org.alfresco.extensions.common.Node;
+import org.alfresco.contentstore.patch.PatchService;
+import org.sglover.alfrescoextensions.common.CassandraSession;
+import org.sglover.alfrescoextensions.common.MimeType;
+import org.sglover.alfrescoextensions.common.Node;
+import org.sglover.checksum.ChecksumService;
+import org.sglover.checksum.Patch;
+import org.sglover.checksum.PatchDocument;
+import org.sglover.entities.EntitiesService;
 
+import com.datastax.driver.core.BatchStatement;
+import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
@@ -46,56 +55,216 @@ public class CassandraContentStore extends AbstractContentStore
     private final CassandraSession cassandraSession;
     private final PreparedStatement getBlockStatement;
     private final PreparedStatement getNodeMetadataStatement;
-    private final PreparedStatement getNodeMetadataWithMimeTypeStatement;
     private final PreparedStatement getNodeStatement;
     private final PreparedStatement writeBlockStatement;
+    private final PreparedStatement writePatchStatement;
+    private final PreparedStatement getPatchesStatement;
+    private final PreparedStatement writeMatchedBlockStatement;
+    private final PreparedStatement getMatchedBlocksStatement;
     private final Charset charset = Charset.forName("UTF-8");
 
-    public CassandraContentStore(CassandraSession cassandraSession, String contentRoot,
-            ChecksumService checksumService, NodeUsageDAO nodeUsageDAO, int blockSize) throws IOException
+    public CassandraContentStore(CassandraSession cassandraSession, ChecksumService checksumService,
+            PatchService patchService, String contentRoot, NodeUsageDAO nodeUsageDAO,
+            EntitiesService entitiesService, boolean async) throws IOException
     {
-        super(contentRoot, checksumService, nodeUsageDAO, blockSize);
+        super(contentRoot, checksumService, patchService, nodeUsageDAO, entitiesService, async);
         this.cassandraSession = cassandraSession;
+
         createSchema();
 
+        String keyspace = cassandraSession.getKeyspace();
+
         this.getBlockStatement = cassandraSession.getCassandraSession().prepare(
-                "SELECT * FROM alfresco.content_data where nodeId = ? and nodeVersion = ? and mimetype = ? and rangeId = ?");
+                "SELECT * FROM " + keyspace + ".content_data where nodeId = ? and nodeVersion = ? and mimetype = ? and rangeId = ?");
         this.getNodeStatement = cassandraSession.getCassandraSession().prepare(
-                "SELECT * FROM alfresco.content where nodeId = ? and nodeVersion = ? and mimetype = ?");
+                "SELECT * FROM " + keyspace + ".content where nodeId = ? and nodeVersion = ? and mimetype = ?");
         this.getNodeMetadataStatement = cassandraSession.getCassandraSession().prepare(
-                "SELECT * FROM alfresco.content_metadata where nodeId = ? and nodeVersion = ?");
-        this.getNodeMetadataWithMimeTypeStatement = cassandraSession.getCassandraSession().prepare(
-                "SELECT * FROM alfresco.content_metadata where nodeId = ? and nodeVersion = ? and mimeType = ?");
+                "SELECT * FROM " + keyspace + ".content_metadata where nodeId = ? and nodeVersion = ? and mimeType = ?");
         this.writeBlockStatement = cassandraSession.getCassandraSession().prepare(
-                "INSERT INTO alfresco.content_data (nodeId, nodeVersion, mimetype, rangeId, data) VALUES(?, ?, ?, ?, ?);");
+                "INSERT INTO " + keyspace + ".content_data (nodeId, nodeVersion, mimetype, rangeId, data) VALUES(?, ?, ?, ?, ?);");
+        this.writePatchStatement = cassandraSession.getCassandraSession().prepare(
+                "INSERT INTO " + keyspace + ".patch_data (nodeId, nodeVersion, mimeType, num, last_match_index, size, patch) VALUES (?, ?, ?, ?, ?, ?, ?);");
+        this.getPatchesStatement = cassandraSession.getCassandraSession().prepare(
+                "SELECT num, last_match_index, size, patch FROM " + keyspace + ".patch_data WHERE nodeId = ? AND nodeVersion = ? and mimeType = ?;");
+        this.writeMatchedBlockStatement = cassandraSession.getCassandraSession().prepare(
+                "INSERT INTO " + keyspace + ".patch_matched_blocks (nodeId, nodeVersion, mimeType, num, matched_block) VALUES (?, ?, ?, ?, ?);");
+        this.getMatchedBlocksStatement = cassandraSession.getCassandraSession().prepare(
+                "SELECT num, matched_block FROM " + keyspace + ".patch_matched_blocks WHERE nodeId = ? AND nodeVersion = ? and mimeType = ?;");
+    }
+
+    private class CassandraPatchDocument implements PatchDocument
+    {
+        private boolean isBatch;
+        private int blockSize;
+        private Node node;
+        private BatchStatement batch;
+        private int numMatchedBlocks = 0;
+        private int numPatches = 0;
+        private int matchCount;
+
+        CassandraPatchDocument(Node node, int blockSize, boolean isBatch)
+        {
+            this.node = node;
+            this.blockSize = blockSize;
+            this.isBatch = isBatch;
+            if(isBatch)
+            {
+                this.batch = new BatchStatement();
+            }
+        }
+
+        @Override
+        public void addPatch(Patch patch)
+        {
+            ByteBuffer bb = ByteBuffer.wrap(patch.getBuffer());
+            BoundStatement st = writePatchStatement.bind(node.getNodeId(), node.getNodeVersion(),
+                    node.getMimeType().getMimetype(), numPatches++, patch.getLastMatchIndex(), 
+                    patch.getSize(), bb);
+
+            if(isBatch)
+            {
+                batch.add(st);
+            }
+            else
+            {
+                cassandraSession.getCassandraSession().execute(st);
+            }
+        }
+
+        @Override
+        public void addMatchedBlock(int matchedBlock)
+        {
+            BoundStatement st = writeMatchedBlockStatement.bind(node.getNodeId(),
+                    node.getNodeVersion(), node.getMimeType().getMimetype(), numMatchedBlocks++, matchedBlock);
+
+            if(isBatch)
+            {
+                batch.add(st);
+            }
+            else
+            {
+                cassandraSession.getCassandraSession().execute(st);
+            }
+        }
+
+        @Override
+        public void setBlockSize(int blockSize)
+        {
+            this.blockSize = blockSize;
+        }
+
+        @Override
+        public int getBlockSize()
+        {
+            return blockSize;
+        }
+
+        @Override
+        public List<Integer> getMatchedBlocks()
+        {
+            List<Integer> matchedBlocks = new LinkedList<>();
+
+            BoundStatement st = getMatchedBlocksStatement.bind(node.getNodeId(),
+                    node.getNodeVersion(), node.getMimeType().getMimetype());
+            
+            ResultSet rs = cassandraSession.getCassandraSession().execute(st);
+            for(Row row : rs)
+            {
+                matchedBlocks.add(row.getInt("matched_block"));
+            }
+
+            this.matchCount = matchedBlocks.size();
+
+            return matchedBlocks;
+        }
+
+        @Override
+        public List<Patch> getPatches()
+        {
+            List<Patch> patches = new LinkedList<>();
+
+            BoundStatement st = getPatchesStatement.bind(node.getNodeId(),
+                    node.getNodeVersion(), node.getMimeType().getMimetype());
+
+            ResultSet rs = cassandraSession.getCassandraSession().execute(st);
+            for(Row row : rs)
+            {
+                int lastMatchIndex = row.getInt("last_match_index");
+                int size = row.getInt("size");
+                byte[] bytes = new byte[size];
+                row.getBytes("patch").get(bytes);
+                Patch patch = new Patch(lastMatchIndex, size, bytes);
+                patches.add(patch);
+            }
+
+            return patches;
+        }
+
+        @Override
+        public void commit()
+        {
+            if(isBatch)
+            {
+                cassandraSession.getCassandraSession().execute(batch);
+            }
+        }
+
+        @Override
+        public int getMatchCount()
+        {
+            return matchCount;
+        }
+
+        @Override
+        public Node getNode()
+        {
+            return node;
+        }
     }
 
     private void createSchema()
     {
-        KeyspaceMetadata keySpaceMetadata = cassandraSession.getCluster().getMetadata().getKeyspace("alfresco");
+        String keyspace = cassandraSession.getKeyspace();
+
+        KeyspaceMetadata keySpaceMetadata = cassandraSession.getCluster().getMetadata()
+                .getKeyspace(keyspace);
         if(keySpaceMetadata == null)
         {
-            throw new RuntimeException("No alfresco keyspace");
+            throw new RuntimeException("No " + keyspace + " keyspace");
         }
         else
         {
             if(keySpaceMetadata.getTable("content_metadata") == null)
             {
-                cassandraSession.getCassandraSession().execute("CREATE TABLE alfresco.content_metadata (nodeId text, nodeVersion bigint, "
+                cassandraSession.getCassandraSession().execute("CREATE TABLE IF NOT EXISTS " + keyspace + ".content_metadata (nodeId text, nodeVersion bigint, "
                         + "mimeType text, "
-                        + "PRIMARY KEY((nodeId, nodeVersion)));");
+                        + "PRIMARY KEY((nodeId, nodeVersion, mimeType)));");
             }
             if(keySpaceMetadata.getTable("content") == null)
             {
-                cassandraSession.getCassandraSession().execute("CREATE TABLE alfresco.content (nodeId text, nodeVersion bigint, "
+                cassandraSession.getCassandraSession().execute("CREATE TABLE IF NOT EXISTS " + keyspace + ".content (nodeId text, nodeVersion bigint, "
                         + "mimetype text, path text, num_blocks int, size bigint, block_size int, "
                         + "PRIMARY KEY((nodeId, nodeVersion, mimetype)));");
             }
             if(keySpaceMetadata.getTable("content_data") == null)
             {
-                cassandraSession.getCassandraSession().execute("CREATE TABLE alfresco.content_data (nodeId text, "
+                cassandraSession.getCassandraSession().execute("CREATE TABLE IF NOT EXISTS " + keyspace + ".content_data (nodeId text, "
                         + "nodeVersion bigint, mimetype text, rangeId bigint, data blob, "
                         + "PRIMARY KEY((nodeId, nodeVersion, mimetype, rangeId)));");
+            }
+            if(keySpaceMetadata.getTable("patch_data") == null)
+            {
+                ResultSet rs = cassandraSession.getCassandraSession().execute("CREATE TABLE IF NOT EXISTS " + keyspace + ".patch_data (nodeId text, "
+                        + "nodeVersion bigint, mimeType text, num int, last_match_index int, size int, patch blob, "
+                        + "PRIMARY KEY((nodeId, nodeVersion, mimetype), num));");
+                System.out.println(rs);
+            }
+            if(keySpaceMetadata.getTable("patch_matched_blocks") == null)
+            {
+                ResultSet rs = cassandraSession.getCassandraSession().execute("CREATE TABLE IF NOT EXISTS " + keyspace + ".patch_matched_blocks (nodeId text, "
+                        + "nodeVersion bigint, mimeType text, num int, matched_block int, "
+                        + "PRIMARY KEY((nodeId, nodeVersion, mimetype), num));");
+                System.out.println(rs);
             }
         }
     }
@@ -105,7 +274,6 @@ public class CassandraContentStore extends AbstractContentStore
         private final Node node;
         private final int numBlocks;
         private final int blockSize;
-        private final MimeType mimeType;
         private final AtomicBoolean isOpen = new AtomicBoolean(true);
         private final AtomicLong position = new AtomicLong(0);
         private final AtomicLong size = new AtomicLong(0);
@@ -127,7 +295,7 @@ public class CassandraContentStore extends AbstractContentStore
             this.blockSize = row.getInt("block_size");
             this.numBlocks = row.getInt("num_blocks");
             this.size.getAndSet(row.getLong("size"));
-            this.mimeType = MimeType.INSTANCES.getByMimetype(row.getString("mimetype"));
+//            this.mimeType = MimeType.INSTANCES.getByMimetype(row.getString("mimetype"));
         }
 
         @Override
@@ -149,27 +317,33 @@ public class CassandraContentStore extends AbstractContentStore
             long size = Math.min(this.size.get(), dst.remaining());
 
             int remaining = dst.remaining();
-            long numBytes = (pos + remaining > size ? size - pos : remaining);
+            long numBytes = (pos + remaining > this.size.get() ? size - pos : remaining);
             long numBlocks = numBytes / blockSize + (numBytes % blockSize > 0 ? 1 : 0);
             long rangeStart = pos / blockSize;
             long rangeEnd = rangeStart + numBlocks - 1;
 
-            int numRead = 0;
-            for (long i = rangeStart; i <= rangeEnd; i++)
+            int numRead = -1;
+            if(rangeEnd >= rangeStart)
             {
-                ByteBuffer bb = null;
-                if(dst.remaining() > blockSize)
+                numRead = 0;
+                for (long i = rangeStart; i <= rangeEnd; i++)
                 {
-                    bb = getBlock(node, mimeType, i);
+                    ByteBuffer bb = null;
+                    if(dst.remaining() > blockSize)
+                    {
+                        bb = getBlock(node, i);
+                    }
+                    else
+                    {
+                        bb = getBlock(node, i, dst.remaining());
+                    }
+    
+                    numRead += bb.remaining();
+    
+                    dst.put(bb);
                 }
-                else
-                {
-                    bb = getBlock(node, mimeType, i, dst.remaining());
-                }
-
-                numRead += bb.remaining();
-
-                dst.put(bb);
+                
+                position.addAndGet(numRead);
             }
 
             return numRead;
@@ -212,18 +386,16 @@ public class CassandraContentStore extends AbstractContentStore
     private class CassandraWritableByteChannel implements WritableByteChannel
     {
         private final Node node;
-        private final MimeType mimeType;
         private final ByteBuffer bb;
         private final AtomicBoolean isOpen = new AtomicBoolean(true);
         private int currentRangeId = 0;
         private long size = 0;
         private int numBlocks = 0;
 
-        public CassandraWritableByteChannel(Node node, MimeType mimeType)
+        public CassandraWritableByteChannel(Node node)
         {
             this.node = node;
-            this.mimeType = mimeType;
-            this.bb = ByteBuffer.allocate(blockSize);
+            this.bb = ByteBuffer.allocate(getBlockSize());
         }
 
         @Override
@@ -236,15 +408,23 @@ public class CassandraContentStore extends AbstractContentStore
         public void close() throws IOException
         {
             bb.flip();
-            writeBlock(node, mimeType, currentRangeId, bb);
+            writeBlock(node, currentRangeId, bb);
             numBlocks++;
             currentRangeId++;
             bb.clear();
 
-            writeNodeData(node, mimeType, numBlocks, size);
-            writeNodeMetadata(node, mimeType);
-
             this.isOpen.getAndSet(false);
+
+            writeNodeMetadata(node);
+            writeNodeData(node, numBlocks, size);
+
+            createPatch(node);
+            extractChecksums(node);
+
+            if(node.getMimeType().equals(MimeType.TEXT))
+            {
+                extractEntities(node);
+            }
         }
 
         @Override
@@ -257,7 +437,7 @@ public class CassandraContentStore extends AbstractContentStore
                 if(bb.remaining() == 0)
                 {
                     bb.flip();
-                    writeBlock(node, mimeType, currentRangeId, bb);
+                    writeBlock(node, currentRangeId, bb);
                     numBlocks++;
                     currentRangeId++;
                     bb.clear();
@@ -282,24 +462,36 @@ public class CassandraContentStore extends AbstractContentStore
         }
     }
 
-    private ByteBuffer getBlock(Node node, MimeType mimeType, long rangeId)
+    private ByteBuffer getBlock(Node node, long rangeId)
     {
-        return getBlock(node, mimeType, rangeId, blockSize);
+        return getBlock(node, rangeId, getBlockSize());
     }
 
-    private ByteBuffer getBlock(Node node, MimeType mimeType, long rangeId, int size)
+    @Override
+    public InputStream getBlockAsInputStream(Node node, long rangeId, int size)
+    {
+        ByteBuffer bb = getBlock(node, rangeId, size);
+        InputStream in = new ByteArrayInputStream(bb.array());
+        return in;
+    }
+
+    /*
+     * Get up to size bytes from the block storage in Cassandra
+     */
+    private ByteBuffer getBlock(Node node, long rangeId, int size)
     {
         ByteBuffer bb = null;
 
         String nodeId = node.getNodeId();
         long nodeVersion = node.getNodeVersion();
+        MimeType mimeType = node.getMimeType();
 
         ResultSet rs = cassandraSession.getCassandraSession()
                 .execute(getBlockStatement.bind(nodeId, nodeVersion, mimeType.getMimetype(), rangeId));
         Row row = rs.one();
         if(row != null)
         {
-            if(size == blockSize)
+            if(size == getBlockSize())
             {
                 bb = row.getBytes("data");
                 bb.compact();
@@ -310,12 +502,17 @@ public class CassandraContentStore extends AbstractContentStore
                 ByteBuffer bb1 = row.getBytes("data");
                 bb1.flip();
                 bb = ByteBuffer.allocate(size);
-                for(int i = 0; i < size; i++)
+                int i = 0;
+                while(bb1.hasRemaining() && i++ < size)
                 {
                     bb.put(bb1.get());
                 }
                 bb.flip();
             }
+        }
+        else
+        {
+            System.out.println("Unknown block node=" + node + ", rangeId=" + rangeId);
         }
 
         return bb;
@@ -359,31 +556,12 @@ public class CassandraContentStore extends AbstractContentStore
         long nodeVersion = node.getNodeVersion();
 
         ResultSet rs = cassandraSession.getCassandraSession()
-                .execute(getNodeMetadataStatement.bind(nodeId, nodeVersion));
+                .execute(getNodeMetadataStatement.bind(nodeId, nodeVersion, node.getMimeType().getMimetype()));
         Row row = rs.one();
         if(row != null)
         {
             MimeType mimeType = MimeType.INSTANCES.getByMimetype(row.getString("mimeType"));
             nodeMetadata = new NodeMetadata(nodeId, nodeVersion, mimeType);
-        }
-
-        return nodeMetadata;
-    }
-
-    private NodeMetadata getNodeMetadata(Node node, MimeType mimeType)
-    {
-        NodeMetadata nodeMetadata = null;
-
-        String nodeId = node.getNodeId();
-        long nodeVersion = node.getNodeVersion();
-
-        ResultSet rs = cassandraSession.getCassandraSession()
-                .execute(getNodeMetadataWithMimeTypeStatement.bind(nodeId, nodeVersion, mimeType));
-        Row row = rs.one();
-        if(row != null)
-        {
-            MimeType mt = MimeType.INSTANCES.getByMimetype(row.getString("mimeType"));
-            nodeMetadata = new NodeMetadata(nodeId, nodeVersion, mt);
         }
 
         return nodeMetadata;
@@ -409,51 +587,51 @@ public class CassandraContentStore extends AbstractContentStore
         return charBuffer;
     }
 
-    private void writeNodeMetadata(Node node, MimeType mimeType)
+    private void writeNodeMetadata(Node node)
     {
-        StringBuilder sb = new StringBuilder("INSERT INTO alfresco.content_metadata (nodeId, nodeVersion, mimeType) ");
+        StringBuilder sb = new StringBuilder("INSERT INTO " + cassandraSession.getKeyspace() + ".content_metadata (nodeId, nodeVersion, mimeType) ");
         sb.append(" VALUES('");
         sb.append(node.getNodeId());
         sb.append("', ");
         sb.append(node.getNodeVersion());
         sb.append(", '");
-        sb.append(mimeType.getMimetype());
+        sb.append(node.getMimeType().getMimetype());
         sb.append("')");
 
         cassandraSession.getCassandraSession().execute(sb.toString());
     }
 
-    private void writeNodeData(Node node, MimeType mimeType, int numBlocks, long size)
+    private void writeNodeData(Node node, int numBlocks, long size)
     {
-        StringBuilder sb = new StringBuilder("INSERT INTO alfresco.content (nodeId, nodeVersion, mimetype, num_blocks, size, block_size) ");
+        StringBuilder sb = new StringBuilder("INSERT INTO " + cassandraSession.getKeyspace() + ".content (nodeId, nodeVersion, mimetype, num_blocks, size, block_size) ");
         sb.append(" VALUES('");
         sb.append(node.getNodeId());
         sb.append("', ");
         sb.append(node.getNodeVersion());
         sb.append(", '");
-        sb.append(mimeType.getMimetype());
+        sb.append(node.getMimeType().getMimetype());
         sb.append("', ");
         sb.append(numBlocks);
         sb.append(", ");
         sb.append(size);
         sb.append(", ");
-        sb.append(blockSize);
+        sb.append(getBlockSize());
         sb.append(")");
 
         cassandraSession.getCassandraSession().execute(sb.toString());
     }
 
-    private void writeBlock(Node node, MimeType mimeType, long rangeId, ByteBuffer bb)
+    private void writeBlock(Node node, long rangeId, ByteBuffer bb)
     {
         cassandraSession.getCassandraSession()
-                .execute(writeBlockStatement.bind(node.getNodeId(), node.getNodeVersion(), mimeType.getMimetype(),
-                        rangeId, bb));
+                .execute(writeBlockStatement.bind(node.getNodeId(), node.getNodeVersion(),
+                        node.getMimeType().getMimetype(), rangeId, bb));
     }
 
     private class CassandraInputStream extends InputStream
     {
         private int currentRangeId = 0;
-        private ByteBuffer bb = ByteBuffer.allocate(CassandraContentStore.this.blockSize);
+        private ByteBuffer bb = ByteBuffer.allocate(getBlockSize());
         private final Node node;
         private final MimeType mimeType;
 
@@ -474,37 +652,44 @@ public class CassandraContentStore extends AbstractContentStore
             this.mimeType = MimeType.INSTANCES.getByMimetype(row.getString("mimetype"));
 
             // get first block
-            bb = getBlock(node, mimeType, currentRangeId);
+            bb = getBlock(node, currentRangeId);
             currentRangeId++;
         }
 
         @Override
         public int read() throws IOException
         {
-            if(bb.remaining() == 0)
+            int ret = -1;
+
+            if(bb != null)
             {
-                bb = getBlock(node, mimeType, currentRangeId);
-                currentRangeId++;
+                if(bb.remaining() == 0)
+                {
+                    bb = getBlock(node, currentRangeId);
+                    currentRangeId++;
+                }
+
+                if(bb != null)
+                {
+                    ret = bb.get() & 0xFF;
+                }
             }
 
-            int i = bb != null ?  bb.get() : -1;
-            return i;
+            return ret;
         }
     }
 
     private class CassandraOutputStream extends OutputStream
     {
         private int currentRangeId = 0;
-        private ByteBuffer bb = ByteBuffer.allocate(CassandraContentStore.this.blockSize);
+        private ByteBuffer bb = ByteBuffer.allocate(getBlockSize());
         private final Node node;
-        private final MimeType mimeType;
         private long size = 0;
         private int numBlocks = 0;
 
-        public CassandraOutputStream(Node node, MimeType mimeType)
+        public CassandraOutputStream(Node node)
         {
             this.node = node;
-            this.mimeType = mimeType;
         }
 
         @Override
@@ -513,7 +698,7 @@ public class CassandraContentStore extends AbstractContentStore
             if(!bb.hasRemaining())
             {
                 bb.flip();
-                writeBlock(node, mimeType, currentRangeId, bb);
+                writeBlock(node, currentRangeId, bb);
                 numBlocks++;
                 currentRangeId++;
                 bb.clear();
@@ -527,14 +712,29 @@ public class CassandraContentStore extends AbstractContentStore
         public void close() throws IOException
         {
             bb.flip();
-            writeBlock(node, mimeType, currentRangeId, bb);
+            writeBlock(node, currentRangeId, bb);
             numBlocks++;
             currentRangeId++;
             bb.clear();
 
-            CassandraContentStore.this.writeNodeMetadata(node, mimeType);
-            CassandraContentStore.this.writeNodeData(node, mimeType, numBlocks, size);
+            writeNodeMetadata(node);
+            writeNodeData(node, numBlocks, size);
+
+            extractChecksums(node);
+            createPatch(node);
+
+            if(node.getMimeType().equals(MimeType.TEXT))
+            {
+                extractEntities(node);
+            }
         }
+    }
+
+    @Override
+    protected PatchDocument getPatchDocument(Node node)
+    {
+        PatchDocument patchDocument = new CassandraPatchDocument(node, checksumService.getBlockSize(), false);
+        return patchDocument;
     }
 
     private class CassandraWriter extends Writer
@@ -542,15 +742,13 @@ public class CassandraContentStore extends AbstractContentStore
         private int currentRangeId = 0;
         private ByteBuffer current;
         private final Node node;
-        private final MimeType mimeType;
         private long size = 0;
         private int numBlocks = 0;
 
-        public CassandraWriter(Node node, MimeType mimeType)
+        public CassandraWriter(Node node)
         {
             this.node = node;
-            this.mimeType = mimeType;
-            this.current = ByteBuffer.allocate(CassandraContentStore.this.blockSize);
+            this.current = ByteBuffer.allocate(getBlockSize());
         }
 
         @Override
@@ -564,7 +762,7 @@ public class CassandraContentStore extends AbstractContentStore
                 size++;
                 if(!current.hasRemaining())
                 {
-                    writeBlock(node, mimeType, currentRangeId, current);
+                    writeBlock(node, currentRangeId, current);
                     numBlocks++;
                     currentRangeId++;
                     current.clear();
@@ -577,24 +775,31 @@ public class CassandraContentStore extends AbstractContentStore
         @Override
         public void flush() throws IOException
         {
-            writeBlock(node, mimeType, currentRangeId, current);
+            writeBlock(node, currentRangeId, current);
             currentRangeId++;
         }
 
         @Override
         public void close() throws IOException
         {
-            CassandraContentStore.this.writeNodeMetadata(node, mimeType);
-            CassandraContentStore.this.writeNodeData(node, mimeType, numBlocks, size);
+            writeNodeMetadata(node);
+            writeNodeData(node, numBlocks, size);
+
+            extractChecksums(node);
+            createPatch(node);
+
+            if(node.getMimeType().equals(MimeType.TEXT))
+            {
+                extractEntities(node);
+            }
         }
     }
 
     private class CassandraReader extends Reader
     {
         private int currentRangeId = 0;
-        private CharBuffer charBuffer = CharBuffer.allocate(CassandraContentStore.this.blockSize);
+        private CharBuffer charBuffer = CharBuffer.allocate(getBlockSize());
         private final Node node;
-        private final MimeType mimeType;
 
         public CassandraReader(Node node)
         {
@@ -610,7 +815,7 @@ public class CassandraContentStore extends AbstractContentStore
             {
                 throw new IllegalArgumentException("No such node " + node);
             }
-            this.mimeType = MimeType.INSTANCES.getByMimetype(row.getString("mimetype")); 
+//            this.mimeType = MimeType.INSTANCES.getByMimetype(row.getString("mimetype")); 
         }
 
         @Override
@@ -624,7 +829,7 @@ public class CassandraContentStore extends AbstractContentStore
                 if(remaining == 0)
                 {
                     currentRangeId++;
-                    ByteBuffer bb = getBlock(node, mimeType, currentRangeId);
+                    ByteBuffer bb = getBlock(node, currentRangeId);
                     charBuffer = charset.decode(bb);
                     remaining = charBuffer.remaining();
                     if(remaining == 0)
@@ -659,7 +864,7 @@ public class CassandraContentStore extends AbstractContentStore
     @Override
     protected ContentReader getReaderImpl(Node node, MimeType mimeType) throws IOException
     {
-        ContentReader ret = new CassandraContentReader(node, mimeType);
+        ContentReader ret = new CassandraContentReader(node);
         return ret;
     }
 
@@ -670,25 +875,18 @@ public class CassandraContentStore extends AbstractContentStore
         return (reader != null ? reader.getChannel() : null);
     }
 
-    @Override
-    public ReadableByteChannel getChannel(Node node, MimeType mimeType) throws IOException
-    {
-        ContentReader reader = getReaderImpl(node, mimeType);
-        return (reader != null ? reader.getChannel() : null);
-    }
-
     @SuppressWarnings("unused")
     @Override
-    public Node applyPatch(String nodeId, long nodeVersion, PatchDocument patchDocument) throws IOException
+    public Node applyPatch(Node node, PatchDocument patchDocument) throws IOException
     {
         int blockSize = patchDocument.getBlockSize();
 
-        Node node = Node.build().nodeId(nodeId).nodeVersion(nodeVersion);
-        Node newNode = Node.build().nodeId(nodeId).nodeVersion(nodeVersion + 1);
         NodeMetadata nodeMetadata = getNodeMetadata(node);
+        Node newNode = Node.build().nodeId(node.getNodeId()).nodeVersion(node.getNodeVersion() + 1)
+                .mimeType(nodeMetadata.getMimeType());
 
         try(ReadableByteChannel inChannel = new CassandraReadingByteChannel(node);
-                WritableByteChannel outChannel = new CassandraWritableByteChannel(newNode, nodeMetadata.getMimeType()))
+                WritableByteChannel outChannel = new CassandraWritableByteChannel(newNode))
         {
             applyPatch(inChannel, outChannel, patchDocument);
             return newNode;
@@ -697,26 +895,25 @@ public class CassandraContentStore extends AbstractContentStore
 
     private class CassandraContentReader extends AbstractContentReader
     {
-        private MimeType mimeType;
+//        private MimeType mimeType;
         private int numBlocks;
         private long size;
 
         CassandraContentReader(Node node)
         {
             super(node);
-            init(null);
+            init();
         }
 
-        CassandraContentReader(Node node, MimeType mimeType)
-        {
-            super(node);
-            init(mimeType);
-        }
+//        CassandraContentReader(Node node, MimeType mimeType)
+//        {
+//            super(node);
+//            init(mimeType);
+//        }
 
-        private void init(MimeType mimeType)
+        private void init()
         {
-            NodeMetadata nodeMetadata = (mimeType == null ? getNodeMetadata(node) :
-                getNodeMetadata(node, mimeType));
+            NodeMetadata nodeMetadata = getNodeMetadata(node);
 
             ResultSet rs = cassandraSession.getCassandraSession()
                     .execute(getNodeStatement.bind(node.getNodeId(), node.getNodeVersion(),
@@ -726,7 +923,7 @@ public class CassandraContentStore extends AbstractContentStore
             {
                 throw new IllegalArgumentException("No such node " + node);
             }
-            this.mimeType = MimeType.INSTANCES.getByMimetype(row.getString("mimeType"));
+//            this.mimeType = MimeType.INSTANCES.getByMimetype(row.getString("mimeType"));
             this.numBlocks = row.getInt("num_blocks");
             this.size = row.getLong("size");
         }
@@ -753,7 +950,7 @@ public class CassandraContentStore extends AbstractContentStore
         @Override
         public MimeType getMimeType()
         {
-            return mimeType;
+            return node.getMimeType();
         }
 
         @Override
@@ -773,28 +970,20 @@ public class CassandraContentStore extends AbstractContentStore
 
     private class CassandraContentWriter extends AbstractContentWriter
     {
-        private MimeType mimeType;
-
         CassandraContentWriter(Node node)
         {
             super(node);
         }
 
-        CassandraContentWriter(Node node, MimeType mimeType)
-        {
-            super(node);
-            this.mimeType = mimeType;
-        }
-
         public OutputStream getOutputStream() throws IOException
         {
-            OutputStream out = new CassandraOutputStream(node, mimeType);
+            OutputStream out = new CassandraOutputStream(node);
             return out;
         }
 
         public Writer getWriter() throws IOException
         {
-            Writer out = new CassandraWriter(node, mimeType);
+            Writer out = new CassandraWriter(node);
             return out;
         }
 
@@ -811,27 +1000,14 @@ public class CassandraContentStore extends AbstractContentStore
     }
 
     @Override
-    public boolean exists(String nodeId, long nodeVersion)
+    public boolean exists(Node node)
     {
         final Statement statement = QueryBuilder
                 .select()
-                .from("alfresco", "content")
-                .where(eq("nodeId", nodeId))
-                .and(eq("nodeVersion", nodeVersion));
-        ResultSet resultSet = cassandraSession.getCassandraSession().execute(statement);
-        Row row = resultSet.one();
-        return row != null;
-    }
-
-    @Override
-    public boolean exists(String nodeId, long nodeVersion, MimeType mimeType)
-    {
-        final Statement statement = QueryBuilder
-                .select()
-                .from("alfresco", "content")
-                .where(eq("nodeId", nodeId))
-                .and(eq("nodeVersion", nodeVersion))
-                .and(eq("mimeType", mimeType.getMimetype()));
+                .from(cassandraSession.getKeyspace(), "content")
+                .where(eq("nodeId", node.getNodeId()))
+                .and(eq("nodeVersion", node.getNodeVersion()))
+                .and(eq("mimeType", node.getMimeType().getMimetype()));
         ResultSet resultSet = cassandraSession.getCassandraSession().execute(statement);
         Row row = resultSet.one();
         return row != null;
@@ -841,13 +1017,6 @@ public class CassandraContentStore extends AbstractContentStore
     protected ContentWriter getWriterImpl(Node node)
     {
         ContentWriter ret = new CassandraContentWriter(node);
-        return ret;
-    }
-
-    @Override
-    protected ContentWriter getWriterImpl(Node node, MimeType mimeType)
-    {
-        ContentWriter ret = new CassandraContentWriter(node, mimeType);
         return ret;
     }
 }

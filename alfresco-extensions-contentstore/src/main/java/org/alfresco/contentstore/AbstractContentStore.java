@@ -19,20 +19,25 @@ import java.security.Principal;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-import org.alfresco.checksum.ChecksumService;
-import org.alfresco.checksum.Patch;
-import org.alfresco.checksum.PatchDocument;
 import org.alfresco.contentstore.dao.NodeUsage;
 import org.alfresco.contentstore.dao.NodeUsageDAO;
 import org.alfresco.contentstore.dao.NodeUsageType;
 import org.alfresco.contentstore.dao.UserContext;
-import org.alfresco.extensions.common.GUID;
-import org.alfresco.extensions.common.MimeType;
-import org.alfresco.extensions.common.Node;
+import org.alfresco.contentstore.patch.PatchService;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.sglover.alfrescoextensions.common.GUID;
+import org.sglover.alfrescoextensions.common.MimeType;
+import org.sglover.alfrescoextensions.common.Node;
+import org.sglover.checksum.ChecksumService;
+import org.sglover.checksum.NodeChecksums;
+import org.sglover.checksum.Patch;
+import org.sglover.checksum.PatchDocument;
+import org.sglover.entities.EntitiesService;
 
 /**
  * 
@@ -42,69 +47,142 @@ import org.apache.commons.logging.LogFactory;
 // TODO orphaned content - link to ContentDAO?
 public abstract class AbstractContentStore implements ContentStore
 {
-    private static Log logger = LogFactory.getLog(AbstractContentStore.class);
+    protected static Log logger = LogFactory.getLog(AbstractContentStore.class);
 
     protected String rootPath;
     protected ChecksumService checksumService;
     protected NodeUsageDAO nodeUsageDAO;
-    protected int blockSize;
+    protected PatchService patchService;
+    protected EntitiesService entitiesService;
 
-    public AbstractContentStore(String contentRoot, ChecksumService checksumService,
-            NodeUsageDAO nodeUsageDAO, int blockSize) throws IOException
+    protected ExecutorService executor;
+
+    protected boolean async = true;
+
+    public AbstractContentStore(String contentRoot, ChecksumService checksumService, PatchService patchService,
+            NodeUsageDAO nodeUsageDAO, EntitiesService entitiesService, boolean async) throws IOException
     {
         this.rootPath = contentRoot;
         this.checksumService = checksumService;
+        this.patchService = patchService;
         this.nodeUsageDAO = nodeUsageDAO;
-        this.blockSize = blockSize;
+        this.async = async;
+
+        this.executor = Executors.newFixedThreadPool(5);
+        this.entitiesService = entitiesService;
     }
 
-//    private ContentReference absoluteReference(ContentReference reference)
-//    {
-//        if (reference != null && reference.getPath() != null)
-//        {
-//            String path = reference.getPath();
-//            if (!path.startsWith(File.separator))
-//            {
-//                return new ContentReference(reference.getNode(),
-//                        absolutePath(path), reference.getMimetype(), reference.getEncoding(), reference.getIndex());
-//            }
-//        }
-//        return reference;
-//    }
-
-//    private String absolutePath(String path)
-//    {
-//        if (!path.startsWith(File.separator))
-//        {
-//            StringBuilder sb = new StringBuilder(rootPath);
-//            sb.append(File.separator);
-//            sb.append(path);
-//            return sb.toString();
-//        }
-//        return path;
-//    }
-
-//    private static File root(String contentRoot) throws IOException
-//    {
-//        File file = new File(contentRoot);
-//        if (!file.exists())
-//        {
-//            makeDirectory(file);
-//        }
-//        return file;
-//    }
-
-    public void setBlockSize(int blockSize)
+    private void extractChecksumsAsync(final Node node)
     {
-        this.blockSize = blockSize;
+        executor.execute(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    extractChecksumsImpl(node);
+                }
+                catch(IOException e)
+                {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+    }
+
+    private void extractChecksumsImpl(final Node node) throws IOException
+    {
+        ContentReader reader = getReader(node);
+
+        try(InputStream in = reader.getStream())
+        {
+            checksumService.extractChecksums(node, in);
+        }
+    }
+
+    protected void extractChecksums(final Node node) throws IOException
+    {
+        if(async)
+        {
+            extractChecksumsAsync(node);
+        }
+        else
+        {
+            extractChecksumsImpl(node);
+        }
+    }
+
+    private void createPatchImpl(Node node) throws IOException
+    {
+        Node preceding = Node.build()
+                .nodeId(node.getNodeId()).nodeVersion(node.getNodeVersion() - 1)
+                .mimeType(node.getMimeType());
+        if(exists(preceding))
+        {
+            // previous version
+            NodeChecksums nodeChecksums = checksumService.getChecksums(preceding.getNodeId(),
+                    preceding.getNodeVersion());
+            if (nodeChecksums != null)
+            {
+                ReadableByteChannel inChannel = getChannel(node);
+                PatchDocument patchDocument = getPatchDocument(node);
+                patchService.getPatch(patchDocument, nodeChecksums, inChannel);
+                patchDocument.commit();
+            }
+            else
+            {
+                throw new RuntimeException(
+                        "No patches available, no checksums for node " + node.getNodeId()
+                                + ", nodeVersion " + (node.getNodeVersion() - 1));
+            }
+        }
+        else
+        {
+            logger.warn("No patches available, only a single version of the node " + node);
+        }
+    }
+
+    private void createPatchAsync(final Node node) throws IOException
+    {
+        executor.execute(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    createPatchImpl(node);
+                }
+                catch(IOException e)
+                {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+    }
+
+    protected void createPatch(final Node node) throws IOException
+    {
+        if(async)
+        {
+            createPatchAsync(node);
+        }
+        else
+        {
+            createPatchImpl(node);
+        }
+    }
+
+    protected int getBlockSize()
+    {
+        return checksumService.getBlockSize();
     }
 
     public String getRootPath()
     {
         return rootPath;
     }
-
-//    protected abstract String temporary() throws IOException;
 
     protected File makeFile(String contentUrl)
     {
@@ -342,32 +420,32 @@ public abstract class AbstractContentStore implements ContentStore
         }
     }
 
-    @Override
-    public ContentReader getReader(Node node, MimeType mimeType) throws IOException
-    {
-        try
-        {
-            return getReaderImpl(node, mimeType);
-        }
-        finally
-        {
-            Principal principal = UserContext.getUser();
-            String username = principal.getName();
-            NodeUsage nodeUsage = new NodeUsage(node.getNodeId(),
-                    node.getNodeVersion(), System.currentTimeMillis(), username, NodeUsageType.READ);
-            nodeUsageDAO.addUsage(nodeUsage);
-        }
-    }
+//    @Override
+//    public ContentReader getReader(Node node, MimeType mimeType) throws IOException
+//    {
+//        try
+//        {
+//            return getReaderImpl(node, mimeType);
+//        }
+//        finally
+//        {
+//            Principal principal = UserContext.getUser();
+//            String username = principal.getName();
+//            NodeUsage nodeUsage = new NodeUsage(node.getNodeId(),
+//                    node.getNodeVersion(), System.currentTimeMillis(), username, NodeUsageType.READ);
+//            nodeUsageDAO.addUsage(nodeUsage);
+//        }
+//    }
 
     protected abstract ContentWriter getWriterImpl(Node node) throws IOException;
-    protected abstract ContentWriter getWriterImpl(Node node, MimeType mimeType) throws IOException;
+//    protected abstract ContentWriter getWriterImpl(Node node, MimeType mimeType) throws IOException;
 
     @Override
-    public ContentWriter getWriter(Node node, MimeType mimeType) throws IOException
+    public ContentWriter getWriter(Node node) throws IOException
     {
         try
         {
-            return getWriterImpl(node, mimeType);
+            return getWriterImpl(node);
         }
         finally
         {
@@ -401,117 +479,297 @@ public abstract class AbstractContentStore implements ContentStore
 //        return getContent(ref);
 //    }
 
-    @SuppressWarnings("unused")
-    protected void applyPatch(ReadableByteChannel inChannel, WritableByteChannel outChannel,
-            PatchDocument patchDocument) throws IOException
+    private class InChannel
     {
-        int blockSize = patchDocument.getBlockSize();
+        private ReadableByteChannel inChannel;
+        private List<Integer> matchedBlocks;
+        private int previousBlockIndex = 0;
+        private boolean initialized = false;
+        private int matchIndex;
+        private int currentBlockIndex;
+        private int blockSize;
+        private ByteBuffer currentBlock;
+        private int bytesRead;
 
-        ByteBuffer currentData = ByteBuffer.allocate(blockSize);
-
-        int matchIndex = 0;
-        List<Integer> matchedBlocks = patchDocument.getMatchedBlocks();
-
-        for(Patch patch : patchDocument.getPatches())
+        InChannel(ReadableByteChannel inChannel, List<Integer> matchedBlocks, int blockSize)
         {
-            int lastMatchingBlockIndex = patch.getLastMatchIndex();
-
-            long pos = 0;
-
-            for(;matchIndex < matchedBlocks.size(); matchIndex++)
-            {
-                int blockIndex = matchedBlocks.get(matchIndex);
-                pos = blockIndex * blockSize;
-                if(blockIndex > lastMatchingBlockIndex)
-                {
-                    break;
-                }
-
-                int bytesRead = inChannel.read(currentData);
-                currentData.flip();
-                int bytesWritten = outChannel.write(currentData);
-                if(bytesWritten != bytesRead)
-                {
-                    throw new RuntimeException("Wrote too few bytes");
-                }
-                currentData.clear();
-
-//                int chunkSize = -1;
-//                if((blockIndex * blockSize) > currentData.limit())
-//                {
-//                    chunkSize = currentData.limit() % blockSize;
-//                }
-//                else
-//                {
-//                    chunkSize = blockSize;
-//                }
-//
-//                ByteBuffer dst = ByteBuffer.allocate(chunkSize);
-//                int bytesWritten = inChannel.read(dst);
-//                dst.flip();
-//                outChannel.write(dst);
-//                if(bytesWritten != chunkSize)
-//                {
-//                    throw new RuntimeException("Wrote too few bytes");
-//                }
-                pos += bytesWritten;
-            }
-
-            int patchSize = patch.getSize();
-            ReadableByteChannel patchChannel = Channels.newChannel(patch.getStream());
-            ByteBuffer patchBB = ByteBuffer.allocate(patchSize);
-            patchChannel.read(patchBB);
-            patchBB.flip();
-            outChannel.write(patchBB);
+            this.inChannel = inChannel;
+            this.matchedBlocks = matchedBlocks;
+            this.blockSize = blockSize;
+            this.currentBlock = ByteBuffer.allocate(blockSize);
+            this.currentBlockIndex = 1;
         }
 
-        //we're done with all the patches, add the remaining blocks
-        for(;matchIndex < matchedBlocks.size(); matchIndex++)
+        int nextBlock() throws IOException
         {
-            int blockIndex = matchedBlocks.get(matchIndex);
-
-            int bytesRead = inChannel.read(currentData);
-            currentData.flip();
-            int bytesWritten = outChannel.write(currentData);
-            if(bytesWritten != bytesRead)
+            if(matchIndex >= matchedBlocks.size())
             {
-                throw new RuntimeException("Wrote too few bytes");
+                return -1;
             }
-            currentData.clear();
+            else
+            {
+                this.currentBlockIndex = matchedBlocks.get(matchIndex++);
 
-//            int chunkSize = -1;
-//            if((blockIndex * blockSize) > currentData.limit())
-//            {
-//                chunkSize = currentData.limit() % blockSize;
-//            }
-//            else
-//            {
-//                chunkSize = blockSize;
-//            }
-//
-//            ByteBuffer dst = ByteBuffer.allocate(chunkSize);
-//            int bytesWritten = inChannel.read(dst);
-//            outChannel.write(dst);
+                if(!initialized || previousBlockIndex != currentBlockIndex)
+                {
+                    int delta = currentBlockIndex - previousBlockIndex;
+                    for(int i = 0; i < delta; i++)
+                    {
+                        currentBlock.clear();
+                        bytesRead = inChannel.read(currentBlock);
+                        currentBlock.flip();
+                    }
+    
+                    previousBlockIndex = currentBlockIndex;
+                    if(!initialized)
+                    {
+                        initialized = true;
+                    }
+                }
+                else
+                {
+                    currentBlock.position(0);
+                }
+
+                return currentBlockIndex;
+            }
+        }
+
+        ByteBuffer getCurrentBlock()
+        {
+            return currentBlock;
+        }
+
+        public int getCurrentBlockIndex()
+        {
+            return currentBlockIndex;
         }
     }
 
-//    public void getEntities(final Node node)
-//    {
-//        EntityTaggerCallback callback = new EntityTaggerCallback()
+    protected int applyPatch(ReadableByteChannel inChannel, WritableByteChannel outChannel,
+            PatchDocument patchDocument) throws IOException
+    {
+        InChannel c = new InChannel(inChannel, patchDocument.getMatchedBlocks(), patchDocument.getBlockSize());
+
+        int totalWritten = 0;
+
+        int blockIndex = -1;
+
+//        int blockIndex = c.nextBlock();
+//        if(blockIndex > -1)
 //        {
-//            @Override
-//            public void onSuccess(Entities entities)
+            for(Patch patch : patchDocument.getPatches())
+            {
+                int lastMatchingBlockIndex = patch.getLastMatchIndex();
+    
+                blockIndex = c.nextBlock();
+                while(blockIndex != -1 && blockIndex <= lastMatchingBlockIndex)
+                {
+                    int bytesWritten = outChannel.write(c.currentBlock);
+                    totalWritten += bytesWritten;
+                    if(bytesWritten != c.bytesRead)
+                    {
+                        throw new RuntimeException("Wrote too few bytes, " + c.blockSize + ", " + bytesWritten);
+                    }
+    
+                    blockIndex = c.nextBlock();
+                    if(blockIndex == -1)
+                    {
+                        break;
+                    }
+                }
+    
+                // apply patch
+                int patchSize = patch.getSize();
+                ReadableByteChannel patchChannel = Channels.newChannel(patch.getStream());
+                ByteBuffer patchBB = ByteBuffer.allocate(patchSize);
+                int bytesRead = patchChannel.read(patchBB);
+                patchBB.flip();
+                int bytesWritten = outChannel.write(patchBB);
+                totalWritten += bytesWritten;
+                if(bytesWritten != bytesRead)
+                {
+                    throw new RuntimeException("Wrote too few bytes, expected " + bytesRead + ", got " + bytesWritten);
+                }
+            }
+
+            // we're done with all the patches, add the remaining blocks
+            while(blockIndex != -1)
+            {
+                int bytesWritten = outChannel.write(c.currentBlock);
+                totalWritten += bytesWritten;
+                if(bytesWritten != c.bytesRead)
+                {
+                    throw new RuntimeException("Wrote too few bytes");
+                }
+
+                blockIndex = c.nextBlock();
+            }
+//        }
+
+        return totalWritten;
+    }
+
+    protected abstract PatchDocument getPatchDocument(Node node);
+
+    @Override
+    public PatchDocument getPatch(Node node, InputStream in) throws IOException
+    {
+        NodeChecksums checksums = checksumService.getChecksums(node.getNodeId(), node.getNodeVersion());
+
+        PatchDocument patchDocument = getPatchDocument(node);
+        patchService.updatePatchDocument(patchDocument, checksums, in);
+
+        return patchDocument;
+    }
+
+    @Override
+    public PatchDocument getPatch(Node node) throws IOException
+    {
+        PatchDocument patchDocument = getPatchDocument(node);
+        return patchDocument;
+    }
+
+    @Override
+    public void writePatchAsProtocolBuffer(Node node, OutputStream out) throws IOException
+    {
+        PatchDocument patchDocument = getPatchDocument(node);
+        patchService.writePatch(node, patchDocument, out);
+    }
+
+//    @SuppressWarnings("unused")
+//    protected void applyPatch(ReadableByteChannel inChannel, WritableByteChannel outChannel,
+//            PatchDocumentImpl patchDocument) throws IOException
+//    {
+//        int blockSize = patchDocument.getBlockSize();
+//
+//        ByteBuffer currentData = ByteBuffer.allocate(blockSize);
+//
+//        int matchIndex = 0;
+//        List<Integer> matchedBlocks = patchDocument.getMatchedBlocks();
+//
+//        for(Patch patch : patchDocument.getPatches())
+//        {
+//            int lastMatchingBlockIndex = patch.getLastMatchIndex();
+//
+//            long pos = 0;
+//
+//            for(;matchIndex < matchedBlocks.size(); matchIndex++)
 //            {
-//                logger.debug("Got entities for node " + node + ", " + entities);
-//                entitiesDAO.addEntities(null, node, entities);
+//                int blockIndex = matchedBlocks.get(matchIndex);
+//                pos = blockIndex * blockSize;
+//                if(blockIndex > lastMatchingBlockIndex)
+//                {
+//                    break;
+//                }
+//
+//                int bytesRead = inChannel.read(currentData);
+//                currentData.flip();
+//                int bytesWritten = outChannel.write(currentData);
+//                if(bytesWritten != bytesRead)
+//                {
+//                    throw new RuntimeException("Wrote too few bytes");
+//                }
+//                currentData.clear();
+//
+////                int chunkSize = -1;
+////                if((blockIndex * blockSize) > currentData.limit())
+////                {
+////                    chunkSize = currentData.limit() % blockSize;
+////                }
+////                else
+////                {
+////                    chunkSize = blockSize;
+////                }
+////
+////                ByteBuffer dst = ByteBuffer.allocate(chunkSize);
+////                int bytesWritten = inChannel.read(dst);
+////                dst.flip();
+////                outChannel.write(dst);
+////                if(bytesWritten != chunkSize)
+////                {
+////                    throw new RuntimeException("Wrote too few bytes");
+////                }
+//                pos += bytesWritten;
 //            }
 //
-//            @Override
-//            public void onFailure(Throwable ex)
+//            int patchSize = patch.getSize();
+//            ReadableByteChannel patchChannel = Channels.newChannel(patch.getStream());
+//            ByteBuffer patchBB = ByteBuffer.allocate(patchSize);
+//            patchChannel.read(patchBB);
+//            patchBB.flip();
+//            outChannel.write(patchBB);
+//        }
+//
+//        //we're done with all the patches, add the remaining blocks
+//        for(;matchIndex < matchedBlocks.size(); matchIndex++)
+//        {
+//            int blockIndex = matchedBlocks.get(matchIndex);
+//
+//            int bytesRead = inChannel.read(currentData);
+//            currentData.flip();
+//            int bytesWritten = outChannel.write(currentData);
+//            if(bytesWritten != bytesRead)
 //            {
-//                logger.error(ex);
+//                throw new RuntimeException("Wrote too few bytes");
 //            }
-//        };
-//        entityExtracter.getEntities(node.getNodeInternalId(), callback);
+//            currentData.clear();
+//
+////            int chunkSize = -1;
+////            if((blockIndex * blockSize) > currentData.limit())
+////            {
+////                chunkSize = currentData.limit() % blockSize;
+////            }
+////            else
+////            {
+////                chunkSize = blockSize;
+////            }
+////
+////            ByteBuffer dst = ByteBuffer.allocate(chunkSize);
+////            int bytesWritten = inChannel.read(dst);
+////            outChannel.write(dst);
+//        }
 //    }
+
+    protected void extractEntities(final Node node) throws IOException
+    {
+        
+        if(async)
+        {
+            extractEntitiesAsync(node);
+        }
+        else
+        {
+            extractEntitiesImpl(node);
+        }
+    }
+
+    protected void extractEntitiesImpl(final Node node) throws IOException
+    {
+        ContentReader reader = getReader(node);
+
+        try(ReadableByteChannel ch = reader.getChannel())
+        {
+            entitiesService.getEntities(node, ch);
+        }
+    }
+    
+    protected void extractEntitiesAsync(final Node node) throws IOException
+    {
+        executor.execute(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    extractEntitiesImpl(node);
+                }
+                catch(IOException e)
+                {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+    }
 }

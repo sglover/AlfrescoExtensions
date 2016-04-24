@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.alfresco.error.AlfrescoRuntimeException;
-import org.alfresco.repo.domain.node.ContentDataWithId;
+//import org.alfresco.repo.domain.node.ContentDataWithId;
 import org.alfresco.service.cmr.repository.AssociationRef;
 import org.alfresco.service.cmr.repository.ChildAssociationRef;
 import org.alfresco.service.cmr.repository.ContentData;
@@ -373,30 +373,30 @@ public class DefaultTypeConverter extends TypeConverter
                 return mlText;
             }
         });
-        addConverter(BasicDBObject.class, ContentDataWithId.class, new TypeConverter.Converter<BasicDBObject, ContentDataWithId>()
-        {
-            public ContentDataWithId convert(BasicDBObject source)
-            {
-                String type = (String)source.get("t");
-                if(!type.equals("CONTENT_DATA_ID"))
-                {
-                    throw new IllegalArgumentException("Invalid source object for conversion "
-                            + source 
-                            + ", expected a ContentDataWithId object");
-                }
-                String contentUrl = (String)source.get("u");
-                String mimeType = (String)source.get("m");
-                Long size = (Long)source.get("s");
-                String encoding = (String)source.get("e");
-                String languageTag = (String)source.get("l");
-                Long id = (Long)source.get("id");
-                Locale locale = Locale.forLanguageTag(languageTag);
-
-                ContentData contentData = new ContentData(contentUrl, mimeType, size, encoding, locale);
-                ContentDataWithId contentDataWithId = new ContentDataWithId(contentData, id);
-                return contentDataWithId;
-            }
-        });
+//        addConverter(BasicDBObject.class, ContentDataWithId.class, new TypeConverter.Converter<BasicDBObject, ContentDataWithId>()
+//        {
+//            public ContentDataWithId convert(BasicDBObject source)
+//            {
+//                String type = (String)source.get("t");
+//                if(!type.equals("CONTENT_DATA_ID"))
+//                {
+//                    throw new IllegalArgumentException("Invalid source object for conversion "
+//                            + source 
+//                            + ", expected a ContentDataWithId object");
+//                }
+//                String contentUrl = (String)source.get("u");
+//                String mimeType = (String)source.get("m");
+//                Long size = (Long)source.get("s");
+//                String encoding = (String)source.get("e");
+//                String languageTag = (String)source.get("l");
+//                Long id = (Long)source.get("id");
+//                Locale locale = Locale.forLanguageTag(languageTag);
+//
+//                ContentData contentData = new ContentData(contentUrl, mimeType, size, encoding, locale);
+//                ContentDataWithId contentDataWithId = new ContentDataWithId(contentData, id);
+//                return contentDataWithId;
+//            }
+//        });
         addConverter(BasicDBObject.class, ContentData.class, new TypeConverter.Converter<BasicDBObject, ContentData>()
         {
             public ContentData convert(BasicDBObject source)
@@ -531,28 +531,28 @@ public class DefaultTypeConverter extends TypeConverter
             }
         });
 
-        addConverter(ContentDataWithId.class, BasicDBObject.class, new TypeConverter.Converter<ContentDataWithId, BasicDBObject>()
-        {
-            public BasicDBObject convert(ContentDataWithId source)
-            {
-                BasicDBObject dbObject = new BasicDBObject("t", "CONTENT_DATA_ID");
-
-                String contentUrl = source.getContentUrl();
-                Long id = source.getId();
-                String languageTag = source.getLocale().toLanguageTag();
-                String encoding = source.getEncoding();
-                long size = source.getSize();
-                String mimeType = source.getMimetype();
-
-                dbObject.put("u", contentUrl);
-                dbObject.put("m", mimeType);
-                dbObject.put("s", size);
-                dbObject.put("e", encoding);
-                dbObject.put("l", languageTag);
-                dbObject.put("id", id);
-                return dbObject;
-            }
-        });
+//        addConverter(ContentDataWithId.class, BasicDBObject.class, new TypeConverter.Converter<ContentDataWithId, BasicDBObject>()
+//        {
+//            public BasicDBObject convert(ContentDataWithId source)
+//            {
+//                BasicDBObject dbObject = new BasicDBObject("t", "CONTENT_DATA_ID");
+//
+//                String contentUrl = source.getContentUrl();
+//                Long id = source.getId();
+//                String languageTag = source.getLocale().toLanguageTag();
+//                String encoding = source.getEncoding();
+//                long size = source.getSize();
+//                String mimeType = source.getMimetype();
+//
+//                dbObject.put("u", contentUrl);
+//                dbObject.put("m", mimeType);
+//                dbObject.put("s", size);
+//                dbObject.put("e", encoding);
+//                dbObject.put("l", languageTag);
+//                dbObject.put("id", id);
+//                return dbObject;
+//            }
+//        });
 
         addConverter(ContentData.class, BasicDBObject.class, new TypeConverter.Converter<ContentData, BasicDBObject>()
         {

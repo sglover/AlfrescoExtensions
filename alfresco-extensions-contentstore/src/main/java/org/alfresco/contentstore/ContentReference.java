@@ -9,8 +9,8 @@ package org.alfresco.contentstore;
 
 import java.io.Serializable;
 
-import org.alfresco.extensions.common.MimeType;
-import org.alfresco.extensions.common.Node;
+import org.sglover.alfrescoextensions.common.MimeType;
+import org.sglover.alfrescoextensions.common.Node;
 
 /**
  * Content reference

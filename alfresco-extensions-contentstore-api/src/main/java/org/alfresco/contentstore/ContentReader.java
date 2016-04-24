@@ -12,8 +12,8 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.nio.channels.ReadableByteChannel;
 
-import org.alfresco.extensions.common.MimeType;
-import org.alfresco.extensions.common.Node;
+import org.sglover.alfrescoextensions.common.MimeType;
+import org.sglover.alfrescoextensions.common.Node;
 
 /**
  * 

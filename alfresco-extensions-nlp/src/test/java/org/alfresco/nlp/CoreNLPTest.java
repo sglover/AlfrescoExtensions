@@ -9,14 +9,14 @@ package org.alfresco.nlp;
 
 import java.io.File;
 
-import org.alfresco.services.nlp.ClasspathModelLoader;
-import org.alfresco.services.nlp.CoreNLPEntityTagger;
-import org.alfresco.services.nlp.Entities;
-import org.alfresco.services.nlp.EntityTagger;
-import org.alfresco.services.nlp.ModelLoader;
-import org.alfresco.services.nlp.SynchronousEntityTaggerCallback;
 import org.junit.Before;
 import org.junit.Test;
+import org.sglover.nlp.ClasspathModelLoader;
+import org.sglover.nlp.CoreNLPEntityTagger;
+import org.sglover.nlp.Entities;
+import org.sglover.nlp.EntityTagger;
+import org.sglover.nlp.ModelLoader;
+import org.sglover.nlp.SynchronousEntityTaggerCallback;
 
 /**
  * 

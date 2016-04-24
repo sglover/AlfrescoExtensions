@@ -13,14 +13,14 @@ import java.io.IOException;
 import java.util.Collection;
 
 import org.alfresco.service.common.elasticsearch.IndexType;
-import org.alfresco.services.nlp.Entities;
-import org.alfresco.services.nlp.Entity;
-import org.alfresco.services.nlp.EntityTaggerCallback;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.sglover.nlp.Entities;
+import org.sglover.nlp.Entity;
+import org.sglover.nlp.EntityTaggerCallback;
 
 /**
  * Entity tagger callback. Persists extracted entities in ElasticSearch.

@@ -7,7 +7,7 @@
  */
 package org.alfresco.contentstore.dao;
 
-import org.alfresco.extensions.common.MimeType;
+import org.sglover.alfrescoextensions.common.MimeType;
 
 /**
  * 

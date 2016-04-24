@@ -9,11 +9,11 @@ package org.alfresco.cacheserver.messages;
 
 import org.alfresco.cacheserver.CacheServerIdentity;
 import org.alfresco.cacheserver.events.ContentAvailableEvent;
-import org.alfresco.checksum.NodeChecksums;
-import org.alfresco.extensions.common.Node;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.gytheio.messaging.MessageProducer;
+import org.sglover.alfrescoextensions.common.Node;
+import org.sglover.checksum.NodeChecksums;
 
 /**
  * 

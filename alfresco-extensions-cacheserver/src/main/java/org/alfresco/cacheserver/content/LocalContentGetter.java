@@ -13,13 +13,13 @@ import java.nio.channels.ReadableByteChannel;
 import org.alfresco.contentstore.ContentReader;
 import org.alfresco.contentstore.ContentStore;
 import org.alfresco.contentstore.dao.ContentDAO;
-import org.alfresco.extensions.common.MimeType;
-import org.alfresco.extensions.common.Node;
 import org.alfresco.httpclient.AuthenticationException;
 import org.alfresco.services.ContentGetter;
 import org.alfresco.services.solr.GetTextContentResponse;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.sglover.alfrescoextensions.common.MimeType;
+import org.sglover.alfrescoextensions.common.Node;
 
 /**
  * 

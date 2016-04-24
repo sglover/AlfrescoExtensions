@@ -28,6 +28,9 @@ import org.junit.Test;
  */
 public class Events implements ExceptionListener
 {
+//    private String jmsName = "amqp:topic:alfresco.repo.events.activities";
+    private String jmsName = "alfresco.repo.events.activities";
+
     @Test
     public void test1()
     {
@@ -50,12 +53,14 @@ public class Events implements ExceptionListener
 
             // Create a MessageConsumer from the Session to the Topic or Queue
 //            MessageConsumer consumer = session.createConsumer(destination);
-
-            ActiveMQTopic topic = new ActiveMQTopic("alfresco.repo.events.nodes");
+            
+//            ActiveMQTopic topic = new ActiveMQTopic("alfresco.repo.events.nodes");
+            ActiveMQTopic topic = new ActiveMQTopic(jmsName);
 //            ActiveMQTopic mdTopic = AdvisorySupport.getMessageConsumedAdvisoryTopic(topic);
             ActiveMQTopic mdTopic = AdvisorySupport.getSlowConsumerAdvisoryTopic(topic);
             //MessageConsumedAdvisoryTopic(topic);
-            MessageConsumer consumer = session.createConsumer(mdTopic);
+//            MessageConsumer consumer = session.createConsumer(mdTopic);
+            MessageConsumer consumer = session.createConsumer(topic);
             // Wait for a message
             long start = System.currentTimeMillis();
             long end = System.currentTimeMillis();
@@ -64,6 +69,7 @@ public class Events implements ExceptionListener
                 Message message = consumer.receive();
     //            Message message = consumer.receive(1000);
     //            message = consumer.receive(1000);
+                System.out.println("message: " + message);
                 if(message != null)
                 {
                     if (message instanceof TextMessage) {

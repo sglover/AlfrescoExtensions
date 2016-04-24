@@ -19,15 +19,15 @@ import org.alfresco.cacheserver.events.ContentAvailableEvent;
 import org.alfresco.cacheserver.http.AuthenticationException;
 import org.alfresco.cacheserver.http.CacheHttpClient;
 import org.alfresco.cacheserver.http.HttpCallback;
-import org.alfresco.checksum.NodeChecksums;
-import org.alfresco.checksum.PatchDocument;
-import org.alfresco.checksum.dao.ChecksumDAO;
 import org.alfresco.contentstore.AbstractContentStore;
 import org.alfresco.contentstore.dao.ContentDAO;
 import org.alfresco.contentstore.dao.NodeInfo;
-import org.alfresco.extensions.common.Node;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.sglover.alfrescoextensions.common.Node;
+import org.sglover.checksum.NodeChecksums;
+import org.sglover.checksum.PatchDocument;
+import org.sglover.checksum.dao.ChecksumDAO;
 
 
 /**

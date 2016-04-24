@@ -7,8 +7,8 @@
  */
 package org.alfresco.cacheserver.messages;
 
-import org.alfresco.checksum.NodeChecksums;
-import org.alfresco.extensions.common.Node;
+import org.sglover.alfrescoextensions.common.Node;
+import org.sglover.checksum.NodeChecksums;
 
 /**
  * 

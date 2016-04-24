@@ -7,7 +7,6 @@
  */
 package org.alfresco.elasticsearch.service;
 
-import org.alfresco.camel.CamelComponent;
 import org.alfresco.elasticsearch.index.ElasticSearchEventListener;
 import org.alfresco.elasticsearch.index.camel.route.ElasticSearchEventsRouteBuilder;
 import org.alfresco.elasticsearch.index.camel.route.ElasticSearchMonitoringRouteBuilder;
@@ -16,6 +15,7 @@ import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.common.component.AbstractLifecycleComponent;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
+import org.sglover.camel.CamelComponent;
 
 /**
  * ElasticSearch component to initialise interaction with Camel/ActiveMQ.

@@ -9,7 +9,7 @@ package org.alfresco.contentstore.dao.mongo;
 
 import org.alfresco.contentstore.dao.NodeUsage;
 import org.alfresco.contentstore.dao.NodeUsageDAO;
-import org.alfresco.extensions.common.identity.ServerIdentity;
+import org.sglover.alfrescoextensions.common.identity.ServerIdentity;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.BasicDBObjectBuilder;

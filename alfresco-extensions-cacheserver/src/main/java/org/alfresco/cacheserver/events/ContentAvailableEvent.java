@@ -9,8 +9,8 @@ package org.alfresco.cacheserver.events;
 
 import java.io.Serializable;
 
-import org.alfresco.checksum.NodeChecksums;
-import org.alfresco.extensions.common.Node;
+import org.sglover.alfrescoextensions.common.Node;
+import org.sglover.checksum.NodeChecksums;
 
 /**
  * 

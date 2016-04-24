@@ -18,11 +18,11 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.alfresco.extensions.common.Node;
 import org.alfresco.services.Content;
 import org.alfresco.services.ContentGetter;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.sglover.alfrescoextensions.common.Node;
 
 /**
  * 

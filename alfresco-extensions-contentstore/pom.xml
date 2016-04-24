@@ -21,6 +21,11 @@
   </properties>
 
   <dependencies>
+	<dependency>
+	    <groupId>com.google.protobuf</groupId>
+	    <artifactId>protobuf-java</artifactId>
+	    <version>2.6.1</version>
+	</dependency>
     <dependency>
 	  <groupId>org.apache.commons</groupId>
 	  <artifactId>commons-lang3</artifactId>
@@ -31,13 +36,16 @@
       <artifactId>alfresco-extensions-contentstore-api</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <!-- 
     <dependency>
       <groupId>org.alfresco.extensions</groupId>
       <artifactId>alfresco-extensions-entities</artifactId>
       <version>${project.version}</version>
     </dependency>
-     -->
+    <dependency>
+      <groupId>org.alfresco.extensions</groupId>
+      <artifactId>alfresco-extensions-common</artifactId>
+      <version>${project.version}</version>
+    </dependency>
     <dependency>
         <groupId>org.alfresco.extensions</groupId>
         <artifactId>alfresco-extensions-util</artifactId>

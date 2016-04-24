@@ -12,7 +12,7 @@ package org.alfresco.contentstore;
  * @author sglover
  *
  */
-public interface ContentAccessor
+public interface ContentAccessor //extends AutoCloseable
 {
 //    ContentReference getContentReference();
 

@@ -15,12 +15,12 @@ import java.util.concurrent.ExecutorService;
 
 import org.alfresco.contentstore.AbstractContentStore;
 import org.alfresco.contentstore.ContentReference;
-import org.alfresco.extensions.common.MimeType;
 import org.alfresco.extensions.transformations.api.TransformRequest;
 import org.alfresco.extensions.transformations.api.options.TransformationOptions;
 import org.alfresco.extensions.transformations.client.LocalTransformClient;
 import org.alfresco.extensions.transformations.client.TransformationCallback;
 import org.alfresco.extensions.transformations.client.TransformationClient;
+import org.sglover.alfrescoextensions.common.MimeType;
 
 /**
  * 

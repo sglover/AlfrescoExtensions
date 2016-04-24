@@ -7,7 +7,7 @@
  */
 package org.alfresco.contentstore;
 
-import org.alfresco.extensions.common.Node;
+import org.sglover.alfrescoextensions.common.Node;
 
 /**
  * 

@@ -8,11 +8,12 @@
 package org.alfresco.contentstore;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.channels.ReadableByteChannel;
 
-import org.alfresco.checksum.PatchDocument;
-import org.alfresco.extensions.common.MimeType;
-import org.alfresco.extensions.common.Node;
+import org.sglover.alfrescoextensions.common.Node;
+import org.sglover.checksum.PatchDocument;
 
 /**
  * 
@@ -21,12 +22,16 @@ import org.alfresco.extensions.common.Node;
  */
 public interface ContentStore
 {
-    boolean exists(String nodeId, long nodeVersion);
-    boolean exists(String nodeId, long nodeVersion, MimeType mimeType);
-    ContentWriter getWriter(Node node, MimeType mimeType) throws IOException;
+    Node applyPatch(Node node, PatchDocument patchDocument) throws IOException;
+    PatchDocument getPatch(Node node, InputStream in) throws IOException;
+    PatchDocument getPatch(Node node) throws IOException;
+    void writePatchAsProtocolBuffer(Node node, OutputStream out) throws IOException;
+
+    InputStream getBlockAsInputStream(Node node, long rangeId, int size);
+
+    boolean exists(Node node);
+
+    ContentWriter getWriter(Node node) throws IOException;
     ContentReader getReader(Node node) throws IOException;
-    ContentReader getReader(Node node, MimeType mimeType) throws IOException;
-    Node applyPatch(String nodeId, long nodeVersion, PatchDocument patchDocument) throws IOException;
     ReadableByteChannel getChannel(Node node) throws IOException;
-    ReadableByteChannel getChannel(Node node, MimeType mimeType) throws IOException;
 }

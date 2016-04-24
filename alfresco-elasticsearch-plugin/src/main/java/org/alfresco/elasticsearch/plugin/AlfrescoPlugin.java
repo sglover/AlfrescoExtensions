@@ -7,14 +7,11 @@
  */
 package org.alfresco.elasticsearch.plugin;
 
-import static org.elasticsearch.common.collect.Lists.newArrayList;
-
+import java.util.ArrayList;
 import java.util.Collection;
 
-import org.alfresco.elasticsearch.service.CamelService;
-import org.elasticsearch.common.component.LifecycleComponent;
 import org.elasticsearch.common.inject.Module;
-import org.elasticsearch.plugins.AbstractPlugin;
+import org.elasticsearch.plugins.Plugin;
 
 /**
  * 
@@ -23,7 +20,7 @@ import org.elasticsearch.plugins.AbstractPlugin;
  * @author sglover
  *
  */
-public class AlfrescoPlugin extends AbstractPlugin
+public class AlfrescoPlugin extends Plugin
 {
     public String name()
     {
@@ -35,24 +32,18 @@ public class AlfrescoPlugin extends AbstractPlugin
         return "Alfresco Plugin";
     }
 
-    @SuppressWarnings("rawtypes")
-    @Override public Collection<Class<? extends LifecycleComponent>> services()
-    {
-        Collection<Class<? extends LifecycleComponent>> services = newArrayList();
-//        services.add(AlfrescoService.class);
-        services.add(CamelService.class);
-        return services;
-    }
+//    @SuppressWarnings("rawtypes")
+//    @Override public Collection<Class<? extends LifecycleComponent>> services()
+//    {
+//        Collection<Class<? extends LifecycleComponent>> services = newArrayList();
+//        services.add(CamelService.class);
+//        return services;
+//    }
 
     public Collection<Class<? extends Module>> modules()
     {
-        Collection<Class<? extends Module>> modules = newArrayList();
+        Collection<Class<? extends Module>> modules = new ArrayList();
         modules.add(AlfrescoIndexModule.class);
         return modules;
     }
-
-//    public void onModule(RiversModule module)
-//    {
-//    	
-//    }
 }

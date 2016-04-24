@@ -18,11 +18,11 @@ import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
 
-import org.alfresco.checksum.Patch;
-import org.alfresco.checksum.PatchDocument;
 import org.apache.commons.io.IOUtils;
 import org.junit.Before;
 import org.junit.Test;
+import org.sglover.checksum.Patch;
+import org.sglover.checksum.PatchDocument;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.WebResource;

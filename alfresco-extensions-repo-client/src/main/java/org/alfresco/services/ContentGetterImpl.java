@@ -14,7 +14,6 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.alfresco.extensions.common.Node;
 import org.apache.chemistry.opencmis.client.api.Document;
 import org.apache.chemistry.opencmis.client.api.ObjectId;
 import org.apache.chemistry.opencmis.client.api.Session;
@@ -27,6 +26,7 @@ import org.apache.chemistry.opencmis.commons.enums.BindingType;
 import org.apache.chemistry.opencmis.commons.exceptions.CmisObjectNotFoundException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.sglover.alfrescoextensions.common.Node;
 
 /**
  * 

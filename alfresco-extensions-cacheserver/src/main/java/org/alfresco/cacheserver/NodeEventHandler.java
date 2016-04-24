@@ -14,7 +14,7 @@ import org.alfresco.events.node.types.NodeAddedEvent;
 import org.alfresco.events.node.types.NodeContentPutEvent;
 import org.alfresco.events.node.types.NodeEvent;
 import org.alfresco.events.node.types.NodeRemovedEvent;
-import org.alfresco.extensions.common.Node;
+import org.sglover.alfrescoextensions.common.Node;
 
 /**
  * 

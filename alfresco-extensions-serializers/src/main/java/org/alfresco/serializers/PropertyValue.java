@@ -23,8 +23,8 @@ import java.util.Map;
 import javax.crypto.SealedObject;
 
 import org.alfresco.error.AlfrescoRuntimeException;
-import org.alfresco.repo.domain.node.ContentDataId;
-import org.alfresco.repo.domain.node.ContentDataWithId;
+//import org.alfresco.repo.domain.node.ContentDataId;
+//import org.alfresco.repo.domain.node.ContentDataWithId;
 import org.alfresco.service.cmr.dictionary.DataTypeDefinition;
 import org.alfresco.service.cmr.repository.AssociationRef;
 import org.alfresco.service.cmr.repository.ChildAssociationRef;
@@ -155,14 +155,14 @@ public class PropertyValue implements Cloneable, Serializable
                 {
                     return null;
                 }
-                else if (value instanceof ContentDataId)
-                {
-                    return ((ContentDataId)value).getId();
-                }
-                else if (value instanceof ContentDataWithId)
-                {
-                    return ((ContentDataWithId)value).getId();
-                }
+//                else if (value instanceof ContentDataId)
+//                {
+//                    return ((ContentDataId)value).getId();
+//                }
+//                else if (value instanceof ContentDataWithId)
+//                {
+//                    return ((ContentDataWithId)value).getId();
+//                }
                 else
                 {
                     return PropertiesTypeConverter.INSTANCE.convert(Long.class, value);
@@ -550,41 +550,41 @@ public class PropertyValue implements Cloneable, Serializable
                 return PropertiesTypeConverter.INSTANCE.convert(Period.class, value);
             }
         },
-        CONTENT_DATA_ID
-        {
-            @Override
-            public Integer getOrdinalNumber()
-            {
-                return Integer.valueOf(21);
-            }
-            
-            @Override
-            protected ValueType getPersistedType(Serializable value)
-            {
-                return ValueType.JSONOBJECT;
-            }
-
-            @Override
-            Serializable convert(Serializable value)
-            {
-                if (value == null)
-                {
-                    return null;
-                }
-                else if (value instanceof Long)
-                {
-                    throw new IllegalArgumentException("Don't know how to persist content data id with just an id, need a ContentDataWithId object");
-                }
-                else if (value instanceof ContentDataId)
-                {
-                    return value;
-                }
-                else
-                {
-                    return PropertiesTypeConverter.INSTANCE.convert(ContentDataWithId.class, value);
-                }
-            }
-        },
+//        CONTENT_DATA_ID
+//        {
+//            @Override
+//            public Integer getOrdinalNumber()
+//            {
+//                return Integer.valueOf(21);
+//            }
+//            
+//            @Override
+//            protected ValueType getPersistedType(Serializable value)
+//            {
+//                return ValueType.JSONOBJECT;
+//            }
+//
+//            @Override
+//            Serializable convert(Serializable value)
+//            {
+//                if (value == null)
+//                {
+//                    return null;
+//                }
+//                else if (value instanceof Long)
+//                {
+//                    throw new IllegalArgumentException("Don't know how to persist content data id with just an id, need a ContentDataWithId object");
+//                }
+//                else if (value instanceof ContentDataId)
+//                {
+//                    return value;
+//                }
+//                else
+//                {
+//                    return PropertiesTypeConverter.INSTANCE.convert(ContentDataWithId.class, value);
+//                }
+//            }
+//        },
         SEALED_OBJECT
         {
             @Override
@@ -763,14 +763,14 @@ public class PropertyValue implements Cloneable, Serializable
         {
             return ValueType.PERIOD;
         }
-        else if (value instanceof ContentDataId)
-        {
-            return ValueType.CONTENT_DATA_ID;
-        }
-        else if (value instanceof ContentDataWithId)
-        {
-            return ValueType.CONTENT_DATA_ID;
-        }
+//        else if (value instanceof ContentDataId)
+//        {
+//            return ValueType.CONTENT_DATA_ID;
+//        }
+//        else if (value instanceof ContentDataWithId)
+//        {
+//            return ValueType.CONTENT_DATA_ID;
+//        }
         else if (value instanceof ContentData)
         {
             return ValueType.CONTENT;
@@ -790,8 +790,8 @@ public class PropertyValue implements Cloneable, Serializable
         		return ValueType.FIXED_POINT;
             case "CONTENT":
                 return ValueType.CONTENT;
-            case "CONTENT_DATA_ID":
-                return ValueType.CONTENT_DATA_ID;
+//            case "CONTENT_DATA_ID":
+//                return ValueType.CONTENT_DATA_ID;
             case "QNAME":
                 return ValueType.QNAME;
             case "NODEREF":
@@ -835,7 +835,8 @@ public class PropertyValue implements Cloneable, Serializable
         valueTypesByPropertyType.put(DataTypeDefinition.DATE, ValueType.DATE);
         valueTypesByPropertyType.put(DataTypeDefinition.DATETIME, ValueType.DATE);
         valueTypesByPropertyType.put(DataTypeDefinition.CATEGORY, ValueType.NODEREF);
-        valueTypesByPropertyType.put(DataTypeDefinition.CONTENT, ValueType.CONTENT_DATA_ID);
+//        valueTypesByPropertyType.put(DataTypeDefinition.CONTENT, ValueType.CONTENT_DATA_ID);
+        valueTypesByPropertyType.put(DataTypeDefinition.CONTENT, ValueType.CONTENT);
         valueTypesByPropertyType.put(DataTypeDefinition.TEXT, ValueType.STRING);
         valueTypesByPropertyType.put(DataTypeDefinition.MLTEXT, ValueType.MLTEXT);
         valueTypesByPropertyType.put(DataTypeDefinition.NODE_REF, ValueType.NODEREF);

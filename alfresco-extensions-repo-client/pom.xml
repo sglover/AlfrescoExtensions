@@ -13,6 +13,10 @@
   <description>Alfresco Extensions Repo Client</description>
   <packaging>jar</packaging>
 
+    <properties>
+        <alfresco.core.version>6.1</alfresco.core.version>
+    </properties>
+
   <dependencies>
     <dependency>
         <groupId>org.alfresco.extensions</groupId>
@@ -39,7 +43,7 @@
         <dependency>
           <groupId>org.alfresco</groupId>
           <artifactId>alfresco-core</artifactId>
-          <version>${alfresco.version}</version>
+          <version>${alfresco.core.version}</version>
           <exclusions>
             <exclusion>
                 <artifactId>slf4j-log4j12</artifactId>

@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.alfresco.error.AlfrescoRuntimeException;
-import org.alfresco.repo.domain.node.ContentDataWithId;
+//import org.alfresco.repo.domain.node.ContentDataWithId;
 import org.alfresco.service.cmr.repository.AssociationRef;
 import org.alfresco.service.cmr.repository.ChildAssociationRef;
 import org.alfresco.service.cmr.repository.ContentData;
@@ -367,30 +367,30 @@ public class PropertiesTypeConverter extends TypeConverter
                 return mlText;
             }
         });
-        addConverter(JSON.class, ContentDataWithId.class, new TypeConverter.Converter<JSON, ContentDataWithId>()
-        {
-            public ContentDataWithId convert(JSON source)
-            {
-                String type = (String)source.get("t");
-                if(!type.equals("CONTENT_DATA_ID"))
-                {
-                    throw new IllegalArgumentException("Invalid source object for conversion "
-                            + source 
-                            + ", expected a ContentDataWithId object");
-                }
-                String contentUrl = (String)source.get("u");
-                String mimeType = (String)source.get("m");
-                Long size = (Long)source.get("s");
-                String encoding = (String)source.get("e");
-                String languageTag = (String)source.get("l");
-                Long id = (Long)source.get("id");
-                Locale locale = Locale.forLanguageTag(languageTag);
-
-                ContentData contentData = new ContentData(contentUrl, mimeType, size, encoding, locale);
-                ContentDataWithId contentDataWithId = new ContentDataWithId(contentData, id);
-                return contentDataWithId;
-            }
-        });
+//        addConverter(JSON.class, ContentDataWithId.class, new TypeConverter.Converter<JSON, ContentDataWithId>()
+//        {
+//            public ContentDataWithId convert(JSON source)
+//            {
+//                String type = (String)source.get("t");
+//                if(!type.equals("CONTENT_DATA_ID"))
+//                {
+//                    throw new IllegalArgumentException("Invalid source object for conversion "
+//                            + source 
+//                            + ", expected a ContentDataWithId object");
+//                }
+//                String contentUrl = (String)source.get("u");
+//                String mimeType = (String)source.get("m");
+//                Long size = (Long)source.get("s");
+//                String encoding = (String)source.get("e");
+//                String languageTag = (String)source.get("l");
+//                Long id = (Long)source.get("id");
+//                Locale locale = Locale.forLanguageTag(languageTag);
+//
+//                ContentData contentData = new ContentData(contentUrl, mimeType, size, encoding, locale);
+//                ContentDataWithId contentDataWithId = new ContentDataWithId(contentData, id);
+//                return contentDataWithId;
+//            }
+//        });
         addConverter(JSON.class, ContentData.class, new TypeConverter.Converter<JSON, ContentData>()
         {
             public ContentData convert(JSON source)
@@ -526,29 +526,29 @@ public class PropertiesTypeConverter extends TypeConverter
             }
         });
 
-        addConverter(ContentDataWithId.class, JSON.class, new TypeConverter.Converter<ContentDataWithId, JSON>()
-        {
-            public JSON convert(ContentDataWithId source)
-            {
-                JSON map = new JSON();
-
-                String contentUrl = source.getContentUrl();
-                Long id = source.getId();
-                String languageTag = source.getLocale().toLanguageTag();
-                String encoding = source.getEncoding();
-                long size = source.getSize();
-                String mimeType = source.getMimetype();
-
-                map.put("t", "CONTENT_DATA_ID");
-                map.put("u", contentUrl);
-                map.put("m", mimeType);
-                map.put("s", size);
-                map.put("e", encoding);
-                map.put("l", languageTag);
-                map.put("id", id);
-                return map;
-            }
-        });
+//        addConverter(ContentDataWithId.class, JSON.class, new TypeConverter.Converter<ContentDataWithId, JSON>()
+//        {
+//            public JSON convert(ContentDataWithId source)
+//            {
+//                JSON map = new JSON();
+//
+//                String contentUrl = source.getContentUrl();
+//                Long id = source.getId();
+//                String languageTag = source.getLocale().toLanguageTag();
+//                String encoding = source.getEncoding();
+//                long size = source.getSize();
+//                String mimeType = source.getMimetype();
+//
+//                map.put("t", "CONTENT_DATA_ID");
+//                map.put("u", contentUrl);
+//                map.put("m", mimeType);
+//                map.put("s", size);
+//                map.put("e", encoding);
+//                map.put("l", languageTag);
+//                map.put("id", id);
+//                return map;
+//            }
+//        });
 
         addConverter(ContentData.class, JSON.class, new TypeConverter.Converter<ContentData, JSON>()
         {

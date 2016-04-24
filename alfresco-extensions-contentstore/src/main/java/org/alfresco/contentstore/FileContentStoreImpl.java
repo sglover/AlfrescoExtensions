@@ -21,14 +21,17 @@ import java.io.Writer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 
-import org.alfresco.checksum.ChecksumService;
-import org.alfresco.checksum.PatchDocument;
 import org.alfresco.contentstore.dao.ContentDAO;
 import org.alfresco.contentstore.dao.NodeInfo;
 import org.alfresco.contentstore.dao.NodeUsageDAO;
-import org.alfresco.extensions.common.MimeType;
-import org.alfresco.extensions.common.Node;
+import org.alfresco.contentstore.patch.PatchService;
 import org.apache.commons.io.IOUtils;
+import org.sglover.alfrescoextensions.common.MimeType;
+import org.sglover.alfrescoextensions.common.Node;
+import org.sglover.checksum.ChecksumService;
+import org.sglover.checksum.PatchDocument;
+import org.sglover.checksum.PatchDocumentImpl;
+import org.sglover.entities.EntitiesService;
 
 /**
  * 
@@ -39,10 +42,10 @@ public class FileContentStoreImpl extends AbstractContentStore implements FileCo
 {
     private ContentDAO contentDAO;
 
-    public FileContentStoreImpl(String contentRoot, ChecksumService checksumService,
-            NodeUsageDAO nodeUsageDAO, ContentDAO contentDAO, int blockSize) throws IOException
+    public FileContentStoreImpl(String contentRoot, ChecksumService checksumService, PatchService patchService,
+            NodeUsageDAO nodeUsageDAO, EntitiesService entitiesService, ContentDAO contentDAO) throws IOException
     {
-        super(contentRoot, checksumService, nodeUsageDAO, blockSize);
+        super(contentRoot, checksumService, patchService, nodeUsageDAO, entitiesService, false);
         this.contentDAO = contentDAO;
     }
 
@@ -143,9 +146,9 @@ public class FileContentStoreImpl extends AbstractContentStore implements FileCo
 
     @SuppressWarnings("unused")
     @Override
-    public Node applyPatch(String nodeId, long nodeVersion, PatchDocument patchDocument) throws IOException
+    public Node applyPatch(Node node, PatchDocument patchDocument) throws IOException
     {
-        NodeInfo nodeInfo = contentDAO.getByNodeId(nodeId, nodeVersion, true);
+        NodeInfo nodeInfo = contentDAO.getByNodeId(node.getNodeId(), node.getNodeVersion(), true);
         String existingContentPath = nodeInfo.getContentPath();
         File inFile = new File(existingContentPath);
         if(!inFile.exists())
@@ -157,7 +160,7 @@ public class FileContentStoreImpl extends AbstractContentStore implements FileCo
         String outContentPath = getFullPath(newContentUrl);
         File outFile = new File(outContentPath);
 
-        Node newNode = Node.build().nodeId(nodeId).nodeVersion(nodeVersion + 1);
+        Node newNode = Node.build().nodeId(node.getNodeId()).nodeVersion(node.getNodeVersion() + 1);
         NodeInfo newNodeInfo = new NodeInfo(newNode, outContentPath, nodeInfo.getMimeType(),
                 nodeInfo.getEncoding(), nodeInfo.getSize());
 
@@ -194,14 +197,6 @@ public class FileContentStoreImpl extends AbstractContentStore implements FileCo
     public ReadableByteChannel getChannel(Node node) throws IOException
     {
         FileContentReader reader = new FileContentReaderImpl(node);
-        ReadableByteChannel channel = reader.getChannel();
-        return channel;
-    }
-
-    @Override
-    public ReadableByteChannel getChannel(Node node, MimeType mimeType) throws IOException
-    {
-        FileContentReader reader = new FileContentReaderImpl(node, mimeType);
         ReadableByteChannel channel = reader.getChannel();
         return channel;
     }
@@ -302,11 +297,11 @@ public class FileContentStoreImpl extends AbstractContentStore implements FileCo
             this.nodeInfo = contentDAO.getByNodeId(node.getNodeId(), node.getNodeVersion(), true);
         }
 
-        FileContentWriterImpl(Node node, MimeType mimeType)
-        {
-            super(node);
-            this.nodeInfo = contentDAO.getByNodeId(node.getNodeId(), node.getNodeVersion(), mimeType);
-        }
+//        FileContentWriterImpl(Node node, MimeType mimeType)
+//        {
+//            super(node);
+//            this.nodeInfo = contentDAO.getByNodeId(node.getNodeId(), node.getNodeVersion(), mimeType);
+//        }
 
         @Override
         public ContentStore getStore()
@@ -344,17 +339,17 @@ public class FileContentStoreImpl extends AbstractContentStore implements FileCo
         }
     }
 
-    @Override
-    public boolean exists(String nodeId, long nodeVersion)
-    {
-        NodeInfo nodeInfo = contentDAO.getByNodeId(nodeId, nodeVersion, true);
-        return nodeInfo != null;
-    }
+//    @Override
+//    public boolean exists(String nodeId, long nodeVersion)
+//    {
+//        NodeInfo nodeInfo = contentDAO.getByNodeId(nodeId, nodeVersion, true);
+//        return nodeInfo != null;
+//    }
 
     @Override
-    public boolean exists(String nodeId, long nodeVersion, MimeType mimeType)
+    public boolean exists(Node node)
     {
-        NodeInfo nodeInfo = contentDAO.getByNodeId(nodeId, nodeVersion, mimeType);
+        NodeInfo nodeInfo = contentDAO.getByNodeId(node.getNodeId(), node.getNodeVersion(), node.getMimeType());
         return nodeInfo != null;
     }
 
@@ -397,19 +392,19 @@ public class FileContentStoreImpl extends AbstractContentStore implements FileCo
         return writer;
     }
 
-    @Override
-    public ContentWriter getWriterImpl(Node node, MimeType mimeType) throws IOException
-    {
-        String contentPath = getFullPath(createNewFileStoreUrl());
-        NodeInfo nodeInfo = NodeInfo
-                .start(node)
-                .setContentPath(contentPath);
-
-        contentDAO.updateNode(nodeInfo);
-
-        FileContentWriter writer = new FileContentWriterImpl(node, mimeType);
-        return writer;
-    }
+//    @Override
+//    public ContentWriter getWriterImpl(Node node, MimeType mimeType) throws IOException
+//    {
+//        String contentPath = getFullPath(createNewFileStoreUrl());
+//        NodeInfo nodeInfo = NodeInfo
+//                .start(node)
+//                .setContentPath(contentPath);
+//
+//        contentDAO.updateNode(nodeInfo);
+//
+//        FileContentWriter writer = new FileContentWriterImpl(node, mimeType);
+//        return writer;
+//    }
 
     /**
      * 
@@ -429,11 +424,17 @@ public class FileContentStoreImpl extends AbstractContentStore implements FileCo
         return null;
     }
 
-//    @Override
-//    public InputStream getContent(String contentPath) throws IOException
-//    {
-//        File file = new File(contentPath);
-//        InputStream in = new BufferedInputStream(new FileInputStream(file));
-//        return in;
-//    }
+    @Override
+    public InputStream getBlockAsInputStream(Node node, long rangeId, int size) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    protected PatchDocument getPatchDocument(Node node)
+    {
+        PatchDocument patchDocument = new PatchDocumentImpl();
+        return patchDocument;
+    }
+
 }

@@ -11,6 +11,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -25,20 +26,13 @@ import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
+import java.nio.charset.Charset;
 import java.util.Iterator;
 import java.util.List;
 
-import org.alfresco.checksum.Checksum;
-import org.alfresco.checksum.ChecksumServiceImpl;
-import org.alfresco.checksum.NodeChecksums;
-import org.alfresco.checksum.Patch;
-import org.alfresco.checksum.PatchDocument;
-import org.alfresco.checksum.dao.ChecksumDAO;
-import org.alfresco.checksum.dao.mongo.MongoChecksumDAO;
 import org.alfresco.contentstore.dao.UserContext;
-import org.alfresco.extensions.common.GUID;
-import org.alfresco.extensions.common.MongoDbFactory;
-import org.alfresco.extensions.common.Node;
+import org.alfresco.contentstore.patch.PatchService;
+import org.alfresco.contentstore.patch.PatchServiceImpl;
 import org.alfresco.util.TempFileProvider;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.auth.BasicUserPrincipal;
@@ -46,13 +40,21 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.sglover.alfrescoextensions.common.GUID;
+import org.sglover.alfrescoextensions.common.Hasher;
+import org.sglover.alfrescoextensions.common.MongoDbFactory;
+import org.sglover.alfrescoextensions.common.Node;
+import org.sglover.checksum.Checksum;
+import org.sglover.checksum.ChecksumServiceImpl;
+import org.sglover.checksum.NodeChecksums;
+import org.sglover.checksum.Patch;
+import org.sglover.checksum.PatchDocument;
+import org.sglover.checksum.PatchDocumentImpl;
+import org.sglover.checksum.dao.ChecksumDAO;
+import org.sglover.checksum.dao.mongo.MongoChecksumDAO;
 
 import com.google.common.io.Files;
 import com.mongodb.DB;
-import com.mongodb.Mongo;
-
-import de.flapdoodle.embed.mongo.distribution.Version;
-import de.flapdoodle.embed.mongo.tests.MongodForTestsFactory;
 
 /**
  * 
@@ -61,14 +63,15 @@ import de.flapdoodle.embed.mongo.tests.MongodForTestsFactory;
  */
 public class ChecksumTest
 {
-    private static MongodForTestsFactory mongoFactory;
+    private static MongoDbFactory mongoFactory;
 
     private ChecksumServiceImpl checksumService;
+    private PatchService patchService;
 
     @BeforeClass
     public static void beforeClass() throws Exception
     {
-        mongoFactory = MongodForTestsFactory.with(Version.Main.PRODUCTION);
+        mongoFactory = new MongoDbFactory(true, "", "test", true);
     }
 
     @AfterClass
@@ -80,20 +83,7 @@ public class ChecksumTest
     @Before
     public void before() throws Exception
     {
-        final MongoDbFactory factory = new MongoDbFactory();
-        boolean useEmbeddedMongo = ("true".equals(System
-                .getProperty("useEmbeddedMongo")) ? true : false);
-        if (useEmbeddedMongo)
-        {
-            final Mongo mongo = mongoFactory.newMongo();
-            factory.setMongo(mongo);
-        }
-        else
-        {
-            factory.setMongoURI("mongodb://127.0.0.1:27017");
-            factory.setDbName("test");
-        }
-        final DB db = factory.createInstance();
+        final DB db = mongoFactory.createInstance();
 
         File rootDirectory = Files.createTempDir();
 
@@ -101,8 +91,11 @@ public class ChecksumTest
 
         long time = System.currentTimeMillis();
 
+        Hasher hasher = new Hasher();
+
         ChecksumDAO checksumDAO = new MongoChecksumDAO(db, "checksums" + time);
-        this.checksumService = new ChecksumServiceImpl(checksumDAO, 8192);
+        this.checksumService = new ChecksumServiceImpl(checksumDAO, 8192, hasher);
+        this.patchService = new PatchServiceImpl(checksumService, hasher);
     }
 
     private static class State
@@ -132,13 +125,18 @@ public class ChecksumTest
             State state = new State();
             for(;;)
             {
-                expectedChannel.read(bb1);
+                int numRead1 = expectedChannel.read(bb1);
                 bb1.flip();
 
-                actualChannel.read(bb2);
+                int numRead2 = actualChannel.read(bb2);
                 bb2.flip();
 
                 assertEqual(bb1, bb2, state);
+
+                if(numRead1 < 1)
+                {
+                    break;
+                }
 
                 bb1.clear();
                 bb2.clear();
@@ -151,21 +149,23 @@ public class ChecksumTest
         int expectedRemaining = expected.remaining();
         int actualRemaining = actual.remaining();
 
-        if(expectedRemaining == actualRemaining && expectedRemaining > 0)
+        if(expectedRemaining != actualRemaining)
         {
-            assertEquals(expected.remaining(), actual.remaining());
-            while(expected.hasRemaining())
-            {
-                byte expectedByte = expected.get();
-                byte actualByte = actual.get();
-                state.incIdx(1);
-                assertEquals("Not equal at " + state, expectedByte, actualByte);
-            };
+            fail("Different lengths");
         }
-        else
+        if(expectedRemaining == 0)
         {
-            fail("Not equal at " + state + ", " + expectedRemaining + ", " + actualRemaining);
+            return;
         }
+
+        assertEquals(expected.remaining(), actual.remaining());
+        while(expected.hasRemaining())
+        {
+            byte expectedByte = expected.get();
+            byte actualByte = actual.get();
+            state.incIdx(1);
+            assertEquals("Not equal at " + state, expectedByte, actualByte);
+        };
     }
 
     private void applyPatch(File f, PatchDocument patchDocument) throws FileNotFoundException, IOException
@@ -185,7 +185,7 @@ public class ChecksumTest
                 Patch patch = patchIt.next();
                 int lastMatchingBlockIndex = patch.getLastMatchIndex();
 //                int lastMatchingBlock = patchDocument.getMatchedBlocks().get(lastMatchingBlockIndex);
-                int pos = (lastMatchingBlockIndex + 1) * blockSize;
+                int pos = (lastMatchingBlockIndex - 1) * blockSize;
 //                int pos = (lastMatchingBlockIndex + 1) * blockSize;
 
                 MappedByteBuffer mem = fc.map(FileChannel.MapMode.READ_WRITE, pos, patch.getSize());
@@ -234,13 +234,14 @@ public class ChecksumTest
             this.matchedBlocks = matchedBlocks;
             this.blockSize = blockSize;
             this.currentBlock = ByteBuffer.allocate(blockSize);
+            this.currentBlockIndex = 1;
         }
 
-        boolean nextBlock() throws IOException
+        int nextBlock() throws IOException
         {
             if(matchIndex >= matchedBlocks.size())
             {
-                return false;
+                return -1;
             }
             else
             {
@@ -267,7 +268,7 @@ public class ChecksumTest
                     currentBlock.position(0);
                 }
 
-                return true;
+                return currentBlockIndex;
             }
         }
 
@@ -289,43 +290,96 @@ public class ChecksumTest
 
         int totalWritten = 0;
 
-        for(Patch patch : patchDocument.getPatches())
+        int blockIndex = c.nextBlock();
+        if(blockIndex > -1)
         {
-            int lastMatchingBlockIndex = patch.getLastMatchIndex();
-
-            while(c.nextBlock())
+            for(Patch patch : patchDocument.getPatches())
             {
-                int blockIndex = c.getCurrentBlockIndex();
-                if(blockIndex > lastMatchingBlockIndex)
+                int lastMatchingBlockIndex = patch.getLastMatchIndex();
+    
+                while(blockIndex != -1 && blockIndex <= lastMatchingBlockIndex)
                 {
-                    // apply patch
-                    int patchSize = patch.getSize();
-                    ReadableByteChannel patchChannel = Channels.newChannel(patch.getStream());
-                    ByteBuffer patchBB = ByteBuffer.allocate(patchSize);
-                    int bytesRead = patchChannel.read(patchBB);
-                    patchBB.flip();
-                    int bytesWritten = outChannel.write(patchBB);
+                    int bytesWritten = outChannel.write(c.currentBlock);
                     totalWritten += bytesWritten;
-                    if(bytesWritten != bytesRead)
+                    if(bytesWritten != c.blockSize)
                     {
-                        throw new RuntimeException("Wrote too few bytes, expected " + bytesRead + ", got " + bytesWritten);
+                        throw new RuntimeException("Wrote too few bytes, " + c.blockSize + ", " + bytesWritten);
                     }
-
-                    if(patchSize < c.blockSize)
+    
+                    blockIndex = c.nextBlock();
+                    if(blockIndex == -1)
                     {
-                        // apply remainder of current block
-
-                        c.currentBlock.position(patchSize);
-
-                        bytesWritten = outChannel.write(c.currentBlock);
-                        totalWritten += bytesWritten;
-                        if(bytesWritten != c.blockSize - patchSize)
-                        {
-                            throw new RuntimeException("Wrote too few bytes");
-                        }
-
-                        c.currentBlock.position(0);
+                        break;
                     }
+                }
+    
+                // apply patch
+                int patchSize = patch.getSize();
+                ReadableByteChannel patchChannel = Channels.newChannel(patch.getStream());
+                ByteBuffer patchBB = ByteBuffer.allocate(patchSize);
+                int bytesRead = patchChannel.read(patchBB);
+                patchBB.flip();
+                int bytesWritten = outChannel.write(patchBB);
+                totalWritten += bytesWritten;
+                if(bytesWritten != bytesRead)
+                {
+                    throw new RuntimeException("Wrote too few bytes, expected " + bytesRead + ", got " + bytesWritten);
+                }
+            }
+
+            // we're done with all the patches, add the remaining blocks
+            while(blockIndex != -1)
+            {
+                int bytesWritten = outChannel.write(c.currentBlock);
+                totalWritten += bytesWritten;
+                if(bytesWritten != c.bytesRead)
+                {
+                    throw new RuntimeException("Wrote too few bytes");
+                }
+
+                blockIndex = c.nextBlock();
+            }
+        }
+
+        return totalWritten;
+    }
+
+//                int blockIndex = c.getCurrentBlockIndex();
+//                if(blockIndex > lastMatchingBlockIndex)
+//                {
+//                    // apply patch
+//                    int patchSize = patch.getSize();
+//                    ReadableByteChannel patchChannel = Channels.newChannel(patch.getStream());
+//                    ByteBuffer patchBB = ByteBuffer.allocate(patchSize);
+//                    int bytesRead = patchChannel.read(patchBB);
+//                    patchBB.flip();
+//                    int bytesWritten = outChannel.write(patchBB);
+//                    totalWritten += bytesWritten;
+//                    if(bytesWritten != bytesRead)
+//                    {
+//                        throw new RuntimeException("Wrote too few bytes, expected " + bytesRead + ", got " + bytesWritten);
+//                    }
+
+//                    if(patchSize < c.blockSize)
+//                    {
+//                        // apply remainder of current block
+//
+//                        c.currentBlock.position(patchSize);
+//
+//                        bytesWritten = outChannel.write(c.currentBlock);
+//                        totalWritten += bytesWritten;
+//                        if(bytesWritten != c.blockSize - patchSize)
+//                        {
+//                            throw new RuntimeException("Wrote too few bytes");
+//                        }
+//
+//                        c.currentBlock.position(0);
+//                    }
+                    
+                    
+                    
+                    
+                    
 //                    else
 //                    {
 //                        // skip blocks covered by patch
@@ -354,35 +408,24 @@ public class ChecksumTest
 //                        c.currentBlock.position(0);
 //                    }
 
-                    break; // out of loop
-                }
-                else
-                {
-                    int bytesWritten = outChannel.write(c.currentBlock);
-                    totalWritten += bytesWritten;
-                    if(bytesWritten != c.blockSize)
-                    {
-                        throw new RuntimeException("Wrote too few bytes, " + c.blockSize + ", " + bytesWritten);
-                    }
-                }
-            }
-        }
+//                    break; // out of loop
+//                }
+//                else
+//                {
+//                    int bytesWritten = outChannel.write(c.currentBlock);
+//                    totalWritten += bytesWritten;
+//                    if(bytesWritten != c.blockSize)
+//                    {
+//                        throw new RuntimeException("Wrote too few bytes, " + c.blockSize + ", " + bytesWritten);
+//                    }
+//                }
+//            }
+//        }
 
-        // we're done with all the patches, add the remaining blocks
-        while(c.nextBlock())
-        {
-            int bytesWritten = outChannel.write(c.currentBlock);
-            totalWritten += bytesWritten;
-            if(bytesWritten != c.blockSize)
-            {
-                throw new RuntimeException("Wrote too few bytes");
-            }
-        }
+//        return totalWritten;
+//    }
 
-        return totalWritten;
-    }
-
-    private void applyPatch(ByteBuffer mem, PatchDocument patchDocument) throws FileNotFoundException, IOException
+    private void applyPatch(ByteBuffer mem, PatchDocumentImpl patchDocument) throws FileNotFoundException, IOException
     {
         int blockSize = checksumService.getBlockSize();
 
@@ -395,7 +438,7 @@ public class ChecksumTest
             Patch patch = patchIt.next();
             int lastMatchingBlockIndex = patch.getLastMatchIndex();
 //            int lastMatchingBlock = patchDocument.getMatchedBlocks().get(lastMatchingBlockIndex);
-            int pos = (lastMatchingBlockIndex + 1) * blockSize;
+            int pos = lastMatchingBlockIndex * blockSize;
 //            int pos = (lastMatchingBlockIndex + 1) * blockSize;
             mem.position(pos);
 
@@ -450,6 +493,24 @@ public class ChecksumTest
         }
     }
 
+    private NodeChecksums getChecksumsForClasspathResource(Node node, String name) throws IOException
+    {
+        try(InputStream in = getClass().getClassLoader().getResourceAsStream(name))
+        {
+            NodeChecksums checksums = checksumService.getChecksums(node, in);
+            return checksums;
+        }
+    }
+
+    private NodeChecksums getChecksumsForString(Node node, String str) throws IOException
+    {
+        try(InputStream in = new ByteArrayInputStream(str.getBytes(Charset.forName("UTF-8"))))
+        {
+            NodeChecksums checksums = checksumService.getChecksums(node, in);
+            return checksums;
+        }
+    }
+
     @Test
     public void test0() throws IOException
     {
@@ -466,8 +527,8 @@ public class ChecksumTest
             try(InputStream in1 = new ByteArrayInputStream("Hello there world".getBytes());
                     ReadableByteChannel channel1 = Channels.newChannel(in1))
             {
-                PatchDocument patchDocument = checksumService.createPatchDocument(
-                        checksums, channel1);
+                PatchDocument patchDocument = new PatchDocumentImpl();
+                patchService.updatePatchDocument(patchDocument, checksums, channel1);
                 System.out.println("patchDocument = " + patchDocument);
             }
         }
@@ -482,30 +543,26 @@ public class ChecksumTest
 
         Node node = Node.build().nodeId(GUID.generate()).nodeVersion(1l);
 
-        ByteBuffer actual = copy(new ByteArrayInputStream("Hello there world".getBytes()));
+        NodeChecksums checksums = getChecksumsForString(node, "Hello there world");
 
-        try(InputStream in = new ByteArrayInputStream("Hello there world".getBytes()))
+        try(ReadableByteChannel inChannel = Channels.newChannel(new ByteArrayInputStream("Hello world".getBytes()));
+            ReadableByteChannel inChannel1 = Channels.newChannel(new ByteArrayInputStream("Hello there world".getBytes()));
+            ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
+            WritableByteChannel patchedChannel = Channels.newChannel(bos))
         {
-            NodeChecksums checksums = checksumService.getChecksums(node, in);
+            PatchDocument patchDocument = new PatchDocumentImpl();
+            patchService.updatePatchDocument(patchDocument, checksums, inChannel);
 
-            try(InputStream in1 = new ByteArrayInputStream("Hello world".getBytes());
-                    ReadableByteChannel channel1 = Channels.newChannel(in1))
+            try(InputStream actual = new ByteArrayInputStream(bos.toByteArray());
+                InputStream expected = new ByteArrayInputStream("Hello world".getBytes()))
             {
-                PatchDocument patchDocument = checksumService.createPatchDocument(
-                        checksums, channel1);
-                System.out.println("patchDocument = " + patchDocument);
-
-                applyPatch(actual, patchDocument);
+                assertEqual(expected, actual);
             }
         }
-
-        ByteBuffer expected = ByteBuffer.wrap("Hello world".getBytes());
-        State state = new State();
-        assertEqual(expected, actual, state);
     }
 
     @Test
-    public void test2() throws IOException
+    public void test1_5() throws IOException
     {
         checksumService.setBlockSize(8192);
 
@@ -515,26 +572,58 @@ public class ChecksumTest
         System.out.println("f = " + f);
         Node node = Node.build().nodeId(GUID.generate()).nodeVersion(1l);
 
-        PatchDocument patchDocument = null;
-
         try(InputStream in = getClass().getClassLoader().getResourceAsStream("marbles-uncompressed.tif"))
         {
             NodeChecksums checksums = checksumService.getChecksums(node, in);
 
-            try(InputStream in1 = getClass().getClassLoader().getResourceAsStream("marbles-uncompressed1.tif");
-                    ReadableByteChannel channel1 = Channels.newChannel(in1))
+            try(ReadableByteChannel channel1 = Channels.newChannel(getClass().getClassLoader().
+                    getResourceAsStream("marbles-uncompressed.tif")))
             {
-                patchDocument = checksumService.createPatchDocument(
-                        checksums, channel1);
+                PatchDocument patchDocument = new PatchDocumentImpl();
+                patchService.updatePatchDocument(patchDocument, checksums, channel1);
                 System.out.println("patchDocument = " + patchDocument);
                 applyPatch(f, patchDocument);
             }
         }
 
+        try(InputStream in3 = getClass().getClassLoader().getResourceAsStream("marbles-uncompressed.tif");
+                InputStream in4 = new FileInputStream(f))
+        {
+            assertEqual(in3, in4);
+        }
+    }
+
+    @Test
+    public void test2() throws IOException
+    {
+        checksumService.setBlockSize(8192);
+
+        UserContext.setUser(new BasicUserPrincipal("user1"));
+
+        File f = TempFileProvider.createTempFile("ContentStoreTest", GUID.generate());
+
+        System.out.println("f = " + f);
+        Node node = Node.build().nodeId(GUID.generate()).nodeVersion(1l);
+
+        NodeChecksums checksums = getChecksumsForClasspathResource(node, "marbles-uncompressed.tif");
+
+        try(ReadableByteChannel channel1 = Channels.newChannel(getClass().getClassLoader().getResourceAsStream("marbles-uncompressed1.tif"));
+//            ReadableByteChannel in = Channels.newChannel(getClass().getClassLoader().getResourceAsStream("marbles-uncompressed1.tif"));
+                ReadableByteChannel in = Channels.newChannel(getClass().getClassLoader().getResourceAsStream("marbles-uncompressed.tif"));
+            FileOutputStream fos = new FileOutputStream(f); WritableByteChannel patchedChannel = fos.getChannel())
+        {
+            PatchDocument patchDocument = new PatchDocumentImpl();
+            patchService.updatePatchDocument(patchDocument, checksums, channel1);
+            System.out.println("patchDocument = " + patchDocument);
+
+            applyPatch(in, patchedChannel, patchDocument);
+//            applyPatch(f, patchDocument);
+        }
+
         try(InputStream in3 = getClass().getClassLoader().getResourceAsStream("marbles-uncompressed1.tif");
                 InputStream in4 = new FileInputStream(f))
         {
-            assertEquals(in3, in4);
+            assertEqual(in3, in4);
         }
     }
 
@@ -561,7 +650,8 @@ public class ChecksumTest
                     FileOutputStream fos = new FileOutputStream(f);
                     WritableByteChannel patchedChannel = fos.getChannel())
             {
-                PatchDocument patchDocument = checksumService.createPatchDocument(checksums, destChannel);
+                PatchDocument patchDocument = new PatchDocumentImpl();
+                patchService.updatePatchDocument(patchDocument, checksums, destChannel);
                 System.out.println("patchDocument = " + patchDocument);
                 int totalWritten = applyPatch(srcChannel, patchedChannel, patchDocument);
                 System.out.println("totalWritten = " + totalWritten);

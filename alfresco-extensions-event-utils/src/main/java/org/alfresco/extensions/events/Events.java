@@ -7,12 +7,9 @@
  */
 package org.alfresco.extensions.events;
 
-/**
- * 
- */
-import org.alfresco.camel.CamelComponent;
 import org.alfresco.messaging.camel.routes.DLQEventsRouteBuilder;
 import org.apache.camel.RoutesBuilder;
+import org.sglover.camel.CamelComponent;
 
 /**
  * 

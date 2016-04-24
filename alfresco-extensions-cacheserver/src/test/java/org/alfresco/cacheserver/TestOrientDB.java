@@ -11,11 +11,11 @@ import static org.junit.Assert.assertEquals;
 
 import org.alfresco.contentstore.dao.NodeInfo;
 import org.alfresco.contentstore.dao.orient.OrientContentDAO;
-import org.alfresco.extensions.common.GUID;
-import org.alfresco.extensions.common.Node;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.sglover.alfrescoextensions.common.GUID;
+import org.sglover.alfrescoextensions.common.Node;
 
 /**
  * 

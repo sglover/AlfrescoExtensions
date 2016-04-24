@@ -19,13 +19,7 @@ import java.util.Map;
 
 import org.alfresco.MockAlfrescoApi;
 import org.alfresco.MockContentGetter;
-import org.alfresco.checksum.ChecksumService;
-import org.alfresco.checksum.ChecksumServiceImpl;
-import org.alfresco.checksum.NodeChecksums;
-import org.alfresco.checksum.dao.ChecksumDAO;
 import org.alfresco.contentstore.ContentReader;
-import org.alfresco.extensions.common.GUID;
-import org.alfresco.extensions.common.Node;
 import org.alfresco.services.AlfrescoApi;
 import org.gytheio.messaging.MessageProducer;
 import org.gytheio.messaging.MessagingException;
@@ -33,6 +27,12 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.sglover.alfrescoextensions.common.GUID;
+import org.sglover.alfrescoextensions.common.Node;
+import org.sglover.checksum.ChecksumService;
+import org.sglover.checksum.ChecksumServiceImpl;
+import org.sglover.checksum.NodeChecksums;
+import org.sglover.checksum.dao.ChecksumDAO;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 

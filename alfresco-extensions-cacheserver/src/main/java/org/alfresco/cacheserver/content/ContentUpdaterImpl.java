@@ -16,16 +16,11 @@ import java.util.concurrent.Executors;
 import org.alfresco.cacheserver.CacheServer;
 import org.alfresco.cacheserver.messages.MessagesService;
 import org.alfresco.cacheserver.transform.TransformService;
-import org.alfresco.checksum.ChecksumService;
-import org.alfresco.checksum.NodeChecksums;
 import org.alfresco.contentstore.AbstractContentStore;
 import org.alfresco.contentstore.ContentReader;
 import org.alfresco.contentstore.ContentReference;
 import org.alfresco.contentstore.dao.ContentDAO;
 import org.alfresco.contentstore.dao.NodeInfo;
-import org.alfresco.entities.EntitiesService;
-import org.alfresco.extensions.common.MimeType;
-import org.alfresco.extensions.common.Node;
 import org.alfresco.extensions.transformations.api.TransformRequest;
 import org.alfresco.extensions.transformations.api.TransformResponse;
 import org.alfresco.extensions.transformations.client.TransformationCallback;
@@ -33,6 +28,11 @@ import org.alfresco.services.ContentGetter;
 import org.apache.chemistry.opencmis.commons.exceptions.CmisObjectNotFoundException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.sglover.alfrescoextensions.common.MimeType;
+import org.sglover.alfrescoextensions.common.Node;
+import org.sglover.checksum.ChecksumService;
+import org.sglover.checksum.NodeChecksums;
+import org.sglover.entities.EntitiesService;
 
 /**
  * 

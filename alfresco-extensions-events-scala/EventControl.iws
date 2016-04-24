@@ -4,12 +4,9 @@
     <list default="true" id="bf6b02c5-569d-4e06-a6fb-4520a69d2ac5" name="Default" comment="" />
     <ignored path="EventControl.iws" />
     <ignored path=".idea/workspace.xml" />
-    <ignored path="$PROJECT_DIR$/target/resolution-cache/" />
-    <ignored path="$PROJECT_DIR$/target/streams/" />
-    <ignored path="$PROJECT_DIR$/target/scala-2.11/classes/" />
-    <ignored path="$PROJECT_DIR$/target/scala-2.11/test-classes/" />
     <ignored path="$PROJECT_DIR$/project/project/target/" />
     <ignored path="$PROJECT_DIR$/project/target/" />
+    <ignored path="$PROJECT_DIR$/target/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -168,10 +165,10 @@
         <option value="$PROJECT_DIR$/src/main/scala-2.11/org/alfresco/events/ControlMessage.scala" />
         <option value="$PROJECT_DIR$/src/main/scala-2.11/org/alfresco/events/JsonClassKeyDeserializer.scala" />
         <option value="$PROJECT_DIR$/src/main/scala-2.11/org/alfresco/events/Command.scala" />
-        <option value="$PROJECT_DIR$/build.sbt" />
         <option value="$PROJECT_DIR$/src/main/scala-2.11/org/alfresco/events/Generator.scala" />
         <option value="$PROJECT_DIR$/src/main/scala-2.11/org/alfresco/events/EventGenerator.scala" />
         <option value="$PROJECT_DIR$/src/test/scala-2.11/org/alfresco/events/TestGenerator.scala" />
+        <option value="$PROJECT_DIR$/build.sbt" />
       </list>
     </option>
   </component>
@@ -207,6 +204,8 @@
     </navigator>
     <panes>
       <pane id="Scope" />
+      <pane id="Scratches" />
+      <pane id="PackagesPane" />
       <pane id="ProjectPane">
         <subPane>
           <PATH>
@@ -315,8 +314,6 @@
           </PATH>
         </subPane>
       </pane>
-      <pane id="Scratches" />
-      <pane id="PackagesPane" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -681,7 +678,7 @@
     </recent_temporary>
   </component>
   <component name="SbtLocalSettings">
-    <option name="lastUpdateTimestamp" value="1455283395086" />
+    <option name="lastUpdateTimestamp" value="1458632303129" />
     <option name="availableProjects">
       <map>
         <entry>
@@ -770,10 +767,10 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="11" y="22" width="1400" height="785" extended-state="0" />
-    <editor active="true" />
+    <editor active="false" />
     <layout>
       <window_info id="Designer" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.2569956" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="true" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.2569956" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="SBT" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Palette&#9;" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />

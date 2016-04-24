@@ -18,10 +18,6 @@ import org.alfresco.service.common.elasticsearch.ElasticSearchMonitoringIndexer;
 import org.alfresco.services.AlfrescoApi;
 import org.alfresco.services.AlfrescoDictionary;
 import org.alfresco.services.TextContentGetter;
-import org.alfresco.services.nlp.CoreNLPEntityTagger;
-import org.alfresco.services.nlp.EntityExtracter;
-import org.alfresco.services.nlp.EntityTagger;
-import org.alfresco.services.nlp.StanfordEntityTagger;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.elasticsearch.ElasticsearchException;
@@ -30,6 +26,10 @@ import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.inject.Singleton;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.util.concurrent.EsExecutors;
+import org.sglover.nlp.CoreNLPEntityTagger;
+import org.sglover.nlp.EntityExtracter;
+import org.sglover.nlp.EntityTagger;
+import org.sglover.nlp.StanfordEntityTagger;
 
 /**
  * 
@@ -56,14 +56,13 @@ public class ElasticSearchComponent
         String indexName = "alfresco";
 
         ThreadFactory threadFactory = EsExecutors.daemonThreadFactory(settings);
-        this.threadPool = EsExecutors.newFixed(4, -1, threadFactory);
+        this.threadPool = EsExecutors.newFixed("Alfresco", 4, -1, threadFactory);
 
         ElasticSearchClient elasticSearchClient = new ElasticSearchClient(
                 client, indexName);
 
         EntityTagger entityTagger = buildEntityTagger(extracterType);
-        EntityExtracter entityExtracter = buildEntityExtracter(threadPool,
-                entityTagger, contentStore);
+        EntityExtracter entityExtracter = buildEntityExtracter(entityTagger);
 
         AlfrescoDictionary alfrescoDictionary = new AlfrescoDictionary(
                 alfrescoHttpClient);
@@ -96,11 +95,9 @@ public class ElasticSearchComponent
         return entityTagger;
     }
 
-    private EntityExtracter buildEntityExtracter(ThreadPoolExecutor threadPool,
-            EntityTagger entityTagger, ContentStore contentStore)
+    private EntityExtracter buildEntityExtracter(EntityTagger entityTagger)
     {
-        EntityExtracter entityExtracter = new EntityExtracter(contentStore,
-                entityTagger, threadPool);
+        EntityExtracter entityExtracter = new EntityExtracter(entityTagger);
         return entityExtracter;
     }
 

@@ -34,8 +34,6 @@ import org.alfresco.services.AlfrescoApi;
 import org.alfresco.services.AlfrescoDictionary;
 import org.alfresco.services.Content;
 import org.alfresco.services.TextContentGetter;
-import org.alfresco.services.nlp.EntityExtracter;
-import org.alfresco.services.nlp.EntityTagger;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.elasticsearch.ElasticsearchException;
@@ -43,6 +41,8 @@ import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Client;
+import org.sglover.nlp.EntityExtracter;
+import org.sglover.nlp.EntityTagger;
 
 import com.mongodb.BasicDBObjectBuilder;
 

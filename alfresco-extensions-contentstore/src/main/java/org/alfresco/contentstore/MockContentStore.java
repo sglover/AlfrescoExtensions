@@ -15,6 +15,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.nio.channels.Channels;
@@ -22,9 +23,9 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.alfresco.checksum.PatchDocument;
-import org.alfresco.extensions.common.MimeType;
-import org.alfresco.extensions.common.Node;
+import org.sglover.alfrescoextensions.common.MimeType;
+import org.sglover.alfrescoextensions.common.Node;
+import org.sglover.checksum.PatchDocument;
 
 /**
  * 
@@ -144,18 +145,16 @@ public class MockContentStore implements ContentStore
         testContentByNodePath.put(path, content);
     }
 
-    @Override
-    public boolean exists(String nodeId, long nodeVersion)
-    {
-        Node node = Node.build().nodeId(nodeId).nodeVersion(nodeVersion);
-        return testContentByNodeId.get(node) != null;
-    }
+//    @Override
+//    public boolean exists(String nodeId, long nodeVersion)
+//    {
+//        Node node = Node.build().nodeId(nodeId).nodeVersion(nodeVersion);
+//        return testContentByNodeId.get(node) != null;
+//    }
 
     @Override
-    public boolean exists(String nodeId, long nodeVersion, MimeType mimeType)
+    public boolean exists(Node node)
     {
-        //MimeType.INSTANCES.getByMimetype(mimetype)
-        Node node = Node.build().nodeId(nodeId).nodeVersion(nodeVersion).mimeType(mimeType);
         return testContentByNodeId.get(node) != null;
     }
 
@@ -208,30 +207,13 @@ public class MockContentStore implements ContentStore
     }
 
     @Override
-    public ContentWriter getWriter(Node node, MimeType mimeType)
-            throws IOException
+    public ContentWriter getWriter(Node node) throws IOException
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public ContentReader getReader(Node node) throws IOException
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public ContentReader getReader(Node node, MimeType mimeType)
-            throws IOException
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public Node applyPatch(String nodeId, long nodeVersion,
-            PatchDocument patchDocument) throws IOException
     {
         // TODO Auto-generated method stub
         return null;
@@ -245,11 +227,36 @@ public class MockContentStore implements ContentStore
     }
 
     @Override
-    public ReadableByteChannel getChannel(Node node, MimeType mimeType)
-            throws IOException
-    {
+    public InputStream getBlockAsInputStream(Node node, long rangeId, int size) {
         // TODO Auto-generated method stub
         return null;
+    }
+
+    @Override
+    public Node applyPatch(Node node, PatchDocument patchDocument)
+            throws IOException {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public PatchDocument getPatch(Node node, InputStream in)
+            throws IOException {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public PatchDocument getPatch(Node node) throws IOException {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public void writePatchAsProtocolBuffer(Node node, OutputStream out)
+            throws IOException {
+        // TODO Auto-generated method stub
+        
     }
 
 }

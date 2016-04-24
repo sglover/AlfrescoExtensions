@@ -9,8 +9,8 @@ package org.alfresco.cacheserver.content;
 
 import java.io.IOException;
 
-import org.alfresco.extensions.common.Node;
 import org.apache.chemistry.opencmis.commons.exceptions.CmisObjectNotFoundException;
+import org.sglover.alfrescoextensions.common.Node;
 
 /**
  * 
