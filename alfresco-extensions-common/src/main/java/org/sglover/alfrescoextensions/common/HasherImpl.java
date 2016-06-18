@@ -11,16 +11,19 @@ import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+import org.springframework.stereotype.Component;
+
 /**
  * 
  * @author sglover
  *
  */
-public class Hasher
+@Component
+public class HasherImpl implements Hasher
 {
     private MessageDigest md5;
 
-    public Hasher() throws NoSuchAlgorithmException
+    public HasherImpl() throws NoSuchAlgorithmException
     {
         md5 = MessageDigest.getInstance("MD5");
     }
@@ -50,6 +53,7 @@ public class Hasher
         return sb.toString();
     }
 
+    @Override
     public String md5(ByteBuffer bytes, int start, int end) throws NoSuchAlgorithmException
     {
         return getHash(bytes, start, end, md5);
