@@ -8,50 +8,13 @@
 package org.sglover.alfrescoextensions.common;
 
 import java.nio.ByteBuffer;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 /**
  * 
  * @author sglover
- *
  */
-public class Hasher
+public interface Hasher
 {
-    private MessageDigest md5;
-
-    public Hasher() throws NoSuchAlgorithmException
-    {
-        md5 = MessageDigest.getInstance("MD5");
-    }
-
-    private String getHash(ByteBuffer bytes, int start, int end, MessageDigest digest)
-            throws NoSuchAlgorithmException
-    {
-        int saveLimit = bytes.limit();
-        bytes.limit(end + 1);
-
-        bytes.mark();
-        bytes.position(start);
-
-        digest.reset();
-        digest.update(bytes);
-        byte[] array = digest.digest();
-        StringBuffer sb = new StringBuffer();
-        for (int i = 0; i < array.length; ++i)
-        {
-            sb.append(Integer.toHexString((array[i] & 0xFF) | 0x100).substring(
-                    1, 3));
-        }
-
-        bytes.limit(saveLimit);
-        bytes.reset();
-
-        return sb.toString();
-    }
-
-    public String md5(ByteBuffer bytes, int start, int end) throws NoSuchAlgorithmException
-    {
-        return getHash(bytes, start, end, md5);
-    }
+    String md5(ByteBuffer bytes, int start, int end) throws NoSuchAlgorithmException;
 }

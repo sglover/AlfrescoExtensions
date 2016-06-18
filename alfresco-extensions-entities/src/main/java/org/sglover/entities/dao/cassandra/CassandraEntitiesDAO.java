@@ -15,12 +15,16 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.sglover.alfrescoextensions.common.CassandraSession;
 import org.sglover.alfrescoextensions.common.Node;
 import org.sglover.entities.dao.EntitiesDAO;
 import org.sglover.nlp.Entities;
 import org.sglover.nlp.Entity;
+import org.sglover.nlp.EntityType;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import com.datastax.driver.core.BatchStatement;
 import com.datastax.driver.core.BoundStatement;
@@ -34,27 +38,33 @@ import com.datastax.driver.core.Row;
  * @author sglover
  *
  */
+@Component
 public class CassandraEntitiesDAO implements EntitiesDAO
 {
-    private final CassandraSession cassandraSession;
+    @Autowired
+    private CassandraSession cassandraSession;
 
-    private final PreparedStatement insertNamesByNodeStatement;
-    private final PreparedStatement insertMiscByNodeStatement;
-    private final PreparedStatement insertMoneyByNodeStatement;
-    private final PreparedStatement insertOrgsByNodeStatement;
+    private PreparedStatement insertNamesByNodeStatement;
+    private PreparedStatement insertMiscByNodeStatement;
+    private PreparedStatement insertMoneyByNodeStatement;
+    private PreparedStatement insertOrgsByNodeStatement;
 
-    private final PreparedStatement insertNamesByEntityStatement;
-    private final PreparedStatement insertMiscByEntityStatement;
-    private final PreparedStatement insertMoneyByEntityStatement;
-    private final PreparedStatement insertOrgsByEntityStatement;
+    private PreparedStatement insertNamesByEntityStatement;
+    private PreparedStatement insertMiscByEntityStatement;
+    private PreparedStatement insertMoneyByEntityStatement;
+    private PreparedStatement insertOrgsByEntityStatement;
 
-    private final PreparedStatement getNamesByNodeStatement;
-    private final PreparedStatement getOrgsByNodeStatement;
-    private final PreparedStatement getNodesByName;
+    private PreparedStatement getNamesByNodeStatement;
+    private PreparedStatement getOrgsByNodeStatement;
+    private PreparedStatement getNodesByName;
 
     private Set<String> allTypes = new HashSet<>();
 
     private Map<String, String> map = new HashMap<>();
+
+    public CassandraEntitiesDAO()
+    {
+    }
 
     public CassandraEntitiesDAO(CassandraSession cassandraSession) throws IOException
     {
@@ -223,7 +233,7 @@ public class CassandraEntitiesDAO implements EntitiesDAO
     }
 
     @Override
-    public Collection<Entity<String>> getNames(Node node)
+    public Stream<Entity<String>> getNames(Node node)
     {
         Collection<Entity<String>> ret = new HashSet<>();
 
@@ -231,15 +241,15 @@ public class CassandraEntitiesDAO implements EntitiesDAO
         for(Row row : rs)
         {
             String name = row.getString("name");
-            Entity<String> entity = new Entity<String>("name", name);
+            Entity<String> entity = new Entity<String>(EntityType.names, name);
             ret.add(entity);
         }
 
-        return ret;
+        return ret.stream();
     }
 
     @Override
-    public Collection<Entity<String>> getOrgs(Node node)
+    public Stream<Entity<String>> getOrgs(Node node)
     {
         Collection<Entity<String>> ret = new HashSet<>();
 
@@ -247,11 +257,11 @@ public class CassandraEntitiesDAO implements EntitiesDAO
         for(Row row : rs)
         {
             String name = row.getString("org");
-            Entity<String> entity = new Entity<String>("org", name);
+            Entity<String> entity = new Entity<String>(EntityType.orgs, name);
             ret.add(entity);
         }
 
-        return ret;
+        return ret.stream();
     }
 
 //    @Override
@@ -286,14 +296,14 @@ public class CassandraEntitiesDAO implements EntitiesDAO
 //    }
 
     @Override
-    public List<Node> matchingNodes(String type, String name)
+    public Stream<Node> matchingNodes(EntityType type, String name)
     {
         List<Node> nodes = new LinkedList<>();
 
         PreparedStatement st = null;
         switch(type)
         {
-            case "name": 
+            case names: 
             {
                 st = getNodesByName;
                 break;
@@ -311,7 +321,7 @@ public class CassandraEntitiesDAO implements EntitiesDAO
             nodes.add(node);
         }
 
-        return nodes;
+        return nodes.stream();
     }
 
     @Override
@@ -319,17 +329,15 @@ public class CassandraEntitiesDAO implements EntitiesDAO
     {
         Entities entities = Entities.empty();
 
-        Collection<Entity<String>> names = getNames(node);
-        for(Entity<String> nameEntity : names)
+        getNames(node).forEach(nameEntity ->
         {
             entities.addName(nameEntity.getEntity());
-        }
+        });
 
-        Collection<Entity<String>> orgs = getOrgs(node);
-        for(Entity<String> orgEntity : orgs)
+        getOrgs(node).forEach(nameEntity ->
         {
-            entities.addOrg(orgEntity.getEntity());
-        }
+            entities.addOrg(nameEntity.getEntity());
+        });
 
         return entities;
     }

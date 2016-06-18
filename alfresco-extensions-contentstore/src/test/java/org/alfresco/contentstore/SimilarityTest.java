@@ -7,41 +7,6 @@
  */
 package org.alfresco.contentstore;
 
-import static org.junit.Assert.assertEquals;
-
-import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.alfresco.contentstore.MockContentStore;
-import org.alfresco.events.node.types.NodeAddedEvent;
-import org.alfresco.events.node.types.NodeContentGetEvent;
-import org.alfresco.events.node.types.NodeContentPutEvent;
-import org.alfresco.events.node.types.NodeRemovedEvent;
-import org.alfresco.events.node.types.NodeUpdatedEvent;
-import org.alfresco.events.node.types.TransactionCommittedEvent;
-import org.alfresco.events.serialize.EventSerializer;
-import org.alfresco.events.serialize.EventsSerializer;
-import org.alfresco.events.serialize.NodeAddedEventSerializer;
-import org.alfresco.events.serialize.NodeContentPutEventSerializer;
-import org.alfresco.events.serialize.NodeRemovedEventSerializer;
-import org.alfresco.events.serialize.NodeUpdatedEventSerializer;
-import org.alfresco.util.GUID;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.junit.Before;
-import org.junit.Test;
-import org.sglover.alfrescoextensions.common.Node;
-import org.sglover.entities.EntitiesService;
-import org.sglover.entities.EntitiesServiceImpl;
-import org.sglover.entities.UserTrackingService;
-import org.sglover.entities.EntitiesServiceImpl.ExtracterType;
-import org.sglover.entities.dao.mongo.MongoEntitiesDAO;
-import org.sglover.entities.dao.mongo.MongoEventsDAO;
-import org.sglover.entities.dao.mongo.MongoSimilarityDAO;
-import org.sglover.nlp.DefaultModelLoader;
-import org.sglover.nlp.ModelLoader;
-
 /**
  * 
  * @author sglover

@@ -29,11 +29,13 @@
             <artifactId>alfresco-extensions-checksum</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <!-- 
         <dependency>
             <groupId>org.alfresco</groupId>
             <artifactId>alfresco-core</artifactId>
             <version>5.0</version>
         </dependency>
+         -->
 		<dependency>
 		    <groupId>junit-addons</groupId>
 		    <artifactId>junit-addons</artifactId>

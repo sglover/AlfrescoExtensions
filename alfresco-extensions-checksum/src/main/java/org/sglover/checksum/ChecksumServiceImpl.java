@@ -16,11 +16,15 @@ import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import javax.annotation.PostConstruct;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.sglover.alfrescoextensions.common.Hasher;
 import org.sglover.alfrescoextensions.common.Node;
 import org.sglover.checksum.dao.ChecksumDAO;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 /**
  * 
@@ -29,20 +33,34 @@ import org.sglover.checksum.dao.ChecksumDAO;
  *         Based on the work here https://github.com/claytongulick/bit-sync
  * 
  */
+@Component
 public class ChecksumServiceImpl implements ChecksumService
 {
     private static Log logger = LogFactory.getLog(ChecksumServiceImpl.class);
 
+    @Autowired
     private ChecksumDAO checksumDAO;
+
     private ExecutorService executors = Executors.newFixedThreadPool(10);
     private int blockSize = 1024 * 10;
+
+    @Autowired
     private Hasher hasher;
+
+    public ChecksumServiceImpl()
+    {
+    }
 
     public ChecksumServiceImpl(ChecksumDAO checksumDAO, int blocksize, Hasher hasher) throws NoSuchAlgorithmException
     {
-        this(checksumDAO);
+        this.checksumDAO = checksumDAO;
         this.blockSize = blocksize;
         this.hasher = hasher;
+    }
+
+    @PostConstruct
+    public void init()
+    {
     }
 
     public void setBlockSize(int blockSize)

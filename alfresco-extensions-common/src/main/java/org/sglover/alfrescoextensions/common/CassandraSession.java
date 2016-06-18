@@ -7,6 +7,11 @@
  */
 package org.sglover.alfrescoextensions.common;
 
+import javax.annotation.PostConstruct;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.Session;
@@ -19,15 +24,39 @@ import com.datastax.driver.core.policies.TokenAwarePolicy;
  * @author sglover
  *
  */
+@Component
 public class CassandraSession
 {
+    @Value("${cassandra.host}")
+    private String host;
+
+    @Value("${cassandra.keyspace}")
     private String keyspace;
+
+    private boolean recreate = false;
+
     private Cluster cluster;
     private Session cassandraSession;
 
     public CassandraSession(String host, String keyspace, boolean recreate)
     {
+        this.host = host;
         this.keyspace = keyspace;
+        this.recreate = recreate;
+    }
+
+    public CassandraSession()
+    {
+    }
+
+    public CassandraSession(boolean recreate)
+    {
+        this.recreate = recreate;
+    }
+
+    @PostConstruct
+    public void init()
+    {
         this.cassandraSession = buildCassandraSession(host);
 
         if(recreate)

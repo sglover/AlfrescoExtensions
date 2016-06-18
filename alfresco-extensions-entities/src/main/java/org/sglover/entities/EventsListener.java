@@ -7,24 +7,6 @@
  */
 package org.sglover.entities;
 
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.List;
-import java.util.Map;
-
-import org.alfresco.events.node.types.Event;
-import org.alfresco.events.node.types.NodeAddedEvent;
-import org.alfresco.events.node.types.NodeContentGetEvent;
-import org.alfresco.events.node.types.NodeContentPutEvent;
-import org.alfresco.events.node.types.NodeEvent;
-import org.alfresco.events.node.types.NodeUpdatedEvent;
-import org.alfresco.events.node.types.Property;
-import org.alfresco.events.node.types.TransactionCommittedEvent;
-import org.alfresco.httpclient.AuthenticationException;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.sglover.entities.dao.EventsDAO;
-
 /**
  * 
  * @author sglover

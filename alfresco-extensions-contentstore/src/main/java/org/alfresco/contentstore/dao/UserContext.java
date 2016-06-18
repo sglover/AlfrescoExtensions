@@ -7,8 +7,6 @@
  */
 package org.alfresco.contentstore.dao;
 
-import java.security.Principal;
-
 /**
  * 
  * @author sglover
@@ -16,14 +14,14 @@ import java.security.Principal;
  */
 public class UserContext
 {
-    private static ThreadLocal<Principal> user = new ThreadLocal<>();
+    private static ThreadLocal<String> user = new ThreadLocal<>();
 
-    public static Principal getUser()
+    public static String getUser()
     {
         return user.get();
     }
 
-    public static void setUser(Principal user)
+    public static void setUser(String user)
     {
         UserContext.user.set(user);
     }

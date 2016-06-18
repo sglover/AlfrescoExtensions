@@ -42,10 +42,10 @@ public class FileContentStoreImpl extends AbstractContentStore implements FileCo
 {
     private ContentDAO contentDAO;
 
-    public FileContentStoreImpl(String contentRoot, ChecksumService checksumService, PatchService patchService,
+    public FileContentStoreImpl(ChecksumService checksumService, PatchService patchService,
             NodeUsageDAO nodeUsageDAO, EntitiesService entitiesService, ContentDAO contentDAO) throws IOException
     {
-        super(contentRoot, checksumService, patchService, nodeUsageDAO, entitiesService, false);
+        super(checksumService, patchService, nodeUsageDAO, entitiesService, false);
         this.contentDAO = contentDAO;
     }
 

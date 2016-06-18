@@ -19,6 +19,7 @@ import org.apache.commons.logging.LogFactory;
  * @author sglover
  *
  */
+//@Component
 public class DefaultModelLoader implements ModelLoader
 {
     private static final Log logger = LogFactory.getLog(DefaultModelLoader.class);

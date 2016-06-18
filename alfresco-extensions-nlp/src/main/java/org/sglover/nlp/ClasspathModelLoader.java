@@ -12,19 +12,21 @@ import java.io.InputStream;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.stereotype.Component;
 
 /**
  * 
  * @author sglover
  *
  */
+@Component
 public class ClasspathModelLoader implements ModelLoader
 {
     private static final Log logger = LogFactory.getLog(ClasspathModelLoader.class);
 
     public InputStream load(String modelFilePath) throws IOException
     {
-    	InputStream in = getClass().getClassLoader().getResourceAsStream(modelFilePath);
-    	return in;
+        InputStream in = getClass().getClassLoader().getResourceAsStream(modelFilePath);
+        return in;
     }
 }

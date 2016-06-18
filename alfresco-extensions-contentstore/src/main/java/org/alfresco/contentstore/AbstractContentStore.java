@@ -15,7 +15,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
-import java.security.Principal;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.List;
@@ -30,6 +29,7 @@ import org.alfresco.contentstore.patch.PatchService;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.gytheio.content.file.TempFileProvider;
 import org.sglover.alfrescoextensions.common.GUID;
 import org.sglover.alfrescoextensions.common.MimeType;
 import org.sglover.alfrescoextensions.common.Node;
@@ -38,6 +38,8 @@ import org.sglover.checksum.NodeChecksums;
 import org.sglover.checksum.Patch;
 import org.sglover.checksum.PatchDocument;
 import org.sglover.entities.EntitiesService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 
 /**
  * 
@@ -49,27 +51,52 @@ public abstract class AbstractContentStore implements ContentStore
 {
     protected static Log logger = LogFactory.getLog(AbstractContentStore.class);
 
-    protected String rootPath;
+    protected String contentRoot;
+
+    @Autowired
     protected ChecksumService checksumService;
+
+    @Autowired
     protected NodeUsageDAO nodeUsageDAO;
+
+    @Autowired
     protected PatchService patchService;
+
+    @Autowired
     protected EntitiesService entitiesService;
 
     protected ExecutorService executor;
 
+    @Value("isAsync")
+    protected String isAsync;
+
     protected boolean async = true;
 
-    public AbstractContentStore(String contentRoot, ChecksumService checksumService, PatchService patchService,
+    public AbstractContentStore()
+    {
+    }
+
+    public AbstractContentStore(ChecksumService checksumService, PatchService patchService,
             NodeUsageDAO nodeUsageDAO, EntitiesService entitiesService, boolean async) throws IOException
     {
-        this.rootPath = contentRoot;
         this.checksumService = checksumService;
         this.patchService = patchService;
         this.nodeUsageDAO = nodeUsageDAO;
         this.async = async;
+        this.entitiesService = entitiesService;
+    }
+
+    public void init()
+    {
+        if(isAsync != null && !isAsync.isEmpty())
+        {
+            this.async = Boolean.valueOf(isAsync);
+        }
+
+        this.contentRoot = TempFileProvider.getTempDir("RepoContentStore").getAbsolutePath();
+        logger.info("ContentStore root directory " + contentRoot);
 
         this.executor = Executors.newFixedThreadPool(5);
-        this.entitiesService = entitiesService;
     }
 
     private void extractChecksumsAsync(final Node node)
@@ -164,13 +191,16 @@ public abstract class AbstractContentStore implements ContentStore
 
     protected void createPatch(final Node node) throws IOException
     {
-        if(async)
+        if(node.getNodeVersion() > 1)
         {
-            createPatchAsync(node);
-        }
-        else
-        {
-            createPatchImpl(node);
+            if(async)
+            {
+                createPatchAsync(node);
+            }
+            else
+            {
+                createPatchImpl(node);
+            }
         }
     }
 
@@ -181,7 +211,7 @@ public abstract class AbstractContentStore implements ContentStore
 
     public String getRootPath()
     {
-        return rootPath;
+        return contentRoot;
     }
 
     protected File makeFile(String contentUrl)
@@ -189,7 +219,7 @@ public abstract class AbstractContentStore implements ContentStore
         // take just the part after the protocol
 
         // get the file
-        File file = new File(rootPath, contentUrl);
+        File file = new File(contentRoot, contentUrl);
 
         // done
         return file;
@@ -412,8 +442,7 @@ public abstract class AbstractContentStore implements ContentStore
         }
         finally
         {
-            Principal principal = UserContext.getUser();
-            String username = principal.getName();
+            String username = UserContext.getUser();
             NodeUsage nodeUsage = new NodeUsage(node.getNodeId(),
                     node.getNodeVersion(), System.currentTimeMillis(), username, NodeUsageType.READ);
             nodeUsageDAO.addUsage(nodeUsage);
@@ -449,8 +478,7 @@ public abstract class AbstractContentStore implements ContentStore
         }
         finally
         {
-            Principal principal = UserContext.getUser();
-            String username = principal.getName();
+            String username = UserContext.getUser();
             NodeUsage nodeUsage = new NodeUsage(node.getNodeId(), node.getNodeVersion(), System.currentTimeMillis(),
                     username, NodeUsageType.WRITE);
             nodeUsageDAO.addUsage(nodeUsage);

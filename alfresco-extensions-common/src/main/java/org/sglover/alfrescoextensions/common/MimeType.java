@@ -9,18 +9,23 @@ package org.sglover.alfrescoextensions.common;
 
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 
 public enum MimeType
 {
     TEST_SOURCE("test_source", "test_source"),
     TEST_TARGET("test_target", "test_target"),
-    
+
+    OCTET_STREAM("application/octet-stream", "application/octet-stream"),
+
     PDF("application/pdf", "pdf"),
     FLASH("application/x-shockwave-flash", "swf"),
 
+    JSON("application/json", "json"),
     TEXT("text/plain", "txt"),
     TEXT_CSV("text/csv", "csv"),
     RTF("application/rtf", "rtf"),
@@ -113,7 +118,23 @@ public enum MimeType
     
     XPS("application/vnd.ms-xpsdocument", "xps");
 
-    
+    private static Set<MimeType> TEXT_MIMETYPES = new HashSet<>();
+    static {
+        TEXT_MIMETYPES.add(JSON);
+        TEXT_MIMETYPES.add(TEXT);
+        TEXT_MIMETYPES.add(TEXT_CSV);
+        TEXT_MIMETYPES.add(SGML);
+        TEXT_MIMETYPES.add(TSV);
+        TEXT_MIMETYPES.add(XML);
+        TEXT_MIMETYPES.add(XHTML);
+        TEXT_MIMETYPES.add(HTML);
+    }
+
+    public boolean isText()
+    {
+        return TEXT_MIMETYPES.contains(this);
+    }
+
     private String mimetype;
     private String ext;
 

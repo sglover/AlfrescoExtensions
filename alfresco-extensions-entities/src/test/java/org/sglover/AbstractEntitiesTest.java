@@ -8,14 +8,8 @@
 package org.sglover;
 
 import org.alfresco.service.common.mongo.MongoDbFactory;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 
 import com.mongodb.DB;
-import com.mongodb.Mongo;
-
-import de.flapdoodle.embed.mongo.distribution.Version;
-import de.flapdoodle.embed.mongo.tests.MongodForTestsFactory;
 
 /**
  * 
@@ -24,36 +18,13 @@ import de.flapdoodle.embed.mongo.tests.MongodForTestsFactory;
  */
 public class AbstractEntitiesTest
 {
-    private static MongodForTestsFactory mongoFactory;
-
     protected DB db;
 
-    @BeforeClass
-    public static void beforeClass() throws Exception
+    public void init() throws Exception
     {
-        mongoFactory = MongodForTestsFactory.with(Version.Main.PRODUCTION);
-    }
-    
-    @AfterClass
-    public static void afterClass()
-    {
-        mongoFactory.shutdown();
-    }
-
-	public void init() throws Exception
-	{
-        final MongoDbFactory factory = new MongoDbFactory();
-        boolean useEmbeddedMongo = ("true".equals(System.getProperty("useEmbeddedMongo")) ? true : false);
-        if (useEmbeddedMongo)
-        {
-            final Mongo mongo = mongoFactory.newMongo();
-            factory.setMongo(mongo);
-        }
-        else
-        {
-            factory.setMongoURI("mongodb://127.0.0.1:27017");
-            factory.setDbName("test");
-        }
+        boolean useEmbeddedMongo = ("true".equals(System.getProperty("useEmbeddedMongo")) ? true
+                : false);
+        final MongoDbFactory factory = new MongoDbFactory(true, null, "test", useEmbeddedMongo);
         this.db = factory.createInstance();
-	}
+    }
 }

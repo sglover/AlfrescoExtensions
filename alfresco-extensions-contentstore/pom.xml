@@ -21,6 +21,21 @@
   </properties>
 
   <dependencies>
+    <dependency>
+        <groupId>org.apache.lucene</groupId>
+        <artifactId>lucene-core</artifactId>
+        <version>4.10.4</version>
+    </dependency>
+    <dependency>
+        <groupId>org.roaringbitmap</groupId>
+        <artifactId>RoaringBitmap</artifactId>
+        <version>[0.6,)</version>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-context</artifactId>
+        <version>4.2.5.RELEASE</version>
+    </dependency>
 	<dependency>
 	    <groupId>com.google.protobuf</groupId>
 	    <artifactId>protobuf-java</artifactId>
@@ -40,6 +55,12 @@
       <groupId>org.alfresco.extensions</groupId>
       <artifactId>alfresco-extensions-entities</artifactId>
       <version>${project.version}</version>
+      <exclusions>
+      	<exclusion>
+      		<artifactId>alfresco-xmlfactory</artifactId>
+      		<groupId>org.alfresco</groupId>
+      	</exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.alfresco.extensions</groupId>
@@ -47,10 +68,25 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava</artifactId>
+        <version>18.0</version>
+    </dependency>
+    <!--  Needed to add this to prevent "Feature 'http://javax.xml.XMLConstants/feature/secure-processing' is not recognized."
+            exception -->
+	<dependency>
+        <groupId>xerces</groupId>
+        <artifactId>xercesImpl</artifactId>
+        <version>2.11.0</version>
+	</dependency>
+
+    <!-- 
+    <dependency>
         <groupId>org.alfresco.extensions</groupId>
         <artifactId>alfresco-extensions-util</artifactId>
         <version>${project.version}</version>
     </dependency>
+     -->
     <dependency>
         <groupId>com.sun.jersey.contribs</groupId>
         <artifactId>jersey-multipart</artifactId>
@@ -310,42 +346,6 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
-            
-            <!--  Check license headers -->
-            <plugin>
-                <groupId>org.apache.rat</groupId>
-                <artifactId>apache-rat-plugin</artifactId>
-                <version>0.10</version>
-                <executions>
-                    <execution>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <includes>
-                        <include>**/*.java</include>
-                    </includes>
-                    <licenses>
-                        <license
-                            implementation="org.apache.rat.analysis.license.SimplePatternBasedLicense">
-                            <licenseFamilyCategory>ALF-ENT</licenseFamilyCategory>
-                            <licenseFamilyName>Alfresco Enterprise License</licenseFamilyName>
-                            <notes></notes>
-                            <patterns>
-                                <pattern>License rights for this program may be obtained from Alfresco Software</pattern>
-                            </patterns>
-                        </license>
-                    </licenses>
-                    <licenseFamilies>
-                        <licenseFamily implementation="org.apache.rat.license.SimpleLicenseFamily">
-                            <familyName>Alfresco Enterprise License</familyName>
-                        </licenseFamily>
-                    </licenseFamilies>
-                </configuration>
             </plugin>
         </plugins>
 

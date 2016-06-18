@@ -7,10 +7,7 @@
  */
 package org.sglover.checksum;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
 
 import org.sglover.alfrescoextensions.common.Node;
 
@@ -21,6 +18,8 @@ import org.sglover.alfrescoextensions.common.Node;
  */
 public interface ChecksumService
 {
+    void setBlockSize(int blockSize);
+
     void extractChecksumsAsync(Node node, InputStream in);
 
     NodeChecksums getChecksums(final Node node, final InputStream in);

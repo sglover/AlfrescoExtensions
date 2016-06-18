@@ -7,12 +7,12 @@
  */
 package org.sglover.entities.dao;
 
-import java.util.Collection;
-import java.util.List;
+import java.util.stream.Stream;
 
 import org.sglover.alfrescoextensions.common.Node;
 import org.sglover.nlp.Entities;
 import org.sglover.nlp.Entity;
+import org.sglover.nlp.EntityType;
 
 /**
  * 
@@ -23,16 +23,10 @@ public interface EntitiesDAO
 {
     Entities getEntities(Node node);
 
-    List<Node> matchingNodes(String type, String name);
+    Stream<Node> matchingNodes(EntityType type, String name);
 
-//    Entities getEntities(Node node, Set<String> types);
-
-    Collection<Entity<String>> getNames(Node node);
-    Collection<Entity<String>> getOrgs(Node node);
-
-//    EntityCounts<String> getEntityCounts(Node node);
-
-//    EntityCounts<String> getNodeMatches(Entities entities);
+    Stream<Entity<String>> getNames(Node node);
+    Stream<Entity<String>> getOrgs(Node node);
 
     void addEntities(Node node, Entities entities);
 }

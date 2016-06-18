@@ -33,15 +33,14 @@ import java.util.List;
 import org.alfresco.contentstore.dao.UserContext;
 import org.alfresco.contentstore.patch.PatchService;
 import org.alfresco.contentstore.patch.PatchServiceImpl;
-import org.alfresco.util.TempFileProvider;
 import org.apache.commons.io.IOUtils;
-import org.apache.http.auth.BasicUserPrincipal;
+import org.gytheio.content.file.TempFileProvider;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.sglover.alfrescoextensions.common.GUID;
-import org.sglover.alfrescoextensions.common.Hasher;
+import org.sglover.alfrescoextensions.common.HasherImpl;
 import org.sglover.alfrescoextensions.common.MongoDbFactory;
 import org.sglover.alfrescoextensions.common.Node;
 import org.sglover.checksum.Checksum;
@@ -91,11 +90,11 @@ public class ChecksumTest
 
         long time = System.currentTimeMillis();
 
-        Hasher hasher = new Hasher();
+        HasherImpl hasher = new HasherImpl();
 
         ChecksumDAO checksumDAO = new MongoChecksumDAO(db, "checksums" + time);
         this.checksumService = new ChecksumServiceImpl(checksumDAO, 8192, hasher);
-        this.patchService = new PatchServiceImpl(checksumService, hasher);
+        this.patchService = new PatchServiceImpl(hasher, checksumService.getBlockSize());
     }
 
     private static class State
@@ -516,7 +515,7 @@ public class ChecksumTest
     {
         checksumService.setBlockSize(5);
 
-        UserContext.setUser(new BasicUserPrincipal("user1"));
+        UserContext.setUser("user1");
 
         Node node = Node.build().nodeId(GUID.generate()).nodeVersion(1l);
 
@@ -539,7 +538,7 @@ public class ChecksumTest
     {
         checksumService.setBlockSize(5);
 
-        UserContext.setUser(new BasicUserPrincipal("user1"));
+        UserContext.setUser("user1");
 
         Node node = Node.build().nodeId(GUID.generate()).nodeVersion(1l);
 
@@ -566,7 +565,7 @@ public class ChecksumTest
     {
         checksumService.setBlockSize(8192);
 
-        UserContext.setUser(new BasicUserPrincipal("user1"));
+        UserContext.setUser("user1");
 
         File f = copy("marbles-uncompressed.tif");
         System.out.println("f = " + f);
@@ -598,7 +597,7 @@ public class ChecksumTest
     {
         checksumService.setBlockSize(8192);
 
-        UserContext.setUser(new BasicUserPrincipal("user1"));
+        UserContext.setUser("user1");
 
         File f = TempFileProvider.createTempFile("ContentStoreTest", GUID.generate());
 
@@ -632,7 +631,7 @@ public class ChecksumTest
     {
         checksumService.setBlockSize(8192);
 
-        UserContext.setUser(new BasicUserPrincipal("user1"));
+        UserContext.setUser("user1");
 
         File f = TempFileProvider.createTempFile("ContentStoreTest", GUID.generate());
 //        File f = copy("marbles-uncompressed.tif");
@@ -670,7 +669,7 @@ public class ChecksumTest
     {
         checksumService.setBlockSize(4);
 
-        UserContext.setUser(new BasicUserPrincipal("user1"));
+        UserContext.setUser("user1");
 
         Node node = Node.build().nodeId(GUID.generate()).nodeVersion(1l);
 

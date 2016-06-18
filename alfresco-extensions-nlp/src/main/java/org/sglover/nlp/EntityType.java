@@ -7,55 +7,84 @@
  */
 package org.sglover.nlp;
 
+/**
+ * 
+ * @author sglover
+ *
+ */
 public enum EntityType
 {
-	names()
-	{
-		public String getName()
-		{
-			return "names";
-		}
-	},
-	
-	locations()
-	{
-		public String getName()
-		{
-			return "locations";
-		}
-	},
-	
-	orgs()
-	{
-		public String getName()
-		{
-			return "orgs";
-		}
-	},
-	
-	dates()
-	{
-		public String getName()
-		{
-			return "dates";
-		}
-	},
+    names()
+    {
+        public String getName()
+        {
+            return "names";
+        }
+    },
 
-	misc()
-	{
-		public String getName()
-		{
-			return "misc";
-		}
-	},
+    times()
+    {
+        public String getName()
+        {
+            return "times";
+        }
+    },
 
-	money()
-	{
-		public String getName()
-		{
-			return "money";
-		}
-	};
+    durations()
+    {
+        public String getName()
+        {
+            return "durations";
+        }
+    },
 
-	public abstract String getName();
+    numbers()
+    {
+        public String getName()
+        {
+            return "numbers";
+        }
+    },
+
+    locations()
+    {
+        public String getName()
+        {
+            return "locations";
+        }
+    },
+
+    orgs()
+    {
+        public String getName()
+        {
+            return "orgs";
+        }
+    },
+
+    dates()
+    {
+        public String getName()
+        {
+            return "dates";
+        }
+    },
+
+    misc()
+    {
+        public String getName()
+        {
+            return "misc";
+        }
+    },
+
+    money()
+    {
+        public String getName()
+        {
+            return "money";
+        }
+    };
+
+    public abstract String getName();
 }

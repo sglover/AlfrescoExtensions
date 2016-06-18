@@ -14,14 +14,15 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
-import org.alfresco.error.AlfrescoRuntimeException;
 import org.alfresco.service.common.mongo.AbstractMongoDAO;
 import org.sglover.alfrescoextensions.common.Node;
 import org.sglover.entities.dao.EntitiesDAO;
 import org.sglover.nlp.Entities;
 import org.sglover.nlp.Entity;
 import org.sglover.nlp.EntityLocation;
+import org.sglover.nlp.EntityType;
 
 import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.BulkWriteOperation;
@@ -85,7 +86,7 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO
         allTypes.add("money");
 
         if (db == null) {
-            throw new AlfrescoRuntimeException("Mongo DB must not be null");
+            throw new RuntimeException("Mongo DB must not be null");
         }
 
         this.entitiesData = getCollection(db, entitiesCollectionName,
@@ -106,7 +107,7 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO
         long count = (Long) dbObject.get("c");
         List<DBObject> locs = (List<DBObject>) dbObject.get("locs");
 
-        Entity<String> entity = new Entity<>(type, name, count);
+        Entity<String> entity = new Entity<>(EntityType.valueOf(type), name, count);
         for (DBObject locDBObject : locs) {
             long beginOffset = (Long) locDBObject.get("s");
             long endOffset = (Long) locDBObject.get("e");
@@ -180,7 +181,7 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO
     }
 
     @Override
-    public Collection<Entity<String>> getNames(Node node) {
+    public Stream<Entity<String>> getNames(Node node) {
         String nodeId = node.getNodeId();
         String nodeVersion = node.getVersionLabel();
 
@@ -200,7 +201,7 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO
                 String name = (String) dbObject.get("nm");
                 int count = (Integer) dbObject.get("c");
                 String type = map.get("nm");
-                Entity<String> entity = new Entity<>(type, name, count);
+                Entity<String> entity = new Entity<>(EntityType.valueOf(type), name, count);
                 ret.add(entity);
             }
         } finally {
@@ -209,11 +210,11 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO
             }
         }
 
-        return ret;
+        return ret.stream();
     }
 
     @Override
-    public Collection<Entity<String>> getOrgs(Node node) {
+    public Stream<Entity<String>> getOrgs(Node node) {
         String nodeId = node.getNodeId();
         String nodeVersion = node.getVersionLabel();
 
@@ -233,7 +234,7 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO
                 String org = (String) dbObject.get("o");
                 int count = (Integer) dbObject.get("c");
                 String type = map.get("nm");
-                Entity<String> entity = new Entity<>(type, org, count);
+                Entity<String> entity = new Entity<>(EntityType.valueOf(type), org, count);
                 ret.add(entity);
             }
         } finally {
@@ -242,7 +243,7 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO
             }
         }
 
-        return ret;
+        return ret.stream();
     }
 
 //    @Override
@@ -277,7 +278,7 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO
 //    }
 
     @Override
-    public List<Node> matchingNodes(String type, String name) {
+    public Stream<Node> matchingNodes(EntityType type, String name) {
         List<Node> nodes = new LinkedList<>();
 
         QueryBuilder queryBuilder = QueryBuilder.start("t").is(type).and("nm")
@@ -304,7 +305,7 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO
             }
         }
 
-        return nodes;
+        return nodes.stream();
     }
 
 //    @Override

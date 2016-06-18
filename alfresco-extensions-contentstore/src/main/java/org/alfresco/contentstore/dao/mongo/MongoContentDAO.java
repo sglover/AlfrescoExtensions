@@ -7,9 +7,9 @@
  */
 package org.alfresco.contentstore.dao.mongo;
 
+import org.alfresco.contentstore.InvalidNodeException;
 import org.alfresco.contentstore.dao.ContentDAO;
 import org.alfresco.contentstore.dao.NodeInfo;
-import org.alfresco.util.InvalidNodeException;
 import org.sglover.alfrescoextensions.common.MimeType;
 import org.sglover.alfrescoextensions.common.Node;
 import org.sglover.alfrescoextensions.common.identity.ServerIdentity;

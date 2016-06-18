@@ -9,7 +9,7 @@ package org.sglover.entities;
 
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
-import java.util.Collection;
+import java.util.stream.Stream;
 
 import org.sglover.alfrescoextensions.common.Node;
 import org.sglover.nlp.Entity;
@@ -23,8 +23,8 @@ public interface EntitiesService
 {
     void getEntities(Node node, ReadableByteChannel channel) throws IOException;
 
-    Collection<Entity<String>> getNames(Node node);
-    Collection<Entity<String>> getOrgs(Node node);
+    Stream<Entity<String>> getNames(Node node);
+    Stream<Entity<String>> getOrgs(Node node);
 
 //    void calculateSimilarities(String txnId);
 

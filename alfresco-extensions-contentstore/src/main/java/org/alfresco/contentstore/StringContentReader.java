@@ -27,6 +27,12 @@ public class StringContentReader extends AbstractContentReader
     private ContentStore store;
     private byte[] bytes;
 
+    public static ContentReader build(String content, ContentStore store, Node node)
+    {
+        ContentReader contentReader = new StringContentReader(content, null, node);
+        return contentReader;
+    }
+
     public StringContentReader(String content, ContentStore store, Node node)
     {
         super(node);

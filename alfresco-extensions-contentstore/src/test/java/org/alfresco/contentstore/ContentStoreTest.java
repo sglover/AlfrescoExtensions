@@ -26,101 +26,111 @@ import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 
-import org.alfresco.contentstore.dao.NodeUsageDAO;
 import org.alfresco.contentstore.dao.UserContext;
-import org.alfresco.contentstore.dao.mongo.MongoNodeUsageDAO;
 import org.alfresco.contentstore.patch.PatchService;
-import org.alfresco.contentstore.patch.PatchServiceImpl;
-import org.alfresco.util.TempFileProvider;
 import org.apache.commons.io.IOUtils;
-import org.apache.http.auth.BasicUserPrincipal;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.gytheio.content.file.TempFileProvider;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.sglover.alfrescoextensions.common.CassandraSession;
+import org.junit.runner.RunWith;
 import org.sglover.alfrescoextensions.common.GUID;
-import org.sglover.alfrescoextensions.common.Hasher;
 import org.sglover.alfrescoextensions.common.MimeType;
-import org.sglover.alfrescoextensions.common.MongoDbFactory;
 import org.sglover.alfrescoextensions.common.Node;
-import org.sglover.alfrescoextensions.common.identity.ServerIdentity;
-import org.sglover.alfrescoextensions.common.identity.ServerIdentityImpl;
-import org.sglover.checksum.ChecksumServiceImpl;
+import org.sglover.checksum.ChecksumService;
 import org.sglover.checksum.NodeChecksums;
 import org.sglover.checksum.Patch;
 import org.sglover.checksum.PatchDocument;
 import org.sglover.checksum.PatchDocumentImpl;
-import org.sglover.checksum.dao.ChecksumDAO;
-import org.sglover.checksum.dao.mongo.MongoChecksumDAO;
-import org.sglover.entities.EntitiesService;
-import org.sglover.entities.EntitiesServiceImpl;
-import org.sglover.entities.EntitiesServiceImpl.ExtracterType;
-import org.sglover.entities.dao.cassandra.CassandraEntitiesDAO;
-import org.sglover.entities.dao.cassandra.CassandraSimilarityDAO;
-import org.sglover.nlp.DefaultModelLoader;
-import org.sglover.nlp.ModelLoader;
-
-import com.google.common.io.Files;
-import com.mongodb.DB;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.support.AnnotationConfigContextLoader;
 
 /**
  * 
  * @author sglover
  *
  */
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration(loader = AnnotationConfigContextLoader.class)
 public class ContentStoreTest
 {
-    private static MongoDbFactory mongoFactory;
+    private static Log logger = LogFactory.getLog(ContentStoreTest.class);
 
-    private ChecksumServiceImpl checksumService;
-    private AbstractContentStore contentStore;
+    @Configuration
+    @ComponentScan(basePackages = {"org.alfresco", "org.sglover"})
+    static class TestConfiguration
+    {
+        @Bean
+        public static PropertySourcesPlaceholderConfigurer propertiesResolver()
+        {
+            PropertySourcesPlaceholderConfigurer p = new PropertySourcesPlaceholderConfigurer();
+            java.util.Properties props = new java.util.Properties();
+            props.put("titan.clear", true);
+            props.put("titan.configurationFile", "conf/test.properties");
+            props.put("cassandra.host", "localhost");
+            props.put("cassandra.keyspace", "alfresco");
+            props.put("content.blocksize", "10240");
+            p.setProperties(props);
+            return p;
+        }
+    }
+
+    @Autowired
+    private ChecksumService checksumService;
+
+    @Autowired
+    private ContentStore contentStore;
+
+    @Autowired
     private PatchService patchService;
-    private EntitiesService entitiesService;
 
     @BeforeClass
     public static void beforeClass() throws Exception
     {
-        mongoFactory = new MongoDbFactory(true, "", "test", true);
     }
 
     @AfterClass
     public static void afterClass()
     {
-        mongoFactory.shutdown();
     }
 
     @Before
     public void before() throws Exception
     {
-        final DB db = mongoFactory.createInstance();
+//        File rootDirectory = Files.createTempDir();
+//
+//        System.out.println("rootDirectory = " + rootDirectory);
 
-        File rootDirectory = Files.createTempDir();
+//        CassandraSession cassandraSession = new CassandraSession("localhost", "alfresco", false);
 
-        System.out.println("rootDirectory = " + rootDirectory);
+//        ChecksumDAO checksumDAO = new CassandraChecksumDAO(cassandraSession);
+//        NodeUsageDAO nodeUsageDAO = new CassandraNodeUsageDAO(cassandraSession);
 
-        ServerIdentity serverIdentity = new ServerIdentityImpl("localhost", 8080, "test");
-        long time = System.currentTimeMillis();
+//        TitanSession titanSession = new TitanSession();
 
-        ChecksumDAO checksumDAO = new MongoChecksumDAO(db, "checksums" + time);
-        NodeUsageDAO nodeUsageDAO = new MongoNodeUsageDAO(db, "nodeUsage" + time, serverIdentity);
+//        ModelLoader modelLoader = new DefaultModelLoader();
+//        TitanEntitiesDAO entitiesDAO = new TitanEntitiesDAO(titanSession);
+//        CassandraSimilarityDAO similarityDAO = new CassandraSimilarityDAO(cassandraSession);
 
-        Hasher hasher = new Hasher();
-        this.checksumService = new ChecksumServiceImpl(checksumDAO, 5, hasher);
-        this.patchService = new PatchServiceImpl(checksumService, hasher);
+//        HasherImpl hasher = new HasherImpl();
+//        this.checksumService = new ChecksumServiceImpl(checksumDAO, 5, hasher);
+//        this.patchService = new PatchServiceImpl(hasher, checksumService.getBlockSize());
 
-        CassandraSession cassandraSession = new CassandraSession("localhost", "alfresco", false);
+//        this.entitiesService = new EntitiesServiceImpl(
+//                EntityTaggerType.StanfordNLP.toString(), modelLoader, entitiesDAO,
+//                similarityDAO/*, contentStore*/);
 
-        ModelLoader modelLoader = new DefaultModelLoader();
-        CassandraEntitiesDAO entitiesDAO = new CassandraEntitiesDAO(cassandraSession);
-        CassandraSimilarityDAO similarityDAO = new CassandraSimilarityDAO(cassandraSession);
-
-        this.entitiesService = new EntitiesServiceImpl(
-                ExtracterType.StanfordNLP.toString(), modelLoader, entitiesDAO,
-                similarityDAO/*, contentStore*/);
-
-        this.contentStore = new CassandraContentStore(cassandraSession, checksumService, patchService,
-                rootDirectory.getAbsolutePath(), nodeUsageDAO, entitiesService, false);
+//        this.contentStore = new CassandraContentStore(cassandraSession, checksumService, patchService,
+//                nodeUsageDAO, entitiesService, false);
     }
 
     private void applyPatch(File f, PatchDocument patchDocument) throws FileNotFoundException, IOException
@@ -252,7 +262,7 @@ public class ContentStoreTest
     {
         String text = "Hello world";
 
-        UserContext.setUser(new BasicUserPrincipal("user1"));
+        UserContext.setUser("user1");
         try
         {
             String nodeId = GUID.generate();
@@ -260,10 +270,8 @@ public class ContentStoreTest
             MimeType mimeType = MimeType.TEXT;
             Node node = Node.build().nodeId(nodeId).nodeVersion(nodeVersion).mimeType(mimeType);
 
-            ContentReader contentReader = new StringContentReader(text, null, node);
-            ContentWriter contentWriter = contentStore.getWriter(node);
-            try(InputStream in = contentReader.getStream();
-                    OutputStream out = contentWriter.getOutputStream())
+            try(InputStream in = StringContentReader.build(text, null, node).getStream();
+                    OutputStream out = contentStore.getWriter(node).getOutputStream())
             {
                 IOUtils.copy(in, out);
             }
@@ -298,27 +306,88 @@ public class ContentStoreTest
         }
     }
 
+    interface Task<T>
+    {
+        String message();
+        T execute() throws Exception;
+    }
+
+    private <T> T time(Task<T> task) throws Exception
+    {
+        long start = System.nanoTime();
+        T ret = task.execute();
+        long end = System.nanoTime();
+
+        System.out.println(task.message() + " in " + (end - start)/1000000 + "ms");
+
+        return ret;
+    }
+
     @Test
     public void test2() throws Exception
     {
-        UserContext.setUser(new BasicUserPrincipal("user1"));
+        UserContext.setUser("user1");
 
         checksumService.setBlockSize(1024*8); // 8K
 
         String nodeId = GUID.generate();
         long nodeVersion = 1l;
         MimeType mimeType = MimeType.XLSX;
-        Node node = Node.build().nodeId(nodeId).nodeVersion(nodeVersion).mimeType(mimeType);
-
-        ContentWriter contentWriter = contentStore.getWriter(node);
+        final Node node = Node.build().nodeId(nodeId).nodeVersion(nodeVersion).mimeType(mimeType);
 
         try(InputStream in = getClass().getClassLoader().getResourceAsStream("test.xlsx");
-                OutputStream out = contentWriter.getOutputStream())
+                OutputStream out = contentStore.getWriter(node).getOutputStream())
         {
-            IOUtils.copy(in, out);
+            time(new Task<Void>()
+            {
+                @Override
+                public String message()
+                {
+                    return "Copy test.xlsx to Cassandra content store";
+                }
+
+                @Override
+                public Void execute() throws Exception
+                {
+                    IOUtils.copy(in, out);
+                    return null;
+                }
+            });
         }
 
-        try(ReadableByteChannel channel1 = Channels.newChannel(getClass().getClassLoader().getResourceAsStream("test1.xlsx")))
+        assertFileEquals(
+                time(new Task<InputStream>()
+                {
+                    @Override
+                    public String message()
+                    {
+                        return "Get test.xlsx from local file store";
+                    }
+
+                    @Override
+                    public InputStream execute() throws Exception
+                    {
+                        return getClass().getClassLoader().getResourceAsStream("test.xlsx");
+                    }
+                }),
+                time(new Task<InputStream>()
+                {
+                    @Override
+                    public String message()
+                    {
+                        return "Get test.xlsx from Cassandra content store";
+                    }
+
+                    @Override
+                    public InputStream execute() throws Exception
+                    {
+                        return contentStore.getReader(node).getStream();
+                    }
+                }),
+                new State());
+
+        try(ReadableByteChannel channel1 = Channels.newChannel(getClass().getClassLoader()
+                .getResourceAsStream("test1.xlsx")))
         {
             PatchDocument patchDocument = getPatch(node, channel1);
 
@@ -329,13 +398,12 @@ public class ContentStoreTest
             long end = System.nanoTime();
             System.out.println("Patch applied time = " + (end - start)/1000000 + "ms");
 
-            node = node.nodeVersion(node.getNodeVersion() + 1);
-            ContentReader reader1 = contentStore.getReader(node);
-            State state = new State();
+            Node node1 = node.nodeVersion(node.getNodeVersion() + 1);
+            ContentReader reader1 = contentStore.getReader(node1);
             try(InputStream in3 = getClass().getClassLoader().getResourceAsStream("test1.xlsx");
                     InputStream in4 = reader1.getStream())
             {
-                assertFileEquals(in3, in4, state);
+                assertFileEquals(in3, in4, new State());
             }
         }
         finally
@@ -349,7 +417,7 @@ public class ContentStoreTest
     {
         checksumService.setBlockSize(8192);
 
-        UserContext.setUser(new BasicUserPrincipal("user1"));
+        UserContext.setUser("user1");
 
         File f = copy("marbles-uncompressed.tif");
         Node node = Node.build().nodeId(GUID.generate()).nodeVersion(1l);
@@ -458,7 +526,7 @@ public class ContentStoreTest
     {
         String text = "Steve Glover was here";
 
-        UserContext.setUser(new BasicUserPrincipal("user1"));
+        UserContext.setUser("user1");
         try
         {
             String nodeId = GUID.generate();
@@ -497,7 +565,7 @@ public class ContentStoreTest
 
         checksumService.setBlockSize(8192);
 
-        UserContext.setUser(new BasicUserPrincipal("user1"));
+        UserContext.setUser("user1");
 
         String nodeId = GUID.generate();
         long nodeVersion = 1l;
@@ -588,7 +656,7 @@ public class ContentStoreTest
     {
         checksumService.setBlockSize(8192);
 
-        UserContext.setUser(new BasicUserPrincipal("user1"));
+        UserContext.setUser("user1");
 
         String nodeId = GUID.generate();
         long nodeVersion = 1l;

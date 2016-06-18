@@ -17,65 +17,64 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @param <T>
  */
-public class Entity<T> //implements Serializable
+public class Entity<T>
 {
-	private static final long serialVersionUID = -812303299537246310L;
-
-	private String type;
-	private List<EntityLocation> locations = new LinkedList<>();
+    private EntityType type;
+    private List<EntityLocation> locations = new LinkedList<>();
     private T entity;
-	private AtomicLong count = new AtomicLong();
+    private AtomicLong count = new AtomicLong();
 
-	public Entity()
-	{
-	}
-
-	public Entity(String type, T entity, long count)
+    public Entity()
     {
-	    super();
-	    this.type = type;
-	    this.entity = entity;
-	    this.count.set(count);
     }
 
-	public Entity(String type, T entity)
+    public Entity(EntityType type, T entity, long count)
     {
-	    super();
-	    this.type = type;
-	    this.entity = entity;
+        super();
+        this.type = type;
+        this.entity = entity;
+        this.count.set(count);
     }
 
-	public String getType()
-	{
-		return type;
-	}
+    public Entity(EntityType type, T entity)
+    {
+        super();
+        this.type = type;
+        this.entity = entity;
+    }
 
-	public void addLocation(EntityLocation entityLocation)
-	{
-//		EntityLocation entityLocation = new EntityLocation(startOffset, endOffset, probability, context);
-		locations.add(entityLocation);
-		count.incrementAndGet();
-	}
+    public EntityType getType()
+    {
+        return type;
+    }
 
-	public T getEntity()
-	{
-		return entity;
-	}
+    public void addLocation(EntityLocation entityLocation)
+    {
+        // EntityLocation entityLocation = new EntityLocation(startOffset,
+        // endOffset, probability, context);
+        locations.add(entityLocation);
+        count.incrementAndGet();
+    }
 
-	public long getCount()
-	{
-		return count.longValue();
-	}
+    public T getEntity()
+    {
+        return entity;
+    }
 
-	public List<EntityLocation> getLocations()
-	{
-		return locations;
-	}
+    public long getCount()
+    {
+        return count.longValue();
+    }
 
-	@Override
+    public List<EntityLocation> getLocations()
+    {
+        return locations;
+    }
+
+    @Override
     public String toString()
     {
-	    return "Entity [type=" + type + ", locations=" + locations
-	            + ", entity=" + entity + ", count=" + count + "]";
+        return "Entity [type=" + type + ", locations=" + locations + ", entity=" + entity
+                + ", count=" + count + "]";
     }
 }

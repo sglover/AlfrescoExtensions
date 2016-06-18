@@ -7,14 +7,17 @@
  */
 package org.sglover.entities.dao.cassandra;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+
+import javax.annotation.PostConstruct;
 
 import org.sglover.alfrescoextensions.common.CassandraSession;
 import org.sglover.alfrescoextensions.common.Node;
 import org.sglover.entities.dao.SimilarityDAO;
 import org.sglover.entities.values.Similarity;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.KeyspaceMetadata;
@@ -27,16 +30,27 @@ import com.datastax.driver.core.Row;
  * @author sglover
  *
  */
+@Component
 public class CassandraSimilarityDAO implements SimilarityDAO
 {
-    private final CassandraSession cassandraSession;
-    private final PreparedStatement insertSimilarityStatement;
-    private final PreparedStatement getSimilarityStatement;
+    @Autowired
+    private CassandraSession cassandraSession;
 
-    public CassandraSimilarityDAO(CassandraSession cassandraSession) throws IOException
+    private PreparedStatement insertSimilarityStatement;
+    private PreparedStatement getSimilarityStatement;
+
+    public CassandraSimilarityDAO()
+    {
+    }
+
+    public CassandraSimilarityDAO(CassandraSession cassandraSession)
     {
         this.cassandraSession = cassandraSession;
+    }
 
+    @PostConstruct
+    public void init()
+    {
         createSchema();
 
         this.insertSimilarityStatement = cassandraSession.getCassandraSession().prepare(

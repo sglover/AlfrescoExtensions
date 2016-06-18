@@ -35,6 +35,9 @@ public class Entities implements Serializable
     private Map<String, Entity<String>> dates;
     private Map<String, Entity<String>> money;
     private Map<String, Entity<String>> misc;
+    private Map<String, Entity<String>> times;
+    private Map<String, Entity<String>> numbers;
+    private Map<String, Entity<String>> durations;
 
     private Entities(String nodeId, String nodeVersion) {
         this();
@@ -49,6 +52,9 @@ public class Entities implements Serializable
         dates = new TreeMap<String, Entity<String>>();
         money = new TreeMap<String, Entity<String>>();
         misc = new TreeMap<String, Entity<String>>();
+        times = new TreeMap<String, Entity<String>>();
+        numbers = new TreeMap<String, Entity<String>>();
+        durations = new TreeMap<String, Entity<String>>();
     }
 
     public static Entities empty() {
@@ -69,6 +75,90 @@ public class Entities implements Serializable
         return nodeVersion;
     }
 
+    public Collection<Entity<String>> getTimes() {
+        return times.values();
+    }
+
+    public Entities addTime(String time, EntityLocation location) {
+        Entity<String> timeEntity = times.get(time);
+        if (timeEntity == null) {
+            timeEntity = new Entity<String>(EntityType.times, time);
+            times.put(time, timeEntity);
+        }
+
+        if (location != null) {
+            timeEntity.addLocation(location);
+        }
+
+        return this;
+    }
+
+    public Entities addTime(String time) {
+        Entity<String> timeEntity = times.get(time);
+        if (timeEntity == null) {
+            timeEntity = new Entity<String>(EntityType.times, time);
+            times.put(time, timeEntity);
+        }
+
+        return this;
+    }
+
+    public Collection<Entity<String>> getNumbers() {
+        return numbers.values();
+    }
+
+    public Entities addNumber(String number, EntityLocation location) {
+        Entity<String> numberEntity = numbers.get(number);
+        if (numberEntity == null) {
+            numberEntity = new Entity<String>(EntityType.numbers, number);
+            numbers.put(number, numberEntity);
+        }
+
+        if (location != null) {
+            numberEntity.addLocation(location);
+        }
+
+        return this;
+    }
+
+    public Entities addNumber(String number) {
+        Entity<String> numberEntity = numbers.get(number);
+        if (numberEntity == null) {
+            numberEntity = new Entity<String>(EntityType.numbers, number);
+            numbers.put(number, numberEntity);
+        }
+
+        return this;
+    }
+
+    public Collection<Entity<String>> getDurations() {
+        return durations.values();
+    }
+
+    public Entities addDuration(String duration, EntityLocation location) {
+        Entity<String> durationEntity = durations.get(duration);
+        if (durationEntity == null) {
+            durationEntity = new Entity<String>(EntityType.durations, duration);
+            durations.put(duration, durationEntity);
+        }
+
+        if (location != null) {
+            durationEntity.addLocation(location);
+        }
+
+        return this;
+    }
+
+    public Entities addDuration(String duration) {
+        Entity<String> durationEntity = durations.get(duration);
+        if (durationEntity == null) {
+            durationEntity = new Entity<String>(EntityType.durations, duration);
+            durations.put(duration, durationEntity);
+        }
+
+        return this;
+    }
+
     public Collection<Entity<String>> getLocations() {
         return locations.values();
     }
@@ -76,12 +166,22 @@ public class Entities implements Serializable
     public Entities addLocation(String name, EntityLocation location) {
         Entity<String> locationEntity = locations.get(name);
         if (locationEntity == null) {
-            locationEntity = new Entity<String>("location", name);
+            locationEntity = new Entity<String>(EntityType.locations, name);
             locations.put(name, locationEntity);
         }
 
         if (location != null) {
             locationEntity.addLocation(location);
+        }
+
+        return this;
+    }
+
+    public Entities addLocation(String name) {
+        Entity<String> locationEntity = locations.get(name);
+        if (locationEntity == null) {
+            locationEntity = new Entity<String>(EntityType.locations, name);
+            locations.put(name, locationEntity);
         }
 
         return this;
@@ -102,7 +202,7 @@ public class Entities implements Serializable
     public Entities addName(String name, EntityLocation location) {
         Entity<String> nameEntity = names.get(name);
         if (nameEntity == null) {
-            nameEntity = new Entity<String>("name", name);
+            nameEntity = new Entity<String>(EntityType.names, name);
             names.put(name, nameEntity);
         }
 
@@ -136,7 +236,7 @@ public class Entities implements Serializable
     public Entities addOrg(String name, EntityLocation location) {
         Entity<String> orgEntity = orgs.get(name);
         if (orgEntity == null) {
-            orgEntity = new Entity<String>("org", name);
+            orgEntity = new Entity<String>(EntityType.orgs, name);
             orgs.put(name, orgEntity);
         }
 
@@ -165,31 +265,31 @@ public class Entities implements Serializable
 
     public Entities addEntity(Entity<String> entity) {
         String name = entity.getEntity();
-        String type = entity.getType();
+        EntityType type = entity.getType();
         List<EntityLocation> locations = entity.getLocations();
         for (EntityLocation location : locations) {
             switch (type) {
-            case "name": {
+            case names: {
                 addName(name, location);
                 break;
             }
-            case "location": {
+            case locations: {
                 addLocation(name, location);
                 break;
             }
-            case "org": {
+            case orgs: {
                 addOrg(name, location);
                 break;
             }
-            case "misc": {
+            case misc: {
                 addMisc(name, location);
                 break;
             }
-            case "money": {
+            case money: {
                 addMoney(name, location);
                 break;
             }
-            case "date": {
+            case dates: {
                 addMoney(name, location);
                 break;
             }
@@ -208,12 +308,20 @@ public class Entities implements Serializable
     public void addDate(String name, EntityLocation location) {
         Entity<String> dateEntity = dates.get(name);
         if (dateEntity == null) {
-            dateEntity = new Entity<String>("date", name);
+            dateEntity = new Entity<String>(EntityType.dates, name);
             dates.put(name, dateEntity);
         }
 
         if (location != null) {
             dateEntity.addLocation(location);
+        }
+    }
+
+    public void addDate(String name) {
+        Entity<String> dateEntity = dates.get(name);
+        if (dateEntity == null) {
+            dateEntity = new Entity<String>(EntityType.dates, name);
+            dates.put(name, dateEntity);
         }
     }
 
@@ -224,12 +332,20 @@ public class Entities implements Serializable
     public void addMoney(String name, EntityLocation location) {
         Entity<String> moneyEntity = money.get(name);
         if (moneyEntity == null) {
-            moneyEntity = new Entity<String>("money", name);
+            moneyEntity = new Entity<String>(EntityType.money, name);
             money.put(name, moneyEntity);
         }
 
         if (location != null) {
             moneyEntity.addLocation(location);
+        }
+    }
+
+    public void addMoney(String name) {
+        Entity<String> moneyEntity = money.get(name);
+        if (moneyEntity == null) {
+            moneyEntity = new Entity<String>(EntityType.money, name);
+            money.put(name, moneyEntity);
         }
     }
 
@@ -240,12 +356,20 @@ public class Entities implements Serializable
     public void addMisc(String name, EntityLocation location) {
         Entity<String> miscEntity = misc.get(name);
         if (miscEntity == null) {
-            miscEntity = new Entity<String>("misc", name);
+            miscEntity = new Entity<String>(EntityType.misc, name);
             misc.put(name, miscEntity);
         }
 
         if (location != null) {
             miscEntity.addLocation(location);
+        }
+    }
+
+    public void addMisc(String name) {
+        Entity<String> miscEntity = misc.get(name);
+        if (miscEntity == null) {
+            miscEntity = new Entity<String>(EntityType.misc, name);
+            misc.put(name, miscEntity);
         }
     }
 

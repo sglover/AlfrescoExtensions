@@ -7,52 +7,57 @@
  */
 package org.sglover.nlp;
 
-import java.io.Serializable;
-
 /**
  * 
  * @author sglover
  *
  */
-public class EntityLocation implements Serializable
+public class EntityLocation
 {
-	private static final long serialVersionUID = -6996952615671789330L;
+    private long beginOffset;
+    private long endOffset;
+    private double probability;
+    private String context;
 
-	private long beginOffset;
-	private long endOffset;
-	private double probability;
-	private String context;
-
-	public EntityLocation(long beginOffset, long endOffset, double probability, String context)
+    public EntityLocation()
     {
-	    super();
-	    this.beginOffset = beginOffset;
-	    this.endOffset = endOffset;
-	    this.probability = probability;
-	    this.context = context;
+
     }
-	public long getBeginOffset()
-	{
-		return beginOffset;
-	}
-	
-	public long getEndOffset()
-	{
-		return endOffset;
-	}
-	public double getProbability()
-	{
-		return probability;
-	}
-	public String getContext()
-	{
-		return context;
-	}
-	@Override
+
+    public EntityLocation(long beginOffset, long endOffset, double probability, String context)
+    {
+        super();
+        this.beginOffset = beginOffset;
+        this.endOffset = endOffset;
+        this.probability = probability;
+        this.context = context;
+    }
+
+    public long getBeginOffset()
+    {
+        return beginOffset;
+    }
+
+    public long getEndOffset()
+    {
+        return endOffset;
+    }
+
+    public double getProbability()
+    {
+        return probability;
+    }
+
+    public String getContext()
+    {
+        return context;
+    }
+
+    @Override
     public String toString()
     {
-	    return "EntityLocation [beginOffset=" + beginOffset + ", endOffset=" + endOffset + ", probability="
-	            + probability + ", context=" + context + "]";
+        return "EntityLocation [beginOffset=" + beginOffset + ", endOffset=" + endOffset
+                + ", probability=" + probability + ", context=" + context + "]";
     }
 
 }

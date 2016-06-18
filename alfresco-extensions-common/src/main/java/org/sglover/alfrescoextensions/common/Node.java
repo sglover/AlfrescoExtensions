@@ -142,17 +142,9 @@ public class Node implements Serializable
     {
         final int prime = 31;
         int result = 1;
-        result = prime * result
-                + ((mimeType == null) ? 0 : mimeType.hashCode());
+        result = prime * result + ((mimeType == null) ? 0 : mimeType.hashCode());
         result = prime * result + ((nodeId == null) ? 0 : nodeId.hashCode());
-        result = prime * result
-                + ((nodeInternalId == null) ? 0 : nodeInternalId.hashCode());
-        result = prime * result
-                + ((nodePath == null) ? 0 : nodePath.hashCode());
-        result = prime * result
-                + ((nodeVersion == null) ? 0 : nodeVersion.hashCode());
-        result = prime * result
-                + ((versionLabel == null) ? 0 : versionLabel.hashCode());
+        result = prime * result + ((nodeVersion == null) ? 0 : nodeVersion.hashCode());
         return result;
     }
 
@@ -172,36 +164,13 @@ public class Node implements Serializable
         {
             if (other.nodeId != null)
                 return false;
-        }
-        else if (!nodeId.equals(other.nodeId))
-            return false;
-        if (nodeInternalId == null)
-        {
-            if (other.nodeInternalId != null)
-                return false;
-        }
-        else if (!nodeInternalId.equals(other.nodeInternalId))
-            return false;
-        if (nodePath == null)
-        {
-            if (other.nodePath != null)
-                return false;
-        }
-        else if (!nodePath.equals(other.nodePath))
+        } else if (!nodeId.equals(other.nodeId))
             return false;
         if (nodeVersion == null)
         {
             if (other.nodeVersion != null)
                 return false;
-        }
-        else if (!nodeVersion.equals(other.nodeVersion))
-            return false;
-        if (versionLabel == null)
-        {
-            if (other.versionLabel != null)
-                return false;
-        }
-        else if (!versionLabel.equals(other.versionLabel))
+        } else if (!nodeVersion.equals(other.nodeVersion))
             return false;
         return true;
     }

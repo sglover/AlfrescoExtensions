@@ -16,6 +16,7 @@ import org.sglover.checksum.NodeChecksums;
  */
 public interface ChecksumDAO
 {
-	void saveChecksums(NodeChecksums checksums);
-	NodeChecksums getChecksums(String nodeId, long nodeVersion);
+    void saveChecksums(NodeChecksums checksums);
+
+    NodeChecksums getChecksums(String nodeId, long nodeVersion);
 }

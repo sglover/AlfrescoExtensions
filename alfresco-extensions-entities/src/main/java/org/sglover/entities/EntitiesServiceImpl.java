@@ -9,8 +9,10 @@ package org.sglover.entities;
 
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
-import java.util.Collection;
 import java.util.Set;
+import java.util.stream.Stream;
+
+import javax.annotation.PostConstruct;
 
 import org.alfresco.services.minhash.MinHash;
 import org.alfresco.services.minhash.MinHashImpl;
@@ -27,48 +29,70 @@ import org.sglover.nlp.EntityTagger;
 import org.sglover.nlp.EntityTaggerCallback;
 import org.sglover.nlp.ModelLoader;
 import org.sglover.nlp.StanfordEntityTagger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Component;
 
 /**
  * 
  * @author sglover
  *
  */
+@Component
 public class EntitiesServiceImpl implements EntitiesService
 {
     private static final Log logger = LogFactory.getLog(EntitiesServiceImpl.class);
 
+    @Autowired
+    @Qualifier(value="titanEntitiesDAO")
     private EntitiesDAO entitiesDAO;
-    private SimilarityDAO similarityDAO;
-    private EntityTagger entityTagger;
-    private EntityExtracter entityExtracter;
-    private ModelLoader modelLoader;
-//    private ExecutorService executorService;
 
-    public EntitiesServiceImpl(String extracterTypeStr, ModelLoader modelLoader,
-            EntitiesDAO entitiesDAO, SimilarityDAO similarityDAO/*, ContentStore contentStore*/)
+    @Autowired
+    @Qualifier(value="titanSimilarityDAO")
+    private SimilarityDAO similarityDAO;
+
+    @Autowired()
+    @Qualifier(value="coreNLPEntityTagger")
+    private EntityTagger entityTagger;
+
+    @Autowired()
+    private EntityExtracter entityExtracter;
+
+    @Autowired
+    private ModelLoader modelLoader;
+
+    public EntitiesServiceImpl()
     {
-        this.modelLoader = modelLoader;
-        ExtracterType extracterType = ExtracterType.valueOf(extracterTypeStr);
-        this.entityTagger = buildEntityTagger(extracterType);
-        this.entitiesDAO = entitiesDAO;
-        this.similarityDAO = similarityDAO;
-//        this.executorService = Executors.newFixedThreadPool(10);
-        this.entityExtracter = buildEntityExtracter(/*executorService,*/
-                entityTagger/*, contentStore*/);
     }
 
-    public static enum ExtracterType
+    public EntitiesServiceImpl(String entityTaggerTypeStr, ModelLoader modelLoader,
+            EntitiesDAO entitiesDAO, SimilarityDAO similarityDAO)
+    {
+        this.modelLoader = modelLoader;
+        this.entitiesDAO = entitiesDAO;
+        this.similarityDAO = similarityDAO;
+        EntityTaggerType entityTaggerType = EntityTaggerType.valueOf(entityTaggerTypeStr);
+        this.entityTagger = buildEntityTagger(entityTaggerType);
+        this.entityExtracter = buildEntityExtracter(entityTagger);
+    }
+
+    @PostConstruct
+    public void init()
+    {
+    }
+
+    public static enum EntityTaggerType
     {
         CoreNLP, StanfordNLP;
     };
 
-    private EntityTagger buildEntityTagger(ExtracterType extracterType)
+    private EntityTagger buildEntityTagger(EntityTaggerType entityTaggerType)
     {
         EntityTagger entityTagger = null;
 
-        logger.debug("extracterType = " + extracterType);
+        logger.debug("entityTaggerType = " + entityTaggerType);
 
-        switch (extracterType)
+        switch (entityTaggerType)
         {
         case CoreNLP:
         {
@@ -81,18 +105,15 @@ public class EntitiesServiceImpl implements EntitiesService
             break;
         }
         default:
-            throw new IllegalArgumentException("Invalid entity.extracter.type");
+            throw new IllegalArgumentException("Invalid entityTaggerType");
         }
 
         return entityTagger;
     }
 
-    private EntityExtracter buildEntityExtracter(
-            /*ExecutorService executorService, */EntityTagger entityTagger/*,
-            ContentStore contentStore*/)
+    private EntityExtracter buildEntityExtracter(EntityTagger entityTagger)
     {
-        EntityExtracter entityExtracter = new EntityExtracter(/*contentStore,
-                */entityTagger/*, executorService*/);
+        EntityExtracter entityExtracter = new EntityExtracter(entityTagger);
         return entityExtracter;
     }
 
@@ -154,13 +175,13 @@ public class EntitiesServiceImpl implements EntitiesService
 //    }
 
     @Override
-    public Collection<Entity<String>> getNames(Node node)
+    public Stream<Entity<String>> getNames(Node node)
     {
         return entitiesDAO.getNames(node);
     }
 
     @Override
-    public Collection<Entity<String>> getOrgs(Node node)
+    public Stream<Entity<String>> getOrgs(Node node)
     {
         return entitiesDAO.getOrgs(node);
     }

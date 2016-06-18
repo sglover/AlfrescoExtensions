@@ -12,46 +12,46 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
-import org.alfresco.contentstore.ContentStore;
-import org.alfresco.httpclient.AuthenticationException;
+import javax.annotation.PostConstruct;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.sglover.alfrescoextensions.common.Node;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Component;
 
 /**
  * 
  * @author sglover
  *
  */
+@Component
 public class EntityExtracter
 {
     private static Log logger = LogFactory.getLog(EntityExtracter.class
             .getName());
 
-//    private ContentStore contentStore;
+    @Autowired()
+    @Qualifier(value="coreNLPEntityTagger")
     private EntityTagger entityTagger;
-//    private ExecutorService executorService;
 
     private Set<String> includeNodeTypes = new HashSet<>();
 
-    public EntityExtracter(/*ContentStore contentStore,*/
-            EntityTagger entityTagger/*, ExecutorService executorService*/)
+    public EntityExtracter()
     {
-//        this.contentStore = contentStore;
-        this.entityTagger = entityTagger;
-        this.includeNodeTypes.add("cm:content");
-//        this.executorService = executorService;
     }
 
-    public EntityExtracter(ContentStore contentStore, EntityTagger entityTagger)
+    public EntityExtracter(EntityTagger entityTagger)
     {
-//        this.contentStore = contentStore;
         this.entityTagger = entityTagger;
+    }
+
+    @PostConstruct
+    public void init()
+    {
         this.includeNodeTypes.add("cm:content");
-//        this.executorService = Executors.newFixedThreadPool(10);
     }
 
     public void getEntities(Node node, ReadableByteChannel channel, EntityTaggerCallback callback)
@@ -60,21 +60,7 @@ public class EntityExtracter
 
         ExtractEntitiesRunnable extractEntities = new ExtractEntitiesRunnable(node, channel, callback);
         extractEntities.run();
-//        executorService.execute(extractEntities);
     }
-
-    // public Entities getEntities(long nodeInternalId) throws IOException,
-    // AuthenticationException
-    // {
-    // Entities entities = null;
-    //
-    // logger.debug("Node " + nodeInternalId + " extracting entities");
-    //
-    // ExtractEntities extractEntities = new ExtractEntities(nodeInternalId);
-    // entities = extractEntities.execute();
-    //
-    // return entities;
-    // }
 
     private class ExtractEntitiesRunnable extends ExtractEntities implements
             Runnable
@@ -123,7 +109,7 @@ public class EntityExtracter
             this.channel = channel;
         }
 
-        public Entities execute() throws IOException, AuthenticationException
+        public Entities execute() throws IOException
         {
             Entities entities = null;
 

@@ -16,9 +16,6 @@ import java.nio.channels.ReadableByteChannel;
 import org.sglover.alfrescoextensions.common.Node;
 import org.sglover.checksum.NodeChecksums;
 import org.sglover.checksum.PatchDocument;
-import org.sglover.checksum.PatchDocumentImpl;
-
-import com.sun.jersey.multipart.MultiPart;
 
 /**
  * 

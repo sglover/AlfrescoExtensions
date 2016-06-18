@@ -15,17 +15,21 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.AbstractList;
 import java.util.List;
 
+import javax.annotation.PostConstruct;
+
 import org.alfresco.contentstore.protobuf.PatchDocumentProtos;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.sglover.alfrescoextensions.common.Hasher;
 import org.sglover.alfrescoextensions.common.Node;
 import org.sglover.checksum.Adler32;
-import org.sglover.checksum.ChecksumService;
 import org.sglover.checksum.NodeChecksums;
 import org.sglover.checksum.Patch;
 import org.sglover.checksum.PatchDocument;
 import org.sglover.checksum.PatchDocumentImpl;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import com.google.protobuf.ByteString;
 
@@ -34,18 +38,31 @@ import com.google.protobuf.ByteString;
  * @author sglover
  *
  */
+@Component
 public class PatchServiceImpl implements PatchService
 {
     private static Log logger = LogFactory.getLog(PatchServiceImpl.class);
 
+    @Value("${content.blocksize}")
     private int blockSize;
+
+    @Autowired
     private Hasher hasher;
 
-    public PatchServiceImpl(ChecksumService checksumService, Hasher hasher)
+    public PatchServiceImpl()
+    {
+    }
+
+    public PatchServiceImpl(Hasher hasher, int blockSize)
     {
         super();
-        this.blockSize = checksumService.getBlockSize();
         this.hasher = hasher;
+        this.blockSize = blockSize;
+    }
+
+    @PostConstruct
+    public void init()
+    {
     }
 
     @Override
