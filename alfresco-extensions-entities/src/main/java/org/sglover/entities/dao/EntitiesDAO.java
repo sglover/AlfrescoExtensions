@@ -25,8 +25,8 @@ public interface EntitiesDAO
 
     Stream<Node> matchingNodes(EntityType type, String name);
 
-    Stream<Entity<String>> getNames(Node node);
-    Stream<Entity<String>> getOrgs(Node node);
+    Stream<Entity<String>> getNames(Node node, int skip, int maxItems);
+    Stream<Entity<String>> getOrgs(Node node, int skip, int maxItems);
 
     void addEntities(Node node, Entities entities);
 }

@@ -7,6 +7,10 @@
  */
 package org.sglover.alfrescoextensions.common;
 
+import java.util.LinkedList;
+import java.util.List;
+import java.util.StringTokenizer;
+
 import javax.annotation.PostConstruct;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -28,7 +32,7 @@ import com.datastax.driver.core.policies.TokenAwarePolicy;
 public class CassandraSession
 {
     @Value("${cassandra.host}")
-    private String host;
+    private String hosts;
 
     @Value("${cassandra.keyspace}")
     private String keyspace;
@@ -38,9 +42,9 @@ public class CassandraSession
     private Cluster cluster;
     private Session cassandraSession;
 
-    public CassandraSession(String host, String keyspace, boolean recreate)
+    public CassandraSession(String hosts, String keyspace, boolean recreate)
     {
-        this.host = host;
+        this.hosts = hosts;
         this.keyspace = keyspace;
         this.recreate = recreate;
     }
@@ -57,7 +61,7 @@ public class CassandraSession
     @PostConstruct
     public void init()
     {
-        this.cassandraSession = buildCassandraSession(host);
+        this.cassandraSession = buildCassandraSession(hosts);
 
         if(recreate)
         {
@@ -78,11 +82,18 @@ public class CassandraSession
         return keyspace;
     }
 
-    private Session buildCassandraSession(String host)
+    private Session buildCassandraSession(String hostsStr)
     {
+        List<String> hosts = new LinkedList<>();
+        StringTokenizer st = new StringTokenizer(hostsStr, ",");
+        while(st.hasMoreTokens())
+        {
+            hosts.add(st.nextToken());
+        }
+
         this.cluster = Cluster
                 .builder()
-                .addContactPoint(host)
+                .addContactPoints(hosts.toArray(new String[0]))
                 .withRetryPolicy(DefaultRetryPolicy.INSTANCE)
                 .withLoadBalancingPolicy(
                          new TokenAwarePolicy(new DCAwareRoundRobinPolicy()))

@@ -16,14 +16,19 @@
 
     <dependencies>
         <dependency>
+			<groupId>commons-configuration</groupId>
+			<artifactId>commons-configuration</artifactId>
+			<version>1.10</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.tinkerpop</groupId>
-            <version>3.0.1-incubating</version>
+            <version>3.1.1-incubating</version>
             <artifactId>gremlin-server</artifactId>
         </dependency>
         <dependency>
            <groupId>com.thinkaurelius.titan</groupId>
            <artifactId>titan-core</artifactId>
-           <version>1.0.0</version>
+           <version>1.1.0-SNAPSHOT</version>
            <exclusions>
             <exclusion>
                 <artifactId>jackson-databind</artifactId>
@@ -38,7 +43,7 @@
         <dependency>
            <groupId>com.thinkaurelius.titan</groupId>
            <artifactId>titan-cassandra</artifactId>
-           <version>1.0.0</version>
+           <version>1.1.0-SNAPSHOT</version>
            <exclusions>
             <exclusion>
                 <artifactId>logback-classic</artifactId>
@@ -65,9 +70,14 @@
            </exclusions>
         </dependency>
         <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>2.6.6</version>
+        </dependency>
+        <dependency>
            <groupId>com.thinkaurelius.titan</groupId>
            <artifactId>titan-es</artifactId>
-           <version>1.0.0</version>
+           <version>1.1.0-SNAPSHOT</version>
         </dependency>
         <dependency>
 		  <groupId>commons-logging</groupId>

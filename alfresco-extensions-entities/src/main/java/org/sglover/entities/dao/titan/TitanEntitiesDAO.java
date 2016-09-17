@@ -9,17 +9,20 @@ package org.sglover.entities.dao.titan;
 
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
 import javax.annotation.PostConstruct;
 
-import org.alfresco.extensions.titan.TitanSession;
+import org.alfresco.extensions.titan.TitanDBSession;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
-import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.sglover.alfrescoextensions.common.Node;
@@ -35,6 +38,8 @@ import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.VertexLabel;
 import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
+import com.thinkaurelius.titan.core.schema.RelationTypeIndex;
+import com.thinkaurelius.titan.core.schema.SchemaStatus;
 import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.diskstorage.BackendException;
@@ -50,7 +55,7 @@ public class TitanEntitiesDAO implements EntitiesDAO
     private static Log logger = LogFactory.getLog(TitanEntitiesDAO.class);
 
     @Autowired
-    protected TitanSession titanSession;
+    protected TitanDBSession titanSession;
 
     protected TitanGraph graph;
 
@@ -58,7 +63,7 @@ public class TitanEntitiesDAO implements EntitiesDAO
     {
     }
 
-    public TitanEntitiesDAO(TitanSession titanSession) throws ConfigurationException, MalformedURLException, URISyntaxException, BackendException
+    public TitanEntitiesDAO(TitanDBSession titanSession) throws ConfigurationException, MalformedURLException, URISyntaxException, BackendException
     {
         this.titanSession = titanSession;
         init();
@@ -69,67 +74,211 @@ public class TitanEntitiesDAO implements EntitiesDAO
     {
         this.graph = titanSession.getGraph();
 
-        // Create Schema
+        graph.tx().rollback();
+
         TitanManagement mgmt = graph.openManagement();
 
-        VertexLabel entityVertexLabel = mgmt.getVertexLabel("ENTITY");
-        if(entityVertexLabel == null)
+        try
         {
-            entityVertexLabel = mgmt.makeVertexLabel("ENTITY").make();
-        }
-
-
-
-        PropertyKey entityTs = mgmt.getPropertyKey("entityTs");
-        if(entityTs == null)
-        {
-            entityTs = mgmt.makePropertyKey("entityTs").dataType(Long.class).make();
-        }
-
-        EdgeLabel nodeEntityEdgeLabel = mgmt.getEdgeLabel("NODEENTITY");
-        if(nodeEntityEdgeLabel == null)
-        {
-            nodeEntityEdgeLabel = mgmt.makeEdgeLabel("NODEENTITY").make();
-
-            TitanGraphIndex byEntityTs = mgmt.getGraphIndex("byEntityTs");
-            if(byEntityTs == null)
+            // Create Schema
+            VertexLabel nameEntityVertexLabel = mgmt.getVertexLabel("NameEntity");
+            if(nameEntityVertexLabel == null)
             {
-                byEntityTs = mgmt.buildIndex("byEntityTs", Edge.class)
-                        .addKey(entityTs)
-                        .indexOnly(nodeEntityEdgeLabel)
-                        .buildCompositeIndex();
+                nameEntityVertexLabel = mgmt.makeVertexLabel("NameEntity").make();
+            }
+
+            VertexLabel locationEntityVertexLabel = mgmt.getVertexLabel("LocationEntity");
+            if(locationEntityVertexLabel == null)
+            {
+                locationEntityVertexLabel = mgmt.makeVertexLabel("LocationEntity").make();
+            }
+
+            VertexLabel miscEntityVertexLabel = mgmt.getVertexLabel("MiscEntity");
+            if(miscEntityVertexLabel == null)
+            {
+                miscEntityVertexLabel = mgmt.makeVertexLabel("MiscEntity").make();
+            }
+
+            VertexLabel orgEntityVertexLabel = mgmt.getVertexLabel("OrgEntity");
+            if(orgEntityVertexLabel == null)
+            {
+                orgEntityVertexLabel = mgmt.makeVertexLabel("OrgEntity").make();
+            }
+
+            VertexLabel dateEntityVertexLabel = mgmt.getVertexLabel("DateEntity");
+            if(dateEntityVertexLabel == null)
+            {
+                dateEntityVertexLabel = mgmt.makeVertexLabel("DateEntity").make();
+            }
+
+            VertexLabel timeEntityVertexLabel = mgmt.getVertexLabel("TimeEntity");
+            if(timeEntityVertexLabel == null)
+            {
+                timeEntityVertexLabel = mgmt.makeVertexLabel("TimeEntity").make();
+            }
+
+            VertexLabel numberEntityVertexLabel = mgmt.getVertexLabel("NumberEntity");
+            if(numberEntityVertexLabel == null)
+            {
+                numberEntityVertexLabel = mgmt.makeVertexLabel("NumberEntity").make();
+            }
+
+            VertexLabel durationEntityVertexLabel = mgmt.getVertexLabel("DurationEntity");
+            if(durationEntityVertexLabel == null)
+            {
+                durationEntityVertexLabel = mgmt.makeVertexLabel("DurationEntity").make();
+            }
+
+            PropertyKey entityTs = mgmt.getPropertyKey("entityTs");
+            if(entityTs == null)
+            {
+                entityTs = mgmt.makePropertyKey("entityTs").dataType(Long.class).make();
+            }
+
+            PropertyKey strValue = mgmt.getPropertyKey("strValue");
+            if(strValue == null)
+            {
+                strValue = mgmt.makePropertyKey("strValue").dataType(String.class).make();
+            }
+
+            EdgeLabel nodeNameEntityLabel = mgmt.getEdgeLabel("NodeNameEntity");
+            if(nodeNameEntityLabel == null)
+            {
+                nodeNameEntityLabel = mgmt.makeEdgeLabel("NodeNameEntity").make();
+            }
+
+            EdgeLabel nodeLocationEntityLabel = mgmt.getEdgeLabel("NodeLocationEntity");
+            if(nodeLocationEntityLabel == null)
+            {
+                nodeLocationEntityLabel = mgmt.makeEdgeLabel("NodeLocationEntity").make();
+            }
+
+            EdgeLabel nodeMiscEntityLabel = mgmt.getEdgeLabel("NodeMiscEntity");
+            if(nodeMiscEntityLabel == null)
+            {
+                nodeMiscEntityLabel = mgmt.makeEdgeLabel("NodeMiscEntity").make();
+            }
+
+            EdgeLabel nodeOrgEntityLabel = mgmt.getEdgeLabel("NodeOrgEntity");
+            if(nodeOrgEntityLabel == null)
+            {
+                nodeOrgEntityLabel = mgmt.makeEdgeLabel("NodeOrgEntity").make();
+            }
+
+            EdgeLabel nodeDateEntityLabel = mgmt.getEdgeLabel("NodeDateEntity");
+            if(nodeDateEntityLabel == null)
+            {
+                nodeDateEntityLabel = mgmt.makeEdgeLabel("NodeDateEntity").make();
+            }
+
+            EdgeLabel nodeTimeEntityLabel = mgmt.getEdgeLabel("NodeTimeEntity");
+            if(nodeTimeEntityLabel == null)
+            {
+                nodeTimeEntityLabel = mgmt.makeEdgeLabel("NodeTimeEntity").make();
+            }
+
+            EdgeLabel nodeNumberEntityLabel = mgmt.getEdgeLabel("NodeNumberEntity");
+            if(nodeNumberEntityLabel == null)
+            {
+                nodeNumberEntityLabel = mgmt.makeEdgeLabel("NodeNumberEntity").make();
+            }
+
+            EdgeLabel nodeDurationEntityLabel = mgmt.getEdgeLabel("NodeDurationEntity");
+            if(nodeDurationEntityLabel == null)
+            {
+                nodeDurationEntityLabel = mgmt.makeEdgeLabel("NodeDurationEntity").make();
+            }
+
+            TitanGraphIndex byNameEntity = mgmt.getGraphIndex("byNameEntity");
+            if(byNameEntity == null)
+            {
+                byNameEntity = mgmt.buildIndex("byNameEntity", Vertex.class)
+                    .indexOnly(nameEntityVertexLabel)
+                    .addKey(strValue)
+                    .unique()
+                    .buildCompositeIndex();
+                mgmt.setConsistency(byNameEntity, ConsistencyModifier.DEFAULT);
+            }
+
+            TitanGraphIndex byLocationEntity = mgmt.getGraphIndex("byLocationEntity");
+            if(byLocationEntity == null)
+            {
+                byLocationEntity = mgmt.buildIndex("byLocationEntity", Vertex.class)
+                    .indexOnly(locationEntityVertexLabel)
+                    .addKey(strValue)
+                    .unique()
+                    .buildCompositeIndex();
+                mgmt.setConsistency(byLocationEntity, ConsistencyModifier.DEFAULT);
+            }
+
+            TitanGraphIndex byMiscEntity = mgmt.getGraphIndex("byMiscEntity");
+            if(byMiscEntity == null)
+            {
+                byMiscEntity = mgmt.buildIndex("byMiscEntity", Vertex.class)
+                    .indexOnly(miscEntityVertexLabel)
+                    .addKey(strValue)
+                    .unique()
+                    .buildCompositeIndex();
+                mgmt.setConsistency(byMiscEntity, ConsistencyModifier.DEFAULT);
+            }
+
+            TitanGraphIndex byOrgEntity = mgmt.getGraphIndex("byOrgEntity");
+            if(byOrgEntity == null)
+            {
+                byOrgEntity = mgmt.buildIndex("byOrgEntity", Vertex.class)
+                    .indexOnly(orgEntityVertexLabel)
+                    .addKey(strValue)
+                    .unique()
+                    .buildCompositeIndex();
+                mgmt.setConsistency(byOrgEntity, ConsistencyModifier.DEFAULT);
+            }
+
+            getOrCreateEdgeIndex(mgmt, "NodeNameEntity", "nodeNameEntity", Arrays.asList("entityTs"));
+            getOrCreateEdgeIndex(mgmt, "NodeLocationEntity", "nodeLocationEntity", Arrays.asList("entityTs"));
+            getOrCreateEdgeIndex(mgmt, "NodeOrgEntity", "nodeOrgEntity", Arrays.asList("entityTs"));
+            getOrCreateEdgeIndex(mgmt, "NodeMiscEntity", "nodeMiscEntity", Arrays.asList("entityTs"));
+            getOrCreateEdgeIndex(mgmt, "NodeDurationEntity", "nodeDurationEntity", Arrays.asList("entityTs"));
+            getOrCreateEdgeIndex(mgmt, "NodeDateEntity", "nodeDateEntity", Arrays.asList("entityTs"));
+            getOrCreateEdgeIndex(mgmt, "NodeTimeEntity", "nodeTimeEntity", Arrays.asList("entityTs"));
+            getOrCreateEdgeIndex(mgmt, "NodeNumberEntity", "nodeNumberEntity", Arrays.asList("entityTs"));
+        }
+        finally
+        {
+            graph.tx().commit();
+            if(mgmt.isOpen())
+            {
+                mgmt.commit();
             }
         }
+    }
 
+    private void getOrCreateEdgeIndex(TitanManagement mgmt, String edgeLabel, String indexName, List<String> keyNames)
+    {
+        String name = edgeLabel + "." + indexName;
 
+        EdgeLabel edgeEntityLabel = mgmt.getEdgeLabel(edgeLabel);
+        RelationTypeIndex entityIndex = mgmt.getRelationIndex(edgeEntityLabel, indexName);
+        logger.info(name + " index " + entityIndex);
 
-
-        PropertyKey entityType = mgmt.getPropertyKey("entityType");
-        if(entityType == null)
+        if(entityIndex == null)
         {
-            // TODO add signature
-            entityType = mgmt.makePropertyKey("entityType").dataType(String.class).make();
+            logger.info("Creating " + name + " index");
+
+            List<PropertyKey> keys = new ArrayList<>(keyNames.size());
+            for(String keyName : keyNames)
+            {
+                PropertyKey key = mgmt.getPropertyKey(keyName);
+                keys.add(key);
+            }
+
+            entityIndex = mgmt.buildEdgeIndex(edgeEntityLabel, indexName, Direction.OUT, 
+                    keys.toArray(new PropertyKey[0]));
+
+            logger.info("Created " + name + " index " + entityIndex);
         }
 
-        PropertyKey entityValue = mgmt.getPropertyKey("entityValue");
-        if(entityValue == null)
-        {
-            entityValue = mgmt.makePropertyKey("entityValue").dataType(String.class).make();
-        }
-
-        TitanGraphIndex byEntity = mgmt.getGraphIndex("byEntity");
-        if(byEntity == null)
-        {
-            byEntity = mgmt.buildIndex("byEntity", Vertex.class)
-                .indexOnly(entityVertexLabel)
-                .addKey(entityType)
-                .addKey(entityValue)
-                .unique()
-                .buildCompositeIndex();
-            mgmt.setConsistency(byEntity, ConsistencyModifier.DEFAULT);
-        }
-
-        mgmt.commit();
+        SchemaStatus status = entityIndex.getIndexStatus();
+        logger.info(name + " status = " + status);
     }
 
     @Override
@@ -139,8 +288,8 @@ public class TitanEntitiesDAO implements EntitiesDAO
                 .hasLabel("NODE")
                 .has("nid", node.getNodeId())
                 .has("nv", node.getNodeVersion())
-                .out("NODEENTITY")
-                .hasLabel("ENTITY")
+                .out("NodeNameEntity", "NodeLocationEntity", "NodeOrgEntity", "NodeMiscEntity")
+                .hasLabel("NameEntity", "LocationEntity", "OrgEntity", "MiscEntity")
                 .map(ne -> {
                     String entityTypeStr = (String)ne.get().property("entityType").value();
                     EntityType entityType = EntityType.valueOf(entityTypeStr);
@@ -192,32 +341,36 @@ public class TitanEntitiesDAO implements EntitiesDAO
     }
 
     @Override
-    public Stream<Entity<String>> getNames(Node node)
+    public Stream<Entity<String>> getNames(Node node, int skip, int maxItems)
     {
         return graph.traversal().V()
             .hasLabel("NODE")
             .has("nid", node.getNodeId())
             .has("nv", node.getNodeVersion())
-            .outE("NODEENTITY")
-            .has("type", "nameEntity")
-            .inV()
+            .outE("NodeNameEntity")
             .order()
-                .by("entityValue", Order.incr)
+                .by("entityTs", Order.incr)
+            .range(skip, skip + maxItems)
+            .inV()
             .map(ne -> {
-                String value = (String)ne.get().property("entityValue").value();
+                String value = (String)ne.get().property("strValue").value();
                 return new Entity<String>(EntityType.names, value);
             })
             .toStream();
     }
 
     @Override
-    public Stream<Entity<String>> getOrgs(Node node)
+    public Stream<Entity<String>> getOrgs(Node node, int skip, int maxItems)
     {
         return graph.traversal().V()
                 .hasLabel("NODE")
                 .has("nid", node.getNodeId())
                 .has("nv", node.getNodeVersion())
-                .out("orgEntity")
+                .outE("NodeOrgEntity")
+                .order()
+                    .by("entityTs", Order.incr)
+                .range(skip, skip + maxItems)
+                .inV()
                 .map(ne -> {
                     String value = (String)ne.get().property("entityValue").value();
                     return new Entity<String>(EntityType.orgs, value);
@@ -225,19 +378,122 @@ public class TitanEntitiesDAO implements EntitiesDAO
                 .toStream();
     }
 
-    private Vertex getOrAddEntity(EntityType entityType, Object entityValue)
+    private Vertex getOrAddNameEntity(String name)
     {
         return graph.traversal().V()
-            .hasLabel("ENTITY")
-            .has("entityType", entityType.toString())
-            .has("entityValue", entityValue)
+            .hasLabel("NameEntity")
+            .has("strValue", name)
             .tryNext()
             .orElseGet(() -> {
-                logger.info("Adding entity " + entityType.toString() + "(" + entityValue.toString() + ")");
+                logger.info("Adding name entity " + name);
 
-                Vertex ev = graph.addVertex("ENTITY");
-                ev.property("entityType", entityType.toString());
-                ev.property("entityValue", entityValue.toString());
+                Vertex ev = graph.addVertex("NameEntity");
+                ev.property("strValue", name);
+                return ev;
+            });
+    }
+
+    private Vertex getOrAddLocationEntity(String location)
+    {
+        return graph.traversal().V()
+            .hasLabel("LocationEntity")
+            .has("strValue", location)
+            .tryNext()
+            .orElseGet(() -> {
+                logger.info("Adding location entity " + location);
+
+                Vertex ev = graph.addVertex("LocationEntity");
+                ev.property("strValue", location);
+                return ev;
+            });
+    }
+
+    private Vertex getOrAddMiscEntity(String misc)
+    {
+        return graph.traversal().V()
+            .hasLabel("MiscEntity")
+            .has("strValue", misc)
+            .tryNext()
+            .orElseGet(() -> {
+                logger.info("Adding misc entity " + misc);
+
+                Vertex ev = graph.addVertex("MiscEntity");
+                ev.property("strValue", misc);
+                return ev;
+            });
+    }
+
+    private Vertex getOrAddOrgEntity(String org)
+    {
+        return graph.traversal().V()
+            .hasLabel("OrgEntity")
+            .has("strValue", org)
+            .tryNext()
+            .orElseGet(() -> {
+                logger.info("Adding org entity " + org);
+
+                Vertex ev = graph.addVertex("OrgEntity");
+                ev.property("strValue", org);
+                return ev;
+            });
+    }
+
+    private Vertex getOrAddDateEntity(String date)
+    {
+        return graph.traversal().V()
+            .hasLabel("DateEntity")
+            .has("strValue", date)
+            .tryNext()
+            .orElseGet(() -> {
+                logger.info("Adding date entity " + date);
+
+                Vertex ev = graph.addVertex("DateEntity");
+                ev.property("dateValue", date);
+                return ev;
+            });
+    }
+
+    private Vertex getOrAddTimeEntity(String time)
+    {
+        return graph.traversal().V()
+            .hasLabel("TimeEntity")
+            .has("strValue", time)
+            .tryNext()
+            .orElseGet(() -> {
+                logger.info("Adding time entity " + time);
+
+                Vertex ev = graph.addVertex("TimeEntity");
+                ev.property("strValue", time);
+                return ev;
+            });
+    }
+
+    private Vertex getOrAddNumberEntity(String number)
+    {
+        return graph.traversal().V()
+            .hasLabel("NumberEntity")
+            .has("strValue", number)
+            .tryNext()
+            .orElseGet(() -> {
+                logger.info("Adding number entity " + number);
+
+                Vertex ev = graph.addVertex("NumberEntity");
+                ev.property("strValue", number);
+                return ev;
+            });
+    }
+
+    private Vertex getOrAddDurationEntity(String duration)
+    {
+        return graph.traversal().V()
+            .hasLabel("DurationEntity")
+            .has("strValue", duration)
+            .tryNext()
+            .orElseGet(() -> {
+                logger.info("Adding duration entity " + duration);
+
+                Vertex ev = graph.addVertex("DurationEntity");
+                ev.property("strValue", duration);
                 return ev;
             });
     }
@@ -253,65 +509,58 @@ public class TitanEntitiesDAO implements EntitiesDAO
                 entities.getNames().stream().forEach(name -> {
                     logger.info("Entity " + name + " for " + node.getNodeId() + "." + node.getNodeVersion());
 
-                    nv.addEdge("NODEENTITY",
-                            getOrAddEntity(name.getType(), name.getEntity()),
-                            "ts", System.currentTimeMillis());
+                    nv.addEdge("NodeNameEntity",
+                            getOrAddNameEntity(name.getEntity()),
+                            "entityTs", System.currentTimeMillis());
                 });
 
                 entities.getLocations().stream().forEach(name -> {
                     logger.info("Entity " + name + " for " + node.getNodeId() + "." + node.getNodeVersion());
 
-                    nv.addEdge("NODEENTITY",
-                            getOrAddEntity(name.getType(), name.getEntity()),
-                            "ts", System.currentTimeMillis());
+                    nv.addEdge("NodeLocationEntity", getOrAddLocationEntity(name.getEntity()),
+                            "entityTs", System.currentTimeMillis());
                 });
 
                 entities.getMisc().stream().forEach(name -> {
                     logger.info("Entity " + name + " for " + node.getNodeId() + "." + node.getNodeVersion());
 
-                    nv.addEdge("NODEENTITY",
-                            getOrAddEntity(name.getType(), name.getEntity()),
-                            "ts", System.currentTimeMillis());
+                    nv.addEdge("NodeMiscEntity", getOrAddMiscEntity(name.getEntity()),
+                            "entityTs", System.currentTimeMillis());
                 });
 
                 entities.getOrgs().stream().forEach(name -> {
                     logger.info("Entity " + name + " for " + node.getNodeId() + "." + node.getNodeVersion());
 
-                    nv.addEdge("NODEENTITY",
-                            getOrAddEntity(name.getType(), name.getEntity()),
-                            "ts", System.currentTimeMillis());
+                    nv.addEdge("NodeOrgEntity", getOrAddOrgEntity(name.getEntity()),
+                            "entityTs", System.currentTimeMillis());
                 });
 
                 entities.getDates().stream().forEach(date -> {
                     logger.info("Entity " + date + " for " + node.getNodeId() + "." + node.getNodeVersion());
 
-                    nv.addEdge("NODEENTITY",
-                            getOrAddEntity(date.getType(), date.getEntity()),
-                            "ts", System.currentTimeMillis());
+                    nv.addEdge("NodeDateEntity", getOrAddDateEntity(date.getEntity()),
+                            "entityTs", System.currentTimeMillis());
                 });
 
                 entities.getTimes().stream().forEach(date -> {
                     logger.info("Entity " + date + " for " + node.getNodeId() + "." + node.getNodeVersion());
 
-                    nv.addEdge("NODEENTITY",
-                            getOrAddEntity(date.getType(), date.getEntity()),
-                            "ts", System.currentTimeMillis());
+                    nv.addEdge("NodeTimeEntity", getOrAddTimeEntity(date.getEntity()),
+                            "entityTs", System.currentTimeMillis());
                 });
 
                 entities.getNumbers().stream().forEach(date -> {
                     logger.info("Entity " + date + " for " + node.getNodeId() + "." + node.getNodeVersion());
 
-                    nv.addEdge("NODEENTITY",
-                            getOrAddEntity(date.getType(), date.getEntity()),
-                            "ts", System.currentTimeMillis());
+                    nv.addEdge("NodeNumberEntity", getOrAddNumberEntity(date.getEntity()),
+                            "entityTs", System.currentTimeMillis());
                 });
 
                 entities.getDurations().stream().forEach(date -> {
                     logger.info("Entity " + date + " for " + node.getNodeId() + "." + node.getNodeVersion());
 
-                    nv.addEdge("NODEENTITY",
-                            getOrAddEntity(date.getType(), date.getEntity()),
-                            "ts", System.currentTimeMillis());
+                    nv.addEdge("NodeDurationEntity", getOrAddDurationEntity(date.getEntity()),
+                            "entityTs", System.currentTimeMillis());
                 });
             });
     }

@@ -10,15 +10,21 @@ package org.alfresco.extensions.titan;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.LinkedList;
+import java.util.List;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
+import org.apache.commons.configuration.CompositeConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.MapConfiguration;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tinkerpop.gremlin.structure.T;
+import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -35,11 +41,11 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
  * @author sglover
  *
  */
-@Component
+@Component("tsess")
 @Scope("singleton")
-public class TitanSession
+public class TitanDBSessionImpl implements TitanDBSession
 {
-    private static Log logger = LogFactory.getLog(TitanSession.class);
+    private static Log logger = LogFactory.getLog(TitanDBSessionImpl.class);
 
     private Configuration conf;
 
@@ -48,31 +54,79 @@ public class TitanSession
     @Value("${titan.clear}")
     private boolean clear = false;
 
-    @Value("${titan.configurationFile}")
-    private String titanConfigurationFile;
+//    @Value("${titan.configurationFile}")
+    private String titanConfigurationFile = "application.properties";
 
-//    private String gremlinConfig = "conf/gremlin-server.yaml";
+    public class GraphTransactionImpl implements GraphTransaction
+    {
+        private Transaction tx;
 
-    public TitanSession(boolean clear, String titanConfigurationFile) throws ConfigurationException, MalformedURLException, URISyntaxException, BackendException
+        GraphTransactionImpl()
+        {
+            this.tx = getGraph().tx();
+        }
+
+        public TitanGraph getTitanGraph()
+        {
+            return getGraph();
+        }
+
+//      return tx.submit(new Function<Graph, T>() {
+//      public T apply(Graph g)
+//      {
+//          return work.execute();
+//      }
+//  })
+//  .exponentialBackoff(5);
+
+        @Override
+        public T execute(TxnWork<T> work)
+        {
+            try
+            {
+                tx.open();
+                return work.execute(this);
+            }
+            finally
+            {
+                tx.commit();
+            }
+        }
+    }
+
+    @Override
+    public GraphTransaction tx()
+    {
+        return new GraphTransactionImpl();
+    }
+
+//    @Override
+//    public Transaction txn()
+//    {
+//        return graph.tx();
+//    }
+
+    public TitanDBSessionImpl(boolean clear, String titanConfigurationFile) throws Exception
     {
         this.clear = clear;
         this.titanConfigurationFile = titanConfigurationFile;
+        buildTitanSession();
     }
 
-    public TitanSession() throws ConfigurationException, MalformedURLException, URISyntaxException, BackendException
+    public TitanDBSessionImpl()
     {
     }
 
     @PostConstruct
     public void buildTitanSession() throws Exception
     {
-        if(titanConfigurationFile == null)
-        {
-            titanConfigurationFile = "conf/repo.properties";
-        }
         URL url = getClass().getClassLoader().
                 getResource(titanConfigurationFile).toURI().toURL();
-        this.conf = new PropertiesConfiguration(url);
+
+        List<Configuration> configs = new LinkedList<>();
+        configs.add(new SystemPropsConfiguration());
+        configs.add(new PropertiesConfiguration(url));
+        this.conf = new CompositeConfiguration(configs);
 
         if(clear)
         {
@@ -82,6 +136,14 @@ public class TitanSession
         this.graph = TitanFactory.open(conf);
 
 //        gremlin();
+    }
+
+    public static class SystemPropsConfiguration extends MapConfiguration
+    {
+        public SystemPropsConfiguration()
+        {
+            super(System.getProperties());
+        }
     }
 
 //    private static void configureMetrics(final Settings.ServerMetrics settings) {
