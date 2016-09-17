@@ -175,15 +175,15 @@ public class EntitiesServiceImpl implements EntitiesService
 //    }
 
     @Override
-    public Stream<Entity<String>> getNames(Node node)
+    public Stream<Entity<String>> getNames(Node node, int skip, int maxItems)
     {
-        return entitiesDAO.getNames(node);
+        return entitiesDAO.getNames(node, skip, maxItems);
     }
 
     @Override
-    public Stream<Entity<String>> getOrgs(Node node)
+    public Stream<Entity<String>> getOrgs(Node node, int skip, int maxItems)
     {
-        return entitiesDAO.getOrgs(node);
+        return entitiesDAO.getOrgs(node, skip, maxItems);
     }
 
     public double similarity(String nodeId1, String nodeVersion1,

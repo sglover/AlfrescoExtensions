@@ -233,7 +233,7 @@ public class CassandraEntitiesDAO implements EntitiesDAO
     }
 
     @Override
-    public Stream<Entity<String>> getNames(Node node)
+    public Stream<Entity<String>> getNames(Node node, int skip, int maxItems)
     {
         Collection<Entity<String>> ret = new HashSet<>();
 
@@ -249,7 +249,7 @@ public class CassandraEntitiesDAO implements EntitiesDAO
     }
 
     @Override
-    public Stream<Entity<String>> getOrgs(Node node)
+    public Stream<Entity<String>> getOrgs(Node node, int skip, int maxItems)
     {
         Collection<Entity<String>> ret = new HashSet<>();
 
@@ -263,37 +263,6 @@ public class CassandraEntitiesDAO implements EntitiesDAO
 
         return ret.stream();
     }
-
-//    @Override
-//    public EntityCounts<String> getEntityCounts(Node node) {
-//        String nodeId = node.getNodeId();
-//        String nodeVersion = node.getVersionLabel();
-//
-//        EntityCounts<String> ret = new EntityCounts<>();
-//
-//        QueryBuilder queryBuilder = QueryBuilder
-//                // .and("c").is(true)
-//                .start("n").is(nodeId).and("v").is(nodeVersion);
-//        DBObject query = queryBuilder.get();
-//
-//        BasicDBObjectBuilder orderByBuilder = BasicDBObjectBuilder.start("c",
-//                1);
-//        DBObject orderBy = orderByBuilder.get();
-//
-//        DBCursor cursor = entitiesData.find(query).sort(orderBy);
-//        try {
-//            for (DBObject dbObject : cursor) {
-//                Entity<String> entity = getEntity(dbObject);
-//                ret.addEntity(entity);
-//            }
-//        } finally {
-//            if (cursor != null) {
-//                cursor.close();
-//            }
-//        }
-//
-//        return ret;
-//    }
 
     @Override
     public Stream<Node> matchingNodes(EntityType type, String name)
@@ -327,210 +296,8 @@ public class CassandraEntitiesDAO implements EntitiesDAO
     @Override
     public Entities getEntities(Node node)
     {
+        // TODO
         Entities entities = Entities.empty();
-
-        getNames(node).forEach(nameEntity ->
-        {
-            entities.addName(nameEntity.getEntity());
-        });
-
-        getOrgs(node).forEach(nameEntity ->
-        {
-            entities.addOrg(nameEntity.getEntity());
-        });
-
         return entities;
     }
-
-//    @Override
-//    public EntityCounts<String> getNodeMatches(Entities entities) {
-//        EntityCounts<String> entityCounts = new EntityCounts<>();
-//
-//        List<DBObject> ors = new LinkedList<>();
-//
-//        {
-//            List<String> entityNames = new LinkedList<>();
-//            for (Entity<String> entity : entities.getNames()) {
-//                entityNames.add(entity.getEntity());
-//            }
-//
-//            String key = map.get("name");
-//            DBObject dbObject = QueryBuilder.start(key).in(entityNames).get();
-//            ors.add(dbObject);
-//        }
-//
-//        {
-//            List<String> entityNames = new LinkedList<>();
-//            for (Entity<String> entity : entities.getLocations()) {
-//                entityNames.add(entity.getEntity());
-//            }
-//
-//            String key = map.get("location");
-//            DBObject dbObject = QueryBuilder.start(key).in(entityNames).get();
-//            ors.add(dbObject);
-//        }
-//
-//        QueryBuilder queryBuilder = QueryBuilder.start()
-//                .or(ors.toArray(new DBObject[0]));
-//
-//        DBObject query = queryBuilder.get();
-//
-//        BasicDBObjectBuilder orderByBuilder = BasicDBObjectBuilder.start("c",
-//                1);
-//        DBObject orderBy = orderByBuilder.get();
-//
-//        DBCursor cursor = entitiesData.find(query).sort(orderBy);
-//        try {
-//            for (DBObject dbObject : cursor) {
-//                Entity<String> entity = getEntity(dbObject);
-//                entityCounts.addEntity(entity);
-//            }
-//        } finally {
-//            if (cursor != null) {
-//                cursor.close();
-//            }
-//        }
-//
-//        return entityCounts;
-//    }
-
-//    @Override
-//    public Entities getEntities(Node node, Set<String> types) {
-//        String nodeId = node.getNodeId();
-//        String nodeVersion = node.getVersionLabel();
-//
-//        Entities entities = Entities.empty(nodeId, nodeVersion);
-//
-//        QueryBuilder queryBuilder = QueryBuilder.start("n").is(nodeId).and("v")
-//                .is(nodeVersion);
-//
-//        if (types != null && types.size() > 0) {
-//            queryBuilder.and("t").in(types);
-//        }
-//
-//        DBObject query = queryBuilder.get();
-//
-//        DBCursor cursor = entitiesData.find(query);
-//        try {
-//            for (DBObject dbObject : cursor) {
-//                Entity<String> entity = getEntity(dbObject);
-//                entities.addEntity(entity);
-//            }
-//        } finally {
-//            if (cursor != null) {
-//                cursor.close();
-//            }
-//        }
-//
-//        return entities;
-//    }
-
-//    private boolean different(String nodeId1, String nodeVersion1,
-//            String nodeId2, String nodeVersion2) {
-//        boolean different = false;
-//        if (!nodeId1.equals(nodeId2)) {
-//            different = true;
-//        } else {
-//            if (nodeVersion1 != nodeVersion2) {
-//                different = !EqualsHelper.nullSafeEquals(nodeVersion1,
-//                        nodeVersion2);
-//            }
-//        }
-//
-//        return different;
-//    }
-
-//    @Override
-//    public List<Entities> getEntities() {
-//        List<Entities> allEntities = new LinkedList<>();
-//
-//        QueryBuilder queryBuilder = QueryBuilder.start();
-//
-//        DBObject query = queryBuilder.get();
-//
-//        DBObject orderBy = BasicDBObjectBuilder.start("n", 1).add("v", 1).get();
-//
-//        DBCursor cursor = entitiesData.find(query).sort(orderBy);
-//        try {
-//            Entities entities = null;
-//
-//            for (DBObject dbObject : cursor) {
-//                String nodeId = (String) dbObject.get("n");
-//                String nodeVersion = (String) dbObject.get("v");
-//                Entity<String> entity = getEntity(dbObject);
-//                if (entities == null) {
-//                    entities = Entities.empty(nodeId, nodeVersion);
-//                    allEntities.add(entities);
-//                } else {
-//                    if (different(nodeId, nodeVersion, entities.getNodeId(),
-//                            entities.getNodeVersion())) {
-//                        entities = Entities.empty(nodeId, nodeVersion);
-//                        allEntities.add(entities);
-//                    }
-//                }
-//                entities.addEntity(entity);
-//            }
-//        } finally {
-//            if (cursor != null) {
-//                cursor.close();
-//            }
-//        }
-//
-//        return allEntities;
-//    }
-
-//    @Override
-//    public List<Entities> unprocessedEntites() {
-//        // TODO Auto-generated method stub
-//        return null;
-//    }
-
-//    @Override
-//    public List<Entities> getEntitiesForTxn(String txnId) {
-//        List<Entities> ret = new LinkedList<>();
-//
-//        QueryBuilder queryBuilder = QueryBuilder.start("tx").is(txnId);
-//
-//        DBObject query = queryBuilder.get();
-//
-//        DBCursor cursor = entitiesData.find(query);
-//        try {
-//            Entities entities = null;
-//
-//            for (DBObject dbObject : cursor) {
-//                String nodeId = (String) dbObject.get("n");
-//                String nodeVersion = (String) dbObject.get("v");
-//                Entity<String> entity = getEntity(dbObject);
-//                if (entities == null) {
-//                    entities = Entities.empty(nodeId, nodeVersion);
-//                    ret.add(entities);
-//                } else {
-//                    if (!nodeId.equals(entities.getNodeId())
-//                            && !EqualsHelper.nullSafeEquals(nodeVersion,
-//                                    entities.getNodeVersion())) {
-//                        entities = Entities.empty(nodeId, nodeVersion);
-//                        ret.add(entities);
-//                    }
-//                }
-//                entities.addEntity(entity);
-//            }
-//        } finally {
-//            if (cursor != null) {
-//                cursor.close();
-//            }
-//        }
-//
-//        return ret;
-//    }
-
-    // @Override
-    // public EntityCounts<String> overlap(Node node)
-    // {
-    // String nodeId = node.getNodeId();
-    // String nodeVersion = node.getNodeVersion();
-    //
-    // Entities entities = getEntities(node, allTypes);
-    // EntityCounts<String> entityCounts = getNodeMatches(entities);
-    // return entityCounts;
-    // }
 }

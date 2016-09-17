@@ -49,21 +49,25 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO
 
     private Map<String, String> map = new HashMap<>();
 
-    public MongoEntitiesDAO(DB db, String entitiesCollectionName) {
+    public MongoEntitiesDAO(DB db, String entitiesCollectionName)
+    {
         this.db = db;
         this.entitiesCollectionName = entitiesCollectionName;
         init();
     }
 
-    public void dropEntities() {
+    public void dropEntities()
+    {
         entitiesData.drop();
     }
 
-    public void drop() {
+    public void drop()
+    {
         dropEntities();
     }
 
-    private void init() {
+    private void init()
+    {
         map.put("name", "nm");
         map.put("location", "l");
         map.put("misc", "mi");
@@ -100,7 +104,8 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO
     }
 
     @SuppressWarnings("unchecked")
-    private Entity<String> getEntity(DBObject dbObject) {
+    private Entity<String> getEntity(DBObject dbObject)
+    {
         String type = (String) dbObject.get("t");
         String key = map.get(type);
         String name = (String) dbObject.get(key);
@@ -122,7 +127,8 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO
     }
 
     private void addEntities(Node node, String type, String key,
-            Collection<Entity<String>> entities) {
+            Collection<Entity<String>> entities)
+    {
         BulkWriteOperation bulk = entitiesData
                 .initializeUnorderedBulkOperation();
 
@@ -166,7 +172,8 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO
     }
 
     @Override
-    public void addEntities(Node node, Entities entities) {
+    public void addEntities(Node node, Entities entities) 
+    {
         Collection<Entity<String>> nameEntities = entities.getNames();
         String key = map.get("name");
         addEntities(node, "name", key, nameEntities);
@@ -181,7 +188,9 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO
     }
 
     @Override
-    public Stream<Entity<String>> getNames(Node node) {
+    // TODO use skip and maxItems
+    public Stream<Entity<String>> getNames(Node node, int skip, int maxItems)
+    {
         String nodeId = node.getNodeId();
         String nodeVersion = node.getVersionLabel();
 
@@ -214,7 +223,9 @@ public class MongoEntitiesDAO extends AbstractMongoDAO implements EntitiesDAO
     }
 
     @Override
-    public Stream<Entity<String>> getOrgs(Node node) {
+    // TODO use skip and maxItems
+    public Stream<Entity<String>> getOrgs(Node node, int skip, int maxItems)
+    {
         String nodeId = node.getNodeId();
         String nodeVersion = node.getVersionLabel();
 

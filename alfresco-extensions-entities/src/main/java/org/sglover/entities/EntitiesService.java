@@ -23,8 +23,8 @@ public interface EntitiesService
 {
     void getEntities(Node node, ReadableByteChannel channel) throws IOException;
 
-    Stream<Entity<String>> getNames(Node node);
-    Stream<Entity<String>> getOrgs(Node node);
+    Stream<Entity<String>> getNames(Node node, int skip, int maxItems);
+    Stream<Entity<String>> getOrgs(Node node, int skip, int maxItems);
 
 //    void calculateSimilarities(String txnId);
 
