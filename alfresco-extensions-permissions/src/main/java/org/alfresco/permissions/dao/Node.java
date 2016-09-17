@@ -7,6 +7,10 @@
  */
 package org.alfresco.permissions.dao;
 
+import java.util.Optional;
+
+import org.alfresco.permissions.Properties;
+
 /**
  * 
  * @author sglover
@@ -14,82 +18,102 @@ package org.alfresco.permissions.dao;
  */
 public class Node
 {
-	private String nodeId;
-	private String nodeVersion;
+    private String nodeId;
+    private int nodeVersion;
+    private Optional<Properties> properties;
 
-	public Node()
-	{
-	}
+    public Node()
+    {
+    }
 
-	public static Node withNodeId(String nodeId)
-	{
-		Node node = new Node();
-		node.nodeId = nodeId;
-		return node;
-	}
+    public static Node withNodeId(String nodeId)
+    {
+        Node node = new Node();
+        node.nodeId = nodeId;
+        return node;
+    }
 
-	public Node withNodeVersion(String nodeVersion)
-	{
-		this.nodeVersion = nodeVersion;
-		return this;
-	}
+    public Node withNodeVersion(int nodeVersion)
+    {
+        this.nodeVersion = nodeVersion;
+        return this;
+    }
 
-	public Node(String nodeId, String nodeVersion)
+    public Node withProperties(Optional<Properties> properties)
+    {
+        this.properties = properties;
+        return this;
+    }
+
+    public Node(String nodeId, int nodeVersion, Optional<Properties> properties)
     {
         super();
         this.nodeId = nodeId;
         this.nodeVersion = nodeVersion;
+        this.properties = properties;
     }
-	public String getNodeId()
-	{
-		return nodeId;
-	}
-	public String getNodeVersion()
-	{
-		return nodeVersion;
-	}
-	
-	
-	@Override
+
+    public Node(String nodeId)
+    {
+        super();
+        int idx = nodeId.indexOf(".");
+        if (idx == -1)
+        {
+            throw new IllegalArgumentException();
+        }
+        this.nodeId = nodeId.substring(0, idx);
+        this.nodeVersion = Integer.parseInt(nodeId.substring(idx + 1));
+    }
+
+    public String getNodeId()
+    {
+        return nodeId;
+    }
+
+    public int getNodeVersion()
+    {
+        return nodeVersion;
+    }
+
+    public Optional<Properties> getProperties()
+    {
+        return properties;
+    }
+
+    @Override
     public int hashCode()
     {
-	    final int prime = 31;
-	    int result = 1;
-	    result = prime * result + ((nodeId == null) ? 0 : nodeId.hashCode());
-	    result = prime * result
-	            + ((nodeVersion == null) ? 0 : nodeVersion.hashCode());
-	    return result;
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((nodeId == null) ? 0 : nodeId.hashCode());
+        result = prime * result + nodeVersion;
+        return result;
     }
 
-	@Override
+    @Override
     public boolean equals(Object obj)
     {
-	    if (this == obj)
-		    return true;
-	    if (obj == null)
-		    return false;
-	    if (getClass() != obj.getClass())
-		    return false;
-	    Node other = (Node) obj;
-	    if (nodeId == null)
-	    {
-		    if (other.nodeId != null)
-			    return false;
-	    } else if (!nodeId.equals(other.nodeId))
-		    return false;
-	    if (nodeVersion == null)
-	    {
-		    if (other.nodeVersion != null)
-			    return false;
-	    } else if (!nodeVersion.equals(other.nodeVersion))
-		    return false;
-	    return true;
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        Node other = (Node) obj;
+        if (nodeId == null)
+        {
+            if (other.nodeId != null)
+                return false;
+        } else if (!nodeId.equals(other.nodeId))
+            return false;
+        if (nodeVersion != other.nodeVersion)
+            return false;
+        return true;
     }
 
-	@Override
+    @Override
     public String toString()
     {
-        return "Node [nodeId=" + nodeId + ", nodeVersion=" + nodeVersion
-                + "]";
+        return "Node [nodeId=" + nodeId + ", nodeVersion=" + nodeVersion + "]";
     }
 }

@@ -9,16 +9,16 @@ package org.alfresco.permissions;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
-import java.util.Arrays;
+import java.io.File;
+import java.net.URL;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.alfresco.permissions.dao.Node;
 import org.alfresco.permissions.dao.titan.TitanPermissionsDAO;
-import org.alfresco.permissions.dao.titan.TitanPermissionsDAO.RemoteCassandraConfig;
-import org.alfresco.permissions.dao.titan.TitanPermissionsDAO.RemoteElasticSearchConfig;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -40,9 +40,17 @@ public class StressTestTitanPermissionsDAO
     @Before
     public void before() throws Exception
     {
-        permissionsDAO = new TitanPermissionsDAO(
-                Arrays.asList(new RemoteCassandraConfig("localhost", true),
-                        new RemoteElasticSearchConfig("localhost", true)));
+//        permissionsDAO = new TitanPermissionsDAO(
+//                Arrays.asList(new RemoteCassandraConfig("localhost", true),
+//                        new RemoteElasticSearchConfig("localhost", true)));
+//        File dir = TempFileProvider.getTempDir("TitanPermissions");
+        URL yamlUrl = getClass().getClassLoader().getResource("embedded-cassandra.yaml");
+        if(yamlUrl == null)
+        {
+            fail();
+        }
+        //new TitanPermissionsDAO.LocalCassandraConfig(yamlUrl.getPath())
+        permissionsDAO = new TitanPermissionsDAO(true, null);
     }
 
     // @Test
@@ -70,52 +78,69 @@ public class StressTestTitanPermissionsDAO
     private void setup1()
     {
         {
-            permissionsDAO.addChildAuthority("Root", "GROUP_1");
-            Stream<String> childAuthsStream = permissionsDAO.getChildAuthoritiesAsStream("Root");
-            List<String> childAuths = childAuthsStream.collect(Collectors.toList());
-            assertTrue(childAuths.contains("GROUP_1"));
+            long start = System.nanoTime();
+            for(int i = 0; i < 500; i++)
+            {
+                permissionsDAO.addChildAuthority("Root", "GROUP_1_" + i);
+            }
+            long end = System.nanoTime();
+            System.out.println("500 child authorities added in " + (end - start)/1000000 + "ms");
+
+            assertEquals(500, permissionsDAO.countChildAuthorities("Root"));
+            List<String> childAuths = permissionsDAO.getChildAuthoritiesAsStream("Root", 0, 10)
+                    .collect(Collectors.toList());
+            assertEquals(10, childAuths.size());
+            assertTrue(childAuths.contains("GROUP_1_0"));
+            assertTrue(childAuths.contains("GROUP_1_1"));
         }
 
         {
-            permissionsDAO.addChildAuthority("GROUP_1", "GROUP_2");
-            Stream<String> childAuthsStream = permissionsDAO
-                    .getContainedAuthoritiesAsStream("Root");
-            List<String> childAuths = childAuthsStream.collect(Collectors.toList());
-            assertTrue(childAuths.contains("GROUP_1"));
-            assertTrue(childAuths.contains("GROUP_2"));
+            long start = System.nanoTime();
+            for(int i = 0; i < 500; i++)
+            {
+                permissionsDAO.addChildAuthority("GROUP_1_0", "GROUP_2_" + i);
+            }
+            long end = System.nanoTime();
+            System.out.println("500 child authorities added in " + (end - start)/1000000 + "ms");
+
+            {
+                assertTrue(permissionsDAO.hasAuthority("GROUP_1_0", "GROUP_2_0"));
+                long numChildAuths = permissionsDAO.countChildAuthorities("GROUP_1_0");
+                assertEquals(500, numChildAuths);
+
+                long start1 = System.nanoTime();
+                for(int j = 0; j < 500; j++)
+                {
+                    assertTrue(permissionsDAO.hasAuthority("Root", "GROUP_1_0"));
+                    assertTrue(permissionsDAO.hasAuthority("Root", "GROUP_2_0"));
+                }
+                long end1 = System.nanoTime();
+                System.out.println("500 hasAuth calls in " + (end1 - start1)/1000000 + "ms");
+            }
         }
 
         {
-            permissionsDAO.addChildAuthority("GROUP_2", "sglover");
-            Stream<String> childAuthsStream = permissionsDAO
-                    .getContainedAuthoritiesAsStream("Root");
-            List<String> childAuths = childAuthsStream.collect(Collectors.toList());
-            assertTrue(childAuths.contains("GROUP_1"));
-            assertTrue(childAuths.contains("GROUP_2"));
-            assertTrue(childAuths.contains("sglover"));
+            permissionsDAO.addChildAuthority("GROUP_2_0", "sglover");
+            assertTrue(permissionsDAO.hasAuthority("Root", "GROUP_1_0"));
+            assertTrue(permissionsDAO.hasAuthority("Root", "GROUP_2_0"));
+            assertTrue(permissionsDAO.hasAuthority("Root", "sglover"));
         }
 
         {
-            permissionsDAO.addChildAuthority("Root", "GROUP_3");
-            Stream<String> childAuthsStream = permissionsDAO
-                    .getContainedAuthoritiesAsStream("Root");
-            List<String> childAuths = childAuthsStream.collect(Collectors.toList());
-            assertTrue(childAuths.contains("GROUP_1"));
-            assertTrue(childAuths.contains("GROUP_2"));
-            assertTrue(childAuths.contains("sglover"));
-            assertTrue(childAuths.contains("GROUP_3"));
+            permissionsDAO.addChildAuthority("Root", "GROUP_3_0");
+            assertTrue(permissionsDAO.hasAuthority("Root", "GROUP_1_0"));
+            assertTrue(permissionsDAO.hasAuthority("Root", "GROUP_2_0"));
+            assertTrue(permissionsDAO.hasAuthority("Root", "sglover"));
+            assertTrue(permissionsDAO.hasAuthority("Root", "GROUP_3_0"));
         }
 
         {
-            permissionsDAO.addChildAuthority("GROUP_3", "cknight");
-            Stream<String> childAuthsStream = permissionsDAO
-                    .getContainedAuthoritiesAsStream("Root");
-            List<String> childAuths = childAuthsStream.collect(Collectors.toList());
-            assertTrue(childAuths.contains("GROUP_1"));
-            assertTrue(childAuths.contains("GROUP_2"));
-            assertTrue(childAuths.contains("sglover"));
-            assertTrue(childAuths.contains("GROUP_3"));
-            assertTrue(childAuths.contains("cknight"));
+            permissionsDAO.addChildAuthority("GROUP_3_0", "cknight");
+            assertTrue(permissionsDAO.hasAuthority("Root", "GROUP_1_0"));
+            assertTrue(permissionsDAO.hasAuthority("Root", "GROUP_2_0"));
+            assertTrue(permissionsDAO.hasAuthority("Root", "sglover"));
+            assertTrue(permissionsDAO.hasAuthority("Root", "GROUP_3_0"));
+            assertTrue(permissionsDAO.hasAuthority("Root", "cknight"));
         }
     }
 
@@ -126,7 +151,7 @@ public class StressTestTitanPermissionsDAO
 
         setup1();
 
-        int numChildren = 500;
+        int numChildren = 1000;
 
         {
             for (int i = 0; i < numChildren; i++)
@@ -136,25 +161,27 @@ public class StressTestTitanPermissionsDAO
                     System.out.print(".");
                 }
                 long start = System.nanoTime();
-                permissionsDAO.setPermission("parent1", "v1", "child", "Read", "GROUP_1",
-                        "child" + i, "v1");
+//                permissionsDAO.addAssoc("parent1", 1, "child", "GROUP_2_0",
+//                        "child" + i, 1);
+                permissionsDAO.addAssoc("parent1", 1, "child", "child" + i, 1);
                 long end = System.nanoTime();
                 total += (end - start);
             }
             long start = System.nanoTime();
-            permissionsDAO.setPermission("parent1", "v1", "child", "Read", "cknight",
-                    "child" + (numChildren + 1), "v1");
+//            permissionsDAO.addAssoc("parent1", 1, "child", "Read", "cknight",
+//                    "child" + (numChildren + 1), 1);
+            permissionsDAO.addAssoc("parent1", 1, "cknight", "child" + (numChildren + 1), 1);
             long end = System.nanoTime();
             total += (end - start);
         }
 
-        System.out.println("avg write (ms) " + (total / 10001 / 1000000.0f));
-        System.out.println("total write (ms) " + (total / 1000000.0f));
+        System.out.println("avg write (ms) for " + numChildren + " children, " + (total / (numChildren + 1) / 1000000.0f));
+        System.out.println("total write (ms) for " + numChildren + " children, " + (total / 1000000.0f));
 
         for (int i = 0; i < 5; i++)
         {
             long start = System.nanoTime();
-            List<Node> children = permissionsDAO.getChildren("parent1", "v1", "sglover", 0, 100);
+            List<Node> children = permissionsDAO.getChildren("parent1", 1, "sglover", 0, 100);
             long end = System.nanoTime();
             assertEquals(100, children.size());
             System.out.println(
@@ -164,11 +191,11 @@ public class StressTestTitanPermissionsDAO
         for (int i = 0; i < 5; i++)
         {
             long start = System.nanoTime();
-            List<Node> children = permissionsDAO.getChildren("parent1", "v1", "cknight", 0, 10);
+            List<Node> children = permissionsDAO.getChildren("parent1", 1, "cknight", 0, 10);
             long end = System.nanoTime();
             assertEquals(1, children.size());
             assertTrue(children
-                    .contains(Node.withNodeId("child" + (numChildren + 1)).withNodeVersion("v1")));
+                    .contains(Node.withNodeId("child" + (numChildren + 1)).withNodeVersion(1)));
             System.out.println(
                     children.size() + " children in time (ms) " + (end - start) / 1000000.0f);
         }
@@ -199,7 +226,7 @@ public class StressTestTitanPermissionsDAO
         // }
 
         long start = System.nanoTime();
-        Stream<String> authStream = permissionsDAO.getContainedAuthoritiesAsStream("GROUP_1");
+        Stream<String> authStream = permissionsDAO.getContainedAuthoritiesAsStream("GROUP_1", 0, null);
         long end = System.nanoTime();
         System.out.println((end - start) / 1000000000.0f + ", " + authStream.count());
     }
